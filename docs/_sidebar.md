@@ -1,11 +1,40 @@
-- Getting started
+- 计算机基础
+  - [数据类型](subdir/quickstart.md)
+  - [Shell](subdir/quickstart.md)
+  - [Dos](subdir/themes.md)
 
-  - [Quick start](subdir/quickstart.md)
-  - [Themes](subdir/themes.md)
+- Java
+  - [OOP](configuration.md)
+  - [JVM](configuration.md)
+  - [JMM](configuration.md)
+  - [多线程](configuration.md)
+  - [集合](configuration.md)
+  
+- web框架
+  - [Spring](configuration.md)
+  - [SpringBoot](configuration.md)
+  - [SpringMVC](configuration.md)
+  - [SpringCloud](configuration.md)
 
-- Customization
+- 存储/数据库
+  - [SQL](configuration.md)
+  - [MySQL](configuration.md)
+  - [Redis](configuration.md)
 
-  - [None](configuration.md)
+- web容器
+  - [Nginx](configuration.md)
+  - [Tomcat](configuration.md)
+  
+- 网络
+  - [HTTP](configuration.md)
+  - [RPC](configuration.md)
+  
+- 微服务
+  - [Docker](configuration.md)
+  
+- 大数据
+  - [Hadoop](configuration.md)
+  - [Flink](configuration.md)
 
-- [Awesome docsify](awesome.md)
-- [Changelog](changelog.md)
+- [Awesome docsify](subdir/quickstart.md)
+- [Changelog](subdir/quickstart.md)
