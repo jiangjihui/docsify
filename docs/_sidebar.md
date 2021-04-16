@@ -1,6 +1,6 @@
 - 计算机基础
-  - [数据类型](subdir/quickstart.md)
-  - [Shell](subdir/quickstart.md)
+  - [数据类型](contents/计算机基础-数据类型.md)
+  - [Shell](contents/计算机基础-Shell.md)
   - [Dos](subdir/themes.md)
 
 - Java
@@ -31,6 +31,7 @@
   
 - 微服务
   - [Docker](configuration.md)
+  - [Alibaba](configuration.md)
   
 - 大数据
   - [Hadoop](configuration.md)
