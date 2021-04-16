@@ -1,6 +1,6 @@
-## docsify
+## 笔记合集
 
-> A magical documentation site generator.
+> 收集自互联网.
 
 ## What it is
 

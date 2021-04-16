@@ -1,10 +1,10 @@
 - 计算机基础
   - [数据类型](contents/计算机基础-数据类型.md)
   - [Shell](contents/计算机基础-Shell.md)
-  - [Dos](subdir/themes.md)
+  - [Dos](contents/计算机基础-dos.md)
 
 - Java
-  - [OOP](configuration.md)
+  - [OOP](contents/Java-OOP.md)
   - [JVM](configuration.md)
   - [JMM](configuration.md)
   - [多线程](configuration.md)
