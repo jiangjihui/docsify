@@ -459,33 +459,33 @@ jstack用于生成java虚拟机当前时刻的线程快照。线程快照是当�
 
 ## **常用故障命令**
 
-\#打印当前java进程信息
-
+```
+#打印当前java进程信息
 jstack <pid>
+```
 
-docker中为 ./jstack 1
+> 注：docker中为 ./jstack 1
 
  
 
-\#打印当前java堆中各个对象的数量、大小。
-
+```
+#打印当前java堆中各个对象的数量、大小。
 jmap -histo <pid>
+```
 
-docker中为 ./jmap -histo 1
+> docker中为 ./jmap -histo 1
 
- 
 
-\# 输出结果[说明](https://blog.csdn.net/jueshengtianya/article/details/46315033)
 
+ 输出结果[说明](https://blog.csdn.net/jueshengtianya/article/details/46315033)
+
+```
 [C is a char[]
-
 [S is a short[]
-
 [I is a int[]
-
 [B is a byte[]
-
 [[I is a int[][]
+```
 
  
 
@@ -493,29 +493,26 @@ docker中为 ./jmap -histo 1
 
 ## CPU占用[**排查**](https://blog.csdn.net/blade2001/article/details/9065985)
 
-\# 查看高CPU使用率的进程
 
-**> top**
+```shell
+# 查看高CPU使用率的进程
+top
 
-\# 显示该进程下的线程列表
+# 显示该进程下的线程列表
+ps -mp {pid} -o THREAD,tid,time
 
-**> ps -mp** pid **-o THREAD,tid,time**
+# 将上面找到的占用时间最长的线程ID转换为16进制格式
+printf "%x\n" {tid}
 
-\# 将上面找到的占用时间最长的线程ID转换为16进制格式
+# 打印线程下该进程的堆栈信息（jstack 28555 | 7082 -A60）
+jstack {pid} |grep {tid} -A 30
 
-**> printf "%x\n"** tid
+# 查看当前进程下的CPU高占用的线程
+top -H -p {pid}
+```
 
-\# 打印线程下该进程的堆栈信息（jstack 28555 | 7082 -A60）
 
-**> jstack** pid **|grep** tid **-A 30**
 
- 
-
-\# 查看当前进程下的CPU高占用的[线程](https://www.jianshu.com/p/6c4bac417003)
-
-**> top -H -p** pid
-
- 
 
 ## JDK11内存[回收](https://blog.csdn.net/goldenfish1919/article/details/82911948)
 
@@ -523,11 +520,28 @@ G1垃圾收集器主要是为那些拥有大内存的多核处理器而设计的
 
  
 
-## **CMS、G1、ZGC的堆内存实现区别**
+## [**CMS、G1、ZGC的堆内存实现区别**](https://blog.csdn.net/jyxmust/article/details/105086208)
 
-https://blog.csdn.net/jyxmust/article/details/105086208
+**CMS**
+CMS堆内存和以往的垃圾回收器一样，分为新生代和老年代，新生代和老年代是物理隔离的。
 
-  
+**G1**
+G1打破了以往将收集范围固定在新生代或老年代的模式，GI 将 Java 堆空间分割成了若干相同大小的 区域，即 region，包括 Eden、Survivor、 Old、 Humongous 四种类型。其中， Humongous 是特殊的 Old 类型，专门 放置大型对象。这样的划分方式意昧着不需要一个连续的内存空间管理对象。 GI 将 空间分为多个区域，优先回收垃圾最多的 区域。 GI 采用的是 好的空间整合能力’不会产生大量的空间碎片。
+
+Region的数值是在1M到32M字节之间的一个2的幂值数，JVM会尽量划分2048个左右、同等大小的Region。
+
+G1的一大优势在于可预测的停顿时间， 能够尽可能快地在指定时间内完成垃圾回收任务。在 JDK11中，已经将 GI 设为默认 垃圾回收器。
+
+**ZGC**
+和G1类似，但ZGC的region的大小更加灵活和动态。zgc的region不会像G1那样在一开始就被划分为固定大小的region。
+
+zgc的region核心亮点就是：动态，表现为：动态地创建和销毁。
+动态地决定region的大小。它的最小单位是2MB的一个块。然后每个region的大小就是是2MB*N就是。*
+
+> 而且他有个概念叫：size groups。有三种：
+> Small：就是一个2MB的region。
+> Medium：32mb。2MB*16。
+> Large：N\*2MB。
 
 
 

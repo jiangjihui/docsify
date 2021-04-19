@@ -6,19 +6,18 @@
 - Java
   - [OOP](contents/Java-OOP.md)
   - [JVM](contents/Java-JVM.md)
-  - [JMM](configuration.md)
-  - [多线程](configuration.md)
+  - [JMM](contents/Java-JMM.md)
+  - [多线程](contents/Java-多线程.md)
   - [集合](configuration.md)
   
 - web框架
-  - [Spring](configuration.md)
-  - [SpringBoot](configuration.md)
-  - [SpringMVC](configuration.md)
-  - [SpringCloud](configuration.md)
+  - [Spring](contents/web框架-Spring.md)
+  - [SpringBoot](contents/web框架-SpringBoot.md)
+  - [SpringMVC](contents/web框架-SpringMVC.md)
 
 - 存储/数据库
-  - [SQL](configuration.md)
-  - [MySQL](configuration.md)
+  - [SQL](contents/存储-SQL.md)
+  - [MySQL](contents/存储-MySQL.md)
   - [Redis](configuration.md)
 
 - web容器
@@ -31,7 +30,8 @@
   
 - 微服务
   - [Docker](configuration.md)
-  - [Alibaba](configuration.md)
+  - [Spring-Cloud](configuration.md)
+  - [Spring-Cloud-Alibaba](configuration.md)
   
 - 大数据
   - [Hadoop](configuration.md)
