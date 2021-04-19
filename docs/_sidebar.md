@@ -5,7 +5,7 @@
 
 - Java
   - [OOP](contents/Java-OOP.md)
-  - [JVM](configuration.md)
+  - [JVM](contents/Java-JVM.md)
   - [JMM](configuration.md)
   - [多线程](configuration.md)
   - [集合](configuration.md)
