@@ -18,7 +18,7 @@
 - 存储/数据库
   - [SQL](contents/存储-SQL.md)
   - [MySQL](contents/存储-MySQL.md)
-  - [Redis](configuration.md)
+  - [Redis](contents/存储-Redis.md)
 
 - web容器
   - [Nginx](configuration.md)

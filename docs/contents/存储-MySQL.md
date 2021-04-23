@@ -798,3 +798,123 @@ docker exec some-mysql sh -c 'exec mysqldump -R -uroot -p"$MYSQL_ROOT_PASSWORD" 
 docker exec -i mysql8_db_1 sh -c 'exec mysql -uroot -pmima merck' < /mnt/hdd/docker/mysql8/merck.sql
 ```
 
+
+
+
+
+## **MySQL双机热备的实现**
+
+**条件：**
+
+1. 主服务器的版本**低于**从服务器版本
+
+2. 主服务器上需要备份的数据库在从服务器的mysql数据库中不能对应不上（即：主服务器有testdb数据库，从服务器也有名称为testdb数据库）
+
+**步骤：**
+
+**主服务器Master配置**
+
+1. 创建好同步连接的帐户
+
+2. 修改mysql配置文件[/etc/mysql/conf.d/my.cnf]
+
+```
+[mysqld]
+server-id = 1　　　　　　　　//唯一id
+log-bin=mysql-bin       //其中这两行是本来就有的，可以不用动，添加下面两行即可.指定日志文件
+binlog-do-db = test　　　　 //记录日志的数据库
+binlog-ignore-db = mysql  //不记录日志的数据库
+```
+
+3. 重启mysql服务
+
+```shell
+service mysql restart     //如果是运行的docker，直接重启docker
+```
+
+4. 查看主服务器状态[记录数据信息，后面需要用到]
+
+```shell
+mysql> show master status\G;
+```
+
+**从服务器Slave配置**
+
+1. 修改mysql配置文件[/etc/mysql/conf.d/my.cnf]
+
+```
+[mysqld]
+server-id = 2
+log-bin=mysql-bin
+replicate-do-db = test
+replicate-ignore-db = mysql,information_schema,performance_schema
+```
+
+2. 重启mysql服务
+
+```shell
+service mysql restart     //如果是运行的docker，直接重启docker
+```
+
+3、指定同步位置
+
+```
+mysql>stop slave;     //先停步slave服务线程，这个是很重要的，如果不这样做会造成以下操作不成功。
+mysql>change master to master_host='59.151.15.36',master_user='replicate',master_password='123456', master_log_file='mysql-bin.000016',master_log_pos=107;
+```
+
+> **注：**master_log_file, master_log_pos由主服务器（Master）查出的状态值中确定。也就是刚刚叫注意的。master_log_file对应File, master_log_pos对应Position。Mysql 5.x以上版本已经不支持在配置文件中指定主服务器相关选项。
+
+```
+mysql>start slave;
+```
+
+4、查看从服务器（Slave）状态
+
+```
+mysql> show slave status\G;
+## 查看下面两项值均为Yes，即表示设置从服务器成功。
+Slave_IO_Running: Yes
+Slave_SQL_Running: Yes
+```
+
+> 参考：https://www.cnblogs.com/fnlingnzb-learner/p/7000898.html
+
+
+
+
+
+## **Linux安装Mysql-5.7版本**
+
+```shell
+groupadd mysql      ## 添加一个mysql组
+useradd -r -g mysql mysql    ## 添加一个用户
+# 解压缩下载的包
+tar -xzvf /data/software/mysql-5.7.13-linux-glibc2.5-x86_64.tar.gz
+# 然后 mv 解压后的包  mysql   ##相当于重命名
+chown -R mysql:mysql ./   ##进入mysql包中， 给这个包授权 给mysql
+bin/mysqld --initialize --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data
+## 进入mysql文件名  basedir 为mysql 的路径， datadir 为mysql的 data 包，里面存放着mysql自己的包， 如user
+## 重要：此处需要注意记录生成的临时密码，如上文：YLi>7ecpe;YP
+bin/mysql_ssl_rsa_setup  --datadir=/usr/local/mysql/data           
+## 进入mysql support-files
+cp my-default.cnf /etc/my.cnf             ##注释或者删除掉 my.cnf里一般配置选项 中的socket=...的内容
+cp mysql.server /etc/init.d/mysql
+vim /etc/init.d/mysql             ##修改basedir=自己的路径     修改datadir=自己的路径
+bin/mysqld_safe --user=mysql --disable-partition-engine-check &     ## 启动mysql
+bin/mysql --user=root –p   
+## 输入临时密码
+set password=password('A123456');
+grant all privileges on *.* to root@'%' identified by 'A123456';
+flush privileges;
+use mysql;
+select host,user from user;
+## 远程链接数据库，或者重启。
+```
+
+> 参考：
+>
+> http://www.cnblogs.com/zfxJava/p/6004188.html
+>
+> http://blog.csdn.net/xyang81/article/details/51792144
+
