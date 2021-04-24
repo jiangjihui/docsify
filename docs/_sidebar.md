@@ -21,7 +21,7 @@
   - [Redis](contents/存储-Redis.md)
 
 - web容器
-  - [Nginx](configuration.md)
+  - [Nginx](contents/web容器-Nginx.md)
   - [Tomcat](configuration.md)
   
 - 网络
