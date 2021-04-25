@@ -22,7 +22,7 @@
 
 - web容器
   - [Nginx](contents/web容器-Nginx.md)
-  - [Tomcat](configuration.md)
+  - [Tomcat](contents/web容器-Tomcat.md)
   
 - 网络
   - [HTTP](configuration.md)
