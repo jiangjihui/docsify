@@ -437,13 +437,13 @@ docker rm redis
 
 docker容器的日志存放在/var/lib/docker/containers/下对于容器的目录下面。
 
+> /var/lib/docker/containers/**[容器ID]**-json.log
+
 使用**truncate**命令，可以将nginx容器的日志文件“清零”：
 
 ```
 truncate -s 0 /var/lib/docker/containers/a376aa694b22ee497f6fc9f7d15d943de91c853284f8f105ff5ad6c7ddae7a53/*-json.log
 ```
-
-> /var/lib/docker/containers/**[容器ID]**-json.log
 
 查看最近30分钟的日志：
 
@@ -461,6 +461,20 @@ docker logs -t --since="2018-02-08T13:23:37" --until "2018-02-09T12:23:37" CONTA
 
 ```
 docker logs -f CONTAINER_ID
+```
+
+
+
+设置容器服务的日志大小[上限](https://blog.csdn.net/yjk13703623757/article/details/80283729)，要从根本上解决问题，需要限制容器服务的日志大小上限。这个通过配置容器docker-compose的max-size选项来实现：
+
+```
+nginx: 
+  image: nginx:1.12.1 
+  restart: always 
+  logging: 
+    driver: “json-file” 
+    options: 
+      max-size: “5g”
 ```
 
 
@@ -767,7 +781,7 @@ services:
 
 ### **Docker-Redis**
 
-**docker run -p** 6379:6379 **-v** $PWD/data:/data **-****d** redis **redis-server --appendonly** yes
+**docker run -p** 6379:6379 **-v** $PWD/data:/data **-d** redis **redis-server --appendonly** yes
 
 命令说明：
 
@@ -782,4 +796,488 @@ services:
 **docker run** -d --name myredis -p 6379:6379 redis --requirepass "mypassword"
 
 
+
+### **Docker-influxdb**
+
+docker-compose.yml
+
+```
+version: '2'
+services:
+	    influxdb:
+	        image: influxdb
+	        environment:
+	            INFLUXDB_ADMIN_ENABLED: "true"
+	            INFLUXDB_ADMIN_USER: "root"
+	            INFLUXDB_ADMIN_PASSWORD: "chada123"
+	            INFLUXDB_DB: railway
+	        volumes:
+	            - ./data:/var/lib/influxdb
+	        ports:
+            - "8086:8086"
+```
+
+
+
+### **Docker-PostgreSQL**
+
+**docker run -p** 54321:5432 **-e** POSTGRES_PASSWORD=root **-d** postgres
+
+命令说明：
+
+> -p 54321:5432 : 将容器的5432端口映射到主机的54321端口
+>
+> -e POSTGRES_PASSWORD=root : 设置环境变量，指定数据库的登录口令为root
+>
+> -d postgres : 所使用镜像的名称
+
+
+
+### **Docker-OracleXE**
+
+**docker pull** wnameless/oracle-xe-11g
+
+**docker run -d -p** 49160:22 **-p** 49161:1521 **wnameless/oracle-xe-11g**
+
+> 注：
+>
+> docker pull 比较耗时，中间可能会中断，继续[拉取即可](https://blog.csdn.net/wm5920/article/details/78770556)
+>
+> 数据库信息：**username**: system/sys **password**: oracle
+
+
+
+### **Docker-SQLServer**
+
+docker-compose.yml
+
+```
+version: '2'
+services:
+        sqlserver2017:
+                image: microsoft/mssql-server-linux:2017-latest
+                volumes:
+                        - ./mssql:/var/opt/mssql
+                ports:
+                        - "1401:1433"
+                environment:
+                        - MSSQL_SA_PASSWORD=sqlserver123!
+                        - ACCEPT_EULA=Y
+```
+
+> [注：](https://blog.csdn.net/xyh153996626/article/details/79022703)
+>
+> ACCEPT_EULA=Y的意思是同意许可协议，必选；
+> MSSQL_SA_PASSWORD为密码，要求是最少8位的强密码，要有大写字母，小写字母，数字以及特殊符号，不然会有一个大坑（docker启动sqlserver容器后过几秒就停止了）；
+
+
+
+### **Docker-WordPress**
+
+**docker run** **--name** mywordpress **--link** 23144a2854f0:mysql **-p 808****1****:80 -****d** wordpress
+
+命令说明：
+
+> -p 8081:80 : 将容器的80端口映射到主机的8081端口
+>
+> --name mywordpress : 指定新实例名称
+>
+> --link 23144a2854f0:mysql：指定要使用的Docker MySQL实例
+>
+> -d postgres : 所使用镜像的名称
+
+
+
+### Docker-Java
+
+docker-compose.yml：
+
+```yaml
+version: '2'
+services:
+    java:
+        image: openjdk:8u222-jdk
+        # 日志容量限制
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "1g"
+        environment:
+            TZ: Asia/Shanghai
+        volumes:
+            # 时区同步
+            - /etc/localtime:/etc/localtime:ro
+            # 应用存放目录
+            - ./app:/app
+        ports:
+            - "18610:8084"
+        command: java -server -jar /app/app.jar --spring.profiles.active=test
+```
+
+
+
+### Docker-Tomcat
+
+docker-compose.yml：
+
+```yaml
+version: '2'
+services:
+    tm:
+        image: tomcat:8.5.46
+        # 日志容量限制
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "1g"
+        environment:
+            TZ: Asia/Shanghai
+        volumes:
+            - ./webapps:/usr/local/tomcat/webapps/
+#            - ./conf:/usr/local/tomcat/conf/
+#            - ./bin/catalina.sh:/usr/local/tomcat/bin/catalina.sh
+            - ./logs:/usr/local/tomcat/logs/
+            - /etc/localtime:/etc/localtime:ro
+        ports:
+            - "29091:8080/tcp"
+```
+
+> FAQ：映射tomcat的catalina.sh错误
+>
+> ERROR: for my_tm Cannot start service my_tm: b'OCI runtime create failed: container_linux.go:348: starting container process caused "exec: [\\"catalina.sh\\](file://"catalina.sh/)": executable file not found in $PATH": unknown'
+>
+> 解决：需要给映射的文件赋权：chmod 777 ./catalina.sh
+
+
+
+## **Maven结合Docker**
+
+docker开启[远程访问](https://blog.csdn.net/she_lock/article/details/79557022)：
+
+```
+vi /lib/systemd/system/docker.service
+```
+
+ 在[Service]这个部分，加上下面两行参数：
+
+```
+ExecStart= 
+ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375 -H unix://var/run/docker.sock
+```
+
+ 
+
+## **重启docker**
+
+systemctl daemon-reload //重新读取配置文件 
+
+systemctl restart docker //重新启动服务
+
+ 
+
+ 
+
+## **Docker-Machine**
+
+[Docker Machine](https://www.jianshu.com/p/0d9659080bd5) 是 Docker 官方提供的一个工具，它可以帮助我们在远程的机器上安装 Docker，或者在虚拟机 host 上直接安装虚拟机并在虚拟机中安装 Docker。我们还可以通过 docker-machine 命令来管理这些虚拟机和 Docker。
+
+ 
+
+ 
+
+## **Docker** **版本**
+
+**有关docker,docker.io,docker-engine,lxc-docker 的**[**区别**](https://www.cnblogs.com/lizichao1991/p/7646917.html)**？**
+
+其中，RHEL/CentOS 软件源中的 Docker 包名为 docker；Ubuntu 软件源中的 Docker 包名为 docker.io；而很古老的 Docker 源中 Docker 也曾叫做 lxc-docker。这些都是非常老旧的 Docker 版本，并且基本不会更新到最新的版本，而对于使用 Docker 而言，使用最新版本非常重要。另外，17.04 以后，包名从 docker-engine 改为 docker-ce，因此从现在开始安装，应该都使用 docker-ce 这个包。
+
+
+
+
+
+## **Docker时区**
+
+Base Image 使用的基本上都是 Docker 官方的，所以里面的时间设置大多是 Etc/UTC，也就是标准的 UTC 时间，所以要简单的[调整](https://tommy.net.cn/2015/02/05/config-timezone-in-docker/)一下，变成中国标准时间。
+
+1 如果已经创建了 container 的话，可以用docker的root用户进入到 container 里面，用命令行实现时区的更改：
+
+```
+docker exec -it -uroot 18c3d53deff3 /bin/bash
+echo "Asia/Shanghai" > /etc/timezone
+dpkg-reconfigure -f noninteractive tzdata
+```
+
+2 如果是在Dockerfile中进行修改，则可以使用如下命令：
+
+```
+RUN echo "Asia/Shanghai" > /etc/timezone
+RUN dpkg-reconfigure -f noninteractive tzdata
+```
+
+3 使用docker-compose.yml，其中设置volumes为:ro表示只读：
+
+```
+volumes:
+    - /etc/localtime:/etc/localtime:ro
+environment:
+             - TZ=Asia/Shanghai
+```
+
+4 快速方法（应用不可靠）：
+
+```
+docker cp /etc/localtime [容器ID或者NAME]:/etc/localtime
+```
+
+
+
+## **Docker搭建私有仓库**
+
+1 使用docker-compose.yml创建镜像服务器：
+
+```
+version: '2'
+services:
+    docker-registry:
+        image: registry:latest
+        ports:
+            - "5000:5000"
+        volumes:
+            - /docker/registry
+        restart: always
+        privileged: true
+```
+
+2 开放http服务器（免去SSL验证[https]）：
+
+```
+vim /etc/docker/daemon.json
+# 添加配置文件 
+{"insecure-registries":["192.168.66.100:5000"]} 
+
+# 重启服务 
+systemctl reload docker
+```
+
+3 推送镜像到私有仓库：
+
+```
+#必须要先将镜像的名称给变成  域名或ip/镜像名
+docker tag centos7:latest 192.168.66.100:5000/centos7
+#推送到本地的仓库上
+docker push 192.168.66.100:5000/centos7
+```
+
+4 访问网页查看是否成功：
+
+http://192.168.1.202:5000/v2/_catalog
+
+5 下载私有仓库镜像：
+
+```
+#删除本地上传的那个仓库，然后下载看看
+docker rmi 192.168.66.100:5000/centos7
+#下载本地仓库的镜像
+docker pull 192.168.66.100:5000/centos7
+```
+
+
+
+## **DockerWine**
+
+在Docker容器中运行Microsoft Windows应用[程序](https://hub.docker.com/r/suchja/wine/)
+
+在挂在程序文件的时候如果需要新建文件之类的，建议使用直接挂载的目录，而不是挂载目录的子目录，否则可能出现权限问题导致命令执行失败
+
+```
+#下载镜像
+docker pull suchja/wine
+
+#启动容器
+docker run --rm -it --entrypoint /bin/bash suchja/wine:latest
+# 或者
+docker run --rm -it -v /home/chada/app/wine/file:/file --entrypoint /bin/bash suchja/wine:latest
+
+#初始化
+wine wineboot --init
+
+#开始使用Wine
+wine notepad.exe
+```
+
+**自定义wine**[**镜像**](http://cache.baiducontent.com/c?m=9f65cb4a8c8507ed4fece76310508c31490797634b87834e29938448e435061e5a24febd2d201704d5c0776604bb0c01aaa639246a5279e0dbdf883b98e0ce7f&p=8e57c54ad5c34af812b9c7710f48cf&newp=997dce1785cc43b310bd9b7d0d1d91231610db2151d6d2106b82c825d7331b001c3bbfb423261206d7c47f6406ae4e5be8f63676350923a3dda5c91d9fb4c57479946f&user=baidu&fm=sc&query=docker+wine&qid=92eac7620000a6e4&p1=2)
+
+Dockerfile：
+
+```dockerfile
+FROM ubuntu:16.04
+RUN useradd -m -g users docker
+RUN sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
+RUN dpkg --add-architecture i386
+RUN apt update
+RUN apt install --no-install-recommends --assume-yes software-properties-common
+RUN add-apt-repository ppa:wine/wine-builds
+RUN apt update
+RUN apt install --no-install-recommends --assume-yes winehq-staging winetricks
+ENV DISPLAY :0
+RUN mkdir /home/docker/game && mkdir /home/docker/game/ED6_FC
+RUN chown -R docker /home/docker/game
+WORKDIR /home/docker/game/ED6_FC
+USER docker
+RUN winetricks d3dxof
+```
+
+构建运行
+
+```
+# 构建镜像
+docker build -t mywine .
+# 运行容器
+docker run --rm -it -v /home/chada/app/wine/file:/file mywine:latest
+# 执行wine
+wine /file/xxx.exe
+```
+
+
+
+## **日志驱动**
+
+| **驱动**                                                     | **描述**                                                     |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| none                                                         | 没有可用于容器的日志，docker logs也不返回任何输出。          |
+| [json-file](https://docs.docker.com/config/containers/logging/json-file/) | 日志格式为JSON。Docker的默认日志记录驱动程序。               |
+| [syslog](https://docs.docker.com/config/containers/logging/syslog/) | 将日志消息写入syslog设施。该syslog守护程序必须在主机上运行。 |
+| [journald](https://docs.docker.com/config/containers/logging/journald/) | 将日志消息写入journald。该journald守护程序必须在主机上运行。 |
+| [gelf](https://docs.docker.com/config/containers/logging/gelf/) | 将日志消息写入Graylog扩展日志格式（GELF）端点，例如Graylog或Logstash。 |
+| [fluentd](https://docs.docker.com/config/containers/logging/fluentd/) | 将日志消息写入fluentd（转发输入）。该fluentd守护程序必须在主机上运行。 |
+| [awslogs](https://docs.docker.com/config/containers/logging/awslogs/) | 将日志消息写入Amazon CloudWatch Logs。                       |
+| [splunk](https://docs.docker.com/config/containers/logging/splunk/) | splunk使用HTTP事件收集器将日志消息写入。                     |
+| [etwlogs](https://docs.docker.com/config/containers/logging/etwlogs/) | 将日志消息写为Windows事件跟踪（ETW）事件。仅适用于Windows平台。 |
+| [gcplogs](https://docs.docker.com/config/containers/logging/gcplogs/) | 将日志消息写入Google Cloud Platform（GCP）日志记录。         |
+| [logentries](https://docs.docker.com/config/containers/logging/logentries/) | 将日志消息写入Rapid7 Logentries。                            |
+
+
+
+## 查看docker的连接（获取docker连接数）
+
+**1** **查找docker的进程号 ：**
+
+```
+docker inspect -f '{{.State.Pid}}' <containerid>
+```
+
+**2** **查看连接：** 
+
+```
+sudo nsenter -t <pid> -n netstat | grep ESTABLISHED
+```
+
+> **示例：**
+> $ docker inspect -f '{{.State.Pid}}' 49b98b2fbad2
+> 1840
+> $ nsenter -t 1840 -n netstat |grep ESTABLISHED
+> udp    0   0 node-2:45963    10.254.0.2:domain    ESTABLISHED
+
+
+
+## **Docker Swarm**
+
+创建主[节点](https://www.cnblogs.com/franknihao/p/8490416.html)
+
+```
+docker swarm init
+```
+
+从节点加入 （使用创建主节点时生成的token）
+
+```
+docker swarm join --token SWMTKN-1-2mi0u8jhfqe1ihvx2n9nc569cxe77pggoq71nl9lkf033m0554-0t2j9gcd9o5fj228vyxzxihww 192.168.1.103:2377
+```
+
+从节点离开
+
+```
+docker swarm leave
+```
+
+
+
+ 
+
+## **进入容器内命令行闪退**
+
+当docker容器的命令行进入闪退的时候，有可能是由于所使用的shell版本不一样导致的，可以更换/bin/bash为/bin/sh[再试](https://blog.csdn.net/qq_34018840/article/details/94397743)
+
+
+
+ 
+
+## **Docker Stack**
+
+[服务部署](https://blog.csdn.net/huangjun0210/article/details/86502021)
+
+```
+docker stack deploy example --compose-file=docker-compose.yml 
+```
+
+**常用命令**
+
+- docker stack deploy    部署新的堆栈或更新现有堆栈
+- docker stack ls    列出现有堆栈
+- docker stack ps    列出堆栈中的任务
+- docker stack rm    删除一个或多个堆栈
+- docker stack services    列出堆栈中的服务
+
+
+
+## **修改docker容器**[**目录**](https://segmentfault.com/a/1190000039426040)
+
+```shell
+# 1.停止docker服务
+$ sudo systemctl stop docker
+
+# 2.开始迁移目录
+$ sudo mv /var/lib/docker /data/
+
+# 3.改动docker启动配置文件
+$ sudo vim /lib/systemd/system/docker.service
+ExecStart=/usr/bin/dockerd --graph=/data/docker/
+
+# 4.改动docker启动配置文件
+$ sudo vim /etc/docker/daemon.json
+{
+    "live-restore": true,
+    "graph": [ "/data/docker/" ]
+}
+# 操作注意事项：在迁移 docker 目录的时候注意使用的命令，要么使用 mv 命令直接移动，要么使用 cp 命令复制文件，但是需要注意同时复制文件权限和对应属性，不然在使用的时候可能会存在权限问题。如果容器中，也是使用 root 用户，则不会存在该问题，但是也是需要按照正确的操作来迁移目录。
+
+# 使用mv命令
+$ sudo mv /var/lib/docker /data/docker
+
+# 使用cp命令
+$ sudo cp -arv /data/docker /data2/docker
+```
+
+
+
+
+
+## [创建不自动关闭的容器](https://blog.csdn.net/xiaojinran/article/details/104112874)
+
+```yaml
+version: '2'
+services:
+    pymssql:
+        image: python:3.9.2
+        container_name: pymssql
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "100m"
+        environment:
+            TZ: Asia/Shanghai
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+        entrypoint: ping baidu.com
+```
 
