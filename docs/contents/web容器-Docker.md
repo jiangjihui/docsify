@@ -809,7 +809,7 @@ services:
 	        environment:
 	            INFLUXDB_ADMIN_ENABLED: "true"
 	            INFLUXDB_ADMIN_USER: "root"
-	            INFLUXDB_ADMIN_PASSWORD: "chada123"
+	            INFLUXDB_ADMIN_PASSWORD: "123456"
 	            INFLUXDB_DB: railway
 	        volumes:
 	            - ./data:/var/lib/influxdb
@@ -1096,7 +1096,7 @@ docker pull suchja/wine
 #启动容器
 docker run --rm -it --entrypoint /bin/bash suchja/wine:latest
 # 或者
-docker run --rm -it -v /home/chada/app/wine/file:/file --entrypoint /bin/bash suchja/wine:latest
+docker run --rm -it -v /home/app/wine/file:/file --entrypoint /bin/bash suchja/wine:latest
 
 #初始化
 wine wineboot --init
@@ -1133,7 +1133,7 @@ RUN winetricks d3dxof
 # 构建镜像
 docker build -t mywine .
 # 运行容器
-docker run --rm -it -v /home/chada/app/wine/file:/file mywine:latest
+docker run --rm -it -v /home/app/wine/file:/file mywine:latest
 # 执行wine
 wine /file/xxx.exe
 ```
