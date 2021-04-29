@@ -212,6 +212,181 @@ public interface ProductService{
 
 
 
+## Nacos Config--服务配置
+
+首先我们来看一下,微服务架构下关于配置文件的一些问题：
+
+1. 配置文件相对分散。在一个微服务架构下，配置文件会随着微服务的增多变的越来越多，而且分散
+
+在各个微服务中，不好统一配置和管理。
+
+2. 配置文件无法区分环境。微服务项目可能会有多个环境，例如：测试环境、预发布环境、生产环
+
+境。每一个环境所使用的配置理论上都是不同的，一旦需要修改，就需要我们去各个微服务下手动
+
+维护，这比较困难。
+
+3. 配置文件无法实时更新。我们修改了配置文件之后，必须重新启动微服务才能使配置生效，这对一
+
+个正在运行的项目来说是非常不友好的。
+
+基于上面这些问题，我们就需要 配置中心 的加入来解决这些问题。
+
+配置中心的思路是：
+
+首先把项目中各种配置全部都放到一个集中的地方进行统一管理，并提供一套标准的接口。
+
+当各个服务需要获取配置的时候，就来配置中心的接口拉取自己的配置。
+
+当配置中心中的各种参数有更新的时候，也能通知到各个服务实时的过来同步最新的信息，使之动
+
+态更新。
+
+
+
+### Nacos Config入门
+
+使用nacos 作为配置中心，其实就是将nacos 当做一个服务端，将各个微服务看成是客户端，我们将各个微服务的配置文件统一存放在nacos 上，然后各个微服务从nacos 上拉取配置即可。
+
+**1** **搭建nacos环境【使用现有的nacos环境即可】**
+
+**2 在微服务中引入nacos 的依赖**
+
+```
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+</dependency>
+```
+
+**3 在微服务中添加nacos config 的配置**
+
+```
+配置文件优先级(由高到低):
+bootstrap.properties -> bootstr ap.yml -> application.pr operties -> application.yml
+spring:
+  application:
+    name: server-product
+  cloud:
+    nacos:
+      config:
+        # nacos中心地址
+        server-addr: localhost:8848
+        # 配置文件格式
+        file-extension: yaml
+  profiles:
+    # 环境标识
+    active: dev
+```
+
+> 注意:不能使用原来的application.yml 作为配置文件，而是新建一个bootstr ap.yml作为配置文件
+
+**4 在nacos 中添加配置**
+
+点击配置列表，点击右边+号，新建配置。在新建配置过程中，要注意下面的细节：
+
+1）Data ID不能随便写，要跟配置文件中的对应：
+
+server-product-dev.yaml
+
+2）配置文件格式要跟配置文件的格式对应，且目前仅仅支持YAML和Properties
+
+3）配置内容与原来的application.yml一样
+
+**5 注释本地的application.yam中的内容， 启动程序进行测试**
+
+ 
+
+**配置动态刷新**
+
+在入门案例中，我们实现了配置的远程存放，但是此时如果修改了配置，我们的程序是无法读取到的，因此，我们需要开启配置的动态刷新功能。
+
+在nacos 中的service-product-dev.yaml 配置项中添加下面测试配置:
+
+```
+config:
+ appName: product
+```
+
+方式一: 硬编码方式
+
+```
+@RestController
+public class NacosConfigController {
+    @Autowired
+    private ConfigurableApplicationContext applicationContext;
+    @GetMapping("/nacos-config-test1")
+    public String nacosConfingTest1() {
+        return 
+applicationContext.getEnvironment().getProperty("config.appName");
+    }
+}
+```
+
+方式二:  注解方式(推荐)
+
+```
+@RestController
+@RefreshScope//只需要在需要动态读取配置的类上添加此注解就可以
+public class NacosConfigController {
+    @Value("${config.appName}")
+    private String appName;
+    //2 注解方式
+    @GetMapping("/nacos-config-test2")
+    public String nacosConfingTest2() {
+        return appName;
+    }
+}
+```
+
+
+
+**配置共享**
+
+如果想在同一个微服务的不同环境之间实现配置共享，其实很简单。
+
+只需要提取一个以spring.application.name 命名的配置文件，然后将其所有环境的公共配置放在里面即可。
+
+比如：
+
+- service-product.yaml配置存放商品微服务的公共配置
+- service-product-test.yaml配置存放测试环境的配置
+- service-product-dev.yaml配置存放开发环境的配置
+
+ 
+
+**不同微服务中间共享配置**
+
+不同为服务之间实现配置共享的原理类似于文件引入，就是定义一个公共配置，然后在当前配置中引入。
+
+1. 在nacos 中定义一个DataID为all-service.yaml的配置，用于所有微服务共享
+
+2. 修改bootstrap.yaml
+
+    ```
+    spring:
+      application:
+        name: server-product
+      cloud:
+        nacos:
+          config:
+            # nacos中心地址
+            server-addr: localhost:8848
+            # 配置文件格式
+            file-extension: yaml
+            # 配置要引入的配置
+            shared-dataids: all-service.yaml
+            # 配置要动态刷新的配置
+            refreshable-dataids: all-service.yaml
+      profiles:
+        # 环境标识
+        active: test
+    ```
+
+
+
+
+
 ## Sentinel--服务容错
 
 ### 简介
@@ -1277,3 +1452,363 @@ Zipkin Server默认会将追踪数据信息保存到内存,但这种方式不适
 
 
 
+
+
+## RocketMQ--消息驱动
+
+MQ（Message Queue）是一种跨进程的通信机制，用于传递消息。通俗点说，就是一个先进先出的数据结构。
+
+RocketMQ是阿里巴巴开源的分布式消息中间件，现在是Apache的一个顶级项目。在阿里内部使用非常广泛，已经经过了"双11"这种万亿级的消息流转。
+
+
+
+### **RocketMQ环境搭建**
+
+接下来我们先在linux平台下安装一个RocketMQ的服务
+
+**环境准备**
+
+- RocketMQ：http://rocketmq.apache.org/release_notes/release-notes-4.4.0/
+- Java1.8
+
+ 
+
+**Linux环境**
+
+**安装RocketMQ**
+
+上传文件到Linux系统，解压，切换到解压后目录下，运行：
+
+编辑bin/runbroker.sh 和 bin/runserver.sh文件。修改里面的：
+
+```
+JAVA_OPT="${JAVA_OPT} -server -Xms8g -Xmx8g -Xmn4g"为 JAVA_OPT="${JAVA_OPT} -server -Xms256m -Xmx256m -Xmn128m"
+```
+
+```
+> nohup ./bin/mqnamesrv &
+> bin/mqbroker -n localhost:9876 &
+```
+
+ 
+
+**关闭RocketMQ**
+
+```
+> bin/mqshutdown broker
+> bin/mqshutdown namesrv
+```
+
+ 
+
+**Windows**[**环境**](https://www.jianshu.com/p/4a275e779afa)
+
+1 解压压缩包到自定义目录，配置ROCKETMQ_HOME环境变量指定到解压的目录
+
+2 启动NAMESERVER：进入解压目录下的bin目录，执行 start mqnamesrv.cmd
+
+3 启动BROKER：进入解压目录下的bin目录，执行 start mqbroker.cmd -n 127.0.0.1:9876 autoCreateTopicEnable=true
+
+> **注意：**假如弹出提示框提示‘错误: 找不到或无法加载主类 xxxxxx’。打开runbroker.cmd，找到JVM Configuration下面的参数，然后将里面的%CLASSPATH%加上英文双引号。保存并重新执行start语句。
+
+
+
+### **RocketMQ概念**
+
+- **Broker**（邮递员）
+
+  接收 存储 投递 消息
+
+- **Name Server**（邮局）
+
+  管理Broker
+
+- **Producer**（寄件人）
+
+  生产消息
+
+- **Consumer**（收件人）
+
+  消息消费者
+
+- **Topic**（地区）
+
+  区分不同消息
+
+- **Message Queue**（邮件）
+
+  一个Topic可以设置一个或多个message queue，这样消息可以并行往各个message queue发送，消费者也可以并行读取消息。
+
+- **Message**（信）
+
+  消息载体
+
+
+
+### **使用Java发送接收消息**
+
+配置文件中添加依赖：
+
+```xml
+<dependency>
+    <groupId>org.apache.rocketmq</groupId>
+    <artifactId>rocketmq-spring-boot-starter</artifactId>
+    <version>2.0.2</version>
+</dependency>
+```
+
+ 
+
+消息发送步骤:
+
+1. 创建消息生产者, 指定生产者所属的组名
+
+2. 指定Nameserver地址
+
+3. 启动生产者
+
+4. 创建消息对象，指定主题、标签和消息体
+
+5. 发送消息
+
+6. 关闭生产者
+
+ 
+
+
+
+## Seata--分布式事务
+
+### **重要组件组成**
+
+TC：Transaction Coordinator 事务协调器，管理全局的分支事务的状态，用于全局性事务的提交和回滚。
+
+TM：Transaction Manager 事务管理器，用于开启、提交或者回滚全局事务。
+
+RM：Resource Manager 资源管理器，用于分支事务上的资源管理，向TC注册分支事务，上报分支事务的状态，接受TC的命令来提交或者回滚分支事务。
+
+ 
+
+ 
+
+### **执行流程**
+
+1. A服务的TM向TC申请开启一个全局事务，TC就会创建一个全局事务并返回一个唯一的XID
+
+2. A服务的RM向TC注册分支事务，并及其纳入XID 对应全局事务的管辖
+
+3. A服务执行分支事务，向数据库做操作
+
+4. A服务开始远程调用B服务，此时XID 会在微服务的调用链上传播
+
+5. B服务的RM向TC注册分支事务，并将其纳入XID 对应的全局事务的管辖
+
+6. B服务执行分支事务，向数据库做操作
+
+7. 全局事务调用链处理完毕，TM根据有无异常向TC发起全局事务的提交或者回滚
+
+8. TC协调其管辖之下的所有分支事务， 决定是否回滚
+
+ 
+
+ 
+
+### **Seata 实现2PC 与传统2PC 的差别**
+
+1. 架构层次方面，传统2PC 方案的 RM 实际上是在数据库层，RM本质上就是数据库自身，通过XA协议实现，而 Seata 的RM是以jar包的形式作为中间件层部署在应用程序这一侧的。
+
+2. 两阶段提交方面，传统2PC 无论第二阶段的决议是commit 还是rollback，事务性资源的锁都要保持到Phase2完成才释放。而Seata 的做法是在Phase1 就将本地事务提交，这样就可以省去Phase2持锁的时间，整体提高效率。
+
+
+
+### **启动Seata**
+
+**下载seata**  
+https://github.com/seata/seata/releases/v0.9.0/
+
+ 
+
+**修改配置文件**  
+registry.conf
+
+```
+registry {
+    type = "nacos"
+    nacos {
+        serverAddr = "localhost"
+        namespace = "public"
+        cluster = "default"
+    }
+}
+config {
+    type = "nacos"
+    nacos {
+        serverAddr = "localhost"
+        namespace = "public"
+        cluster = "default"
+    }
+}
+```
+
+
+
+nacos-config.txt
+
+第14行添加如下内容：
+
+```
+service.vgroup_mapping.service-product=default
+service.vgroup_mapping.service-order=default
+```
+
+> 这里的语法为：service.vgroup_mapping.${your-service-gruop}=default ，中间的${your-service-gruop} 为自己定义的服务组名称， 这里需要我们在程序的配置文件中配置。
+
+
+
+初始化seata 在nacos 的配置
+
+```
+# 初始化seata 的nacos配置
+# 注意: 这里要保证nacos是已经正常运行的
+cd conf
+nacos-config.sh 127.0.0.1
+```
+
+> 注：如果在window下的话，需要使用sh nacos-config.sh 127.0.0.1命令（如果sh不可用，需要安装git之后，[配置git](https://blog.csdn.net/weixin_42376686/article/details/82391410)的环境变量即可）
+
+
+
+### **使用Seata 实现事务控制**
+
+**初始化数据表**
+
+在我们的数据库中加入一张undo_log表,这是Seata 记录事务日志要用到的表
+
+```
+CREATE TABLE `undo_log`
+(
+  `id`            BIGINT(20)   NOT NULL AUTO_INCREMENT,
+  `branch_id`     BIGINT(20)   NOT NULL,
+  `xid`           VARCHAR(100) NOT NULL,
+  `context`       VARCHAR(128) NOT NULL,
+  `rollback_info` LONGBLOB     NOT NULL,
+  `log_status`    INT(11)      NOT NULL,
+  `log_created`   DATETIME     NOT NULL,
+  `log_modified`  DATETIME     NOT NULL,
+  `ext`           VARCHAR(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ux_undo_log` (`xid`, `branch_id`)
+) ENGINE = INNODB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8;
+```
+
+
+
+**添加配置**
+
+在需要进行分布式控制的微服务中进行下面几项配置:
+
+1 添加依赖
+
+```xml
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+</dependency>
+```
+
+
+
+2 添加配置类：DataSourceProxyConfig
+
+Seata 是通过代理数据源实现事务分支的，所以需要配置 io.seata.rm.datasour ce.DataSourceProxy 的Bean，且是 @Primary 默认的数据源，否则事务不会回滚，无法实现分布式事务
+
+```java
+@Configuration
+public class DataSourceProxyConfig {
+    @Bean
+    @ConfigurationProperties(prefix = "spring.datasource")
+    public DruidDataSource druidDataSource() {
+        return new DruidDataSource();
+    }
+    @Primary
+    @Bean
+    public DataSourceProxy dataSource(DruidDataSource druidDataSource) {
+        return new DataSourceProxy(druidDataSource);
+    }
+}
+```
+
+
+
+3 registry.conf
+
+在resources 下添加Seata 的配置文件 registry.conf
+
+```
+registry {
+    type = "nacos"
+    nacos {
+        serverAddr = "localhost"
+        namespace = "public"
+        cluster = "default"
+    }
+}
+config {
+    type = "nacos"
+    nacos {
+        serverAddr = "localhost"
+        namespace = "public"
+        cluster = "default"
+    }
+}
+```
+
+
+
+4 bootstrap.yaml
+
+```
+spring:
+  application:
+    name: service-product
+  cloud:
+    nacos:
+      config:
+        server-addr: localhost:8848 # nacos的服务端地址
+        namespace: public
+        group: SEATA_GROUP
+    alibaba:
+      seata:
+        tx-service-group: ${spring.application.name}
+```
+
+
+
+**在order 微服务开启全局事务**
+
+```
+@GlobalTransactional//全局事务控制
+public Order createOrder(Integer pid) {}
+```
+
+再次下单测试
+
+
+
+**要点说明：**
+
+1、每个RM使用DataSourceProxy连接数据库，其目的是使用ConnectionProxy，使用数据源和数据连接代理的目的就是在第一阶段将undo_log和业务数据放在一个本地事务提交，这样就保存了只要有业务操作就一定有undo_log。
+
+2、在第一阶段undo_log中存放了数据修改前和修改后的值，为事务回滚作好准备，所以第一阶段完成就已经将分支事务提交，也就释放了锁资源。
+
+3、TM开启全局事务开始，将XID 全局事务id 放在事务上下文中，通过feign调用也将XID 传入下游分支事务，每个分支事务将自己的Branch ID分支事务ID与XID 关联。
+
+4、第二阶段全局事务提交，TC会通知各各分支参与者提交分支事务，在第一阶段就已经提交了分支事务，这里各各参与者只需要删除undo_log即可，并且可以异步执行，第二阶段很快可以完成。
+
+5、第二阶段全局事务回滚，TC会通知各各分支参与者回滚分支事务，通过 XID 和 Br anch ID 找到相应的回滚日志，通过回滚日志生成反向的 SQL 并执行，以完成分支事务回滚到之前的状态，如果回滚失败则会重试回滚操作。
