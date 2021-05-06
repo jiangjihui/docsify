@@ -34,7 +34,7 @@
   - [Spring-Cloud-Alibaba](contents/微服务-Spring-Cloud-Alibaba.md)
   
 - 大数据
-  - [Hadoop](configuration.md)
+  - [Hadoop](contents/大数据-Hadoop.md)
   - [Flink](configuration.md)
 
 - [Awesome docsify](subdir/quickstart.md)
