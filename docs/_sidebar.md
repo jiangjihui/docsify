@@ -40,4 +40,4 @@
   - [Flink](configuration.md)
 
 - [Awesome docsify](subdir/quickstart.md)
-- [Changelog](subdir/quickstart.md)
+- [Changelog](none.md)
