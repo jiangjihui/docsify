@@ -18,8 +18,9 @@
 - 存储/数据库
   - [SQL](contents/存储-SQL.md)
   - [MySQL](contents/存储-MySQL.md)
-  - [Redis](contents/存储-Redis.md)
   - [Oracle](contents/存储-Oracle.md)
+  - [Redis](contents/存储-Redis.md)
+  - [MongoDB](contents/存储-MongoDB.md)
 
 - web容器
   - [Nginx](contents/web容器-Nginx.md)
