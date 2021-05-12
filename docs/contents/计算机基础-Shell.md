@@ -54,6 +54,136 @@ installing open-vm-tools
 
  
 
+## CentOS 7 防火墙设置
+
+centos安装后，默认是开启[防火墙](https://www.linuxidc.com/Linux/2016-12/138979.htm)的，外部访问不了centos的端口。
+
+**查看防火墙状态**
+
+```
+firewall-cmd --state
+systemctl status firewalld.service
+```
+
+**关闭防火墙**
+
+```
+systemctl stop firewalld.service
+```
+
+**开启防火墙**
+
+```
+systemctl start firewalld.service
+```
+
+**停止开机启动**
+
+```
+systemctl disable firewalld.service
+```
+
+**查看已经开放的端口**
+
+```
+firewall-cmd --list-ports
+```
+
+**开启端口**
+
+```
+firewall-cmd --zone=public --add-port=80/tcp --permanent
+```
+
+**对指定IP开放指定**[**端口**](https://blog.csdn.net/qguanri/article/details/51673845)
+
+```
+firewall-cmd --permanent --add-rich-rule="rule family="ipv4" source address="192.168.142.166" port protocol="tcp" port="6379" accept"
+```
+
+**删除规则**
+
+```
+firewall-cmd --permanent --remove-rich-rule="rule family="ipv4" source address="192.168.142.166" port protocol="tcp" port="11300" accept"
+
+systemctl restart firewalld.service
+```
+
+ 
+
+ 
+
+## CentOS 7 设置静态IP
+
+如果linux操作系统通过dhcp无法自动获取IP地址，需要手动[设置](https://jingyan.baidu.com/article/a501d80c3c9b8aec630f5e8c.html)静态IP地址
+
+进入到网卡配置目录：
+
+```
+cd /etc/sysconfig/network-scripts/
+```
+
+ifconfig查看网卡信息并获取到网卡的名称位ens33，编辑对应的配置文件[ifcfg-ens33](https://www.jianshu.com/p/70f0a3ae4643?utm_source=oschina-app)：
+
+vi ifcfg-ens33：
+
+```
+BOOTPROTO=static
+IPADDR=192.168.1.149
+NETMASK=255.255.255.0
+GATEWAY=192.168.1.1
+DNS1=8.8.8.8
+ONBOOT=yes
+```
+
+**重启network**
+
+```
+systemctl restart network.service
+# 或者
+service network restart
+```
+
+
+
+
+
+## **CentOS 7** **替换镜像**[**源**](https://blog.csdn.net/z13615480737/article/details/78945623)
+
+```
+# 备份
+yum install wget  -y
+mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
+# 下载
+CentOS 5
+wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-5.repo
+CentOS 6
+wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-6.repo
+CentOS 7
+wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+# 生成缓存
+yum makecache
+# 更新yum
+yum -y update
+```
+
+
+
+
+
+## **CentOS 7** **桌面操作**
+
+```
+# 关闭图形界面
+ [root@bogon ~]# init 3
+# 开启图形界面
+ [root@bogon ~]# init 5
+```
+
+
+
+
+
 ## [**SSH使用前的准备**](http://www.linuxidc.com/Linux/2015-03/115056.htm)
 
 | **被控制端** | SSH 服务器的安装 | sudo apt-get install  openssh-server | 出现问题，可重启 SSH 服务器：sudo  service ssh restart |
@@ -151,7 +281,6 @@ netstat -n | awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'
 > TIME_WAIT    处理完毕，等待超时结束的连接数
 >
 > ESTABLISHED    有效的连接数
->
 
 
 
@@ -436,7 +565,6 @@ nohup java -server -jar ./app.jar >/dev/null 2>&1 &
 ```
 
 > 注：>/dev/null 2>&1 表示不输出运行日志
->
 
  
 
