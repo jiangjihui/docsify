@@ -410,6 +410,18 @@ su -
 
  
 
+## ubuntu 安装gcc g++ make
+
+一个命令全部搞定：
+
+```sh
+apt install build-essential
+```
+
+
+
+
+
 ## **控制台编码**
 
 ```shell

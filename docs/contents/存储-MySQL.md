@@ -564,7 +564,7 @@ MySQL 的每一次更新并没有每次都写入磁盘，InnoDB 引擎会先将�
 
  
 
-## **binlog**
+## **bin log**
 
 MySQL 整体可以分为 Server 层和引擎层。其实，**redo log** 是属于引擎层的 **InnoDB** **所特有**的日志，而 Server 层也有自己的日志，即 binlog（归档日志）。
 
@@ -584,7 +584,20 @@ MySQL 整体可以分为 Server 层和引擎层。其实，**redo log** 是属�
 
  
 
+**与redo log比较**
+
+redo log记录的东西是偏向于物理性质的，如：“对什么数据，做了什么修改”。bin log是偏向于逻辑性质的，类似于：“对 students 表中的 id 为 1 的记录做了更新操作” 两者的主要特点总结如下:
+
+| 性质     | redo Log                                                     | bin Log                                                      |
+| -------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 文件大小 | redo log 的大小是固定的（配置中也可以设置，一般默认的就足够了） | bin log 可通过配置参数max_bin log_size设置每个bin log文件的大小（但是一般不建议修改）。 |
+| 实现方式 | redo log是InnoDB引擎层实现的（也就是说是 Innodb  存储引起过独有的） | bin log是  MySQL  层实现的，所有引擎都可以使用 bin log日志   |
+| 记录方式 | redo log 采用循环写的方式记录，当写到结尾时，会回到开头循环写日志。 | bin log 通过追加的方式记录，当文件大小大于给定值后，后续的日志会记录到新的文件上 |
+| 使用场景 | redo log适用于崩溃恢复(crash-safe)（这一点其实非常类似与 Redis 的持久化特征） | bin log 适用于主从复制和数据恢复                             |
+
  
+
+
 
 ## **压测工具mysqlslap**
 
@@ -612,7 +625,7 @@ mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=myisam -
 
  
 
-## **ID****自增问题**
+## ID自增问题
 
 一张表，里面有ID自增主键，当insert了17条记录之后，删除了第15,16,17条记录，再把Mysql重启，再insert一条记录，这条记录的ID是18还是15？
 

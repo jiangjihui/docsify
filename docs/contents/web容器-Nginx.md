@@ -320,9 +320,9 @@ http {
 
  
 
-## Https配置（[**Nginx 1.14**](https://blog.52itstyle.vip/archives/4219/)）
+## SSL(Https)配置
 
-nginx配置SSL即Https需要nginx启用了https模块；nginx更详细的配置[参考](https://help.aliyun.com/document_detail/98728.html?spm=a2c4g.11186623.2.12.c0076b441E8wxG#concept-n45-21x-yfb)：
+[**Nginx 1.14**](https://blog.52itstyle.vip/archives/4219/)配置SSL即Https需要nginx启用了https模块；nginx更详细的配置[参考](https://help.aliyun.com/document_detail/98728.html?spm=a2c4g.11186623.2.12.c0076b441E8wxG#concept-n45-21x-yfb)：
 
 ```nginx
 server {
@@ -352,4 +352,36 @@ server {
     #SSL-END
 }
 ```
+
+
+
+## Nginx多项目配置
+
+有时候我们会在同一个系统中存在好几个项目，比如手机端和pc端，这时候就需要对不同的项目使用不同的路由去区分，下面是针对一个主项目和一个子项目（subpage）的配置：
+
+```nginx
+server {
+    listen       8081 default_server;
+    listen       [::]:8081 default_server;
+    server_name  _;
+    root         /usr/share/nginx/html;
+    # Load configuration files for the default server block.
+
+    # 主项目路径
+    location / {
+        index  index.html;
+        # vue路由模式：history
+        try_files $uri $uri/ /index.html; 
+    }
+    # 子项目路径
+    location /subpage {
+        alias /usr/share/nginx/subpage;
+        # vue路由模式：history
+        try_files $uri $uri/ /subpage/index.html;
+        index  index.html index.htm;
+    }
+}
+```
+
+
 
