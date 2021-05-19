@@ -20,7 +20,71 @@ MongoDB 是一个介于关系数据库和非关系数据库之间的产品，是
 
 
 
-## **Windows下运行**
+
+
+## 为什么使用MongoDB
+
+以下是一些为什么应该开始使用MongoDB的原因
+
+- **面向文档的**–由于MongoDB是NoSQL类型的数据库，它不是以关系类型的格式存储数据，而是将数据存储在文档中。这使得MongoDB非常灵活，可以适应实际的业务环境和需求。
+- **临时查询**-MongoDB支持按字段，范围查询和正则表达式搜索。可以查询返回文档中的特定字段。
+- **索引**-可以创建索引以提高MongoDB中的搜索性能。MongoDB文档中的任何字段都可以建立索引。
+- **复制**-MongoDB可以提供副本集的高可用性。副本集由两个或多个mongo数据库实例组成。每个副本集成员可以随时充当主副本或辅助副本的角色。主副本是与客户端交互并执行所有读/写操作的主服务器。辅助副本使用内置复制维护主数据的副本。当主副本发生故障时，副本集将自动切换到辅助副本，然后它将成为主服务器。
+- **负载平衡**-MongoDB使用分片的概念，通过在多个MongoDB实例之间拆分数据来水平扩展。MongoDB可以在多台服务器上运行，以平衡负载或复制数据，以便在硬件出现故障时保持系统正常运行。
+
+
+
+
+
+## MongoDB与RDBMS区别
+
+下表将帮助您更容易理解Mongo中的一些概念：
+
+| SQL术语/概念 | MongoDB术语/概念 | 解释/说明                           |
+| ------------ | ---------------- | ----------------------------------- |
+| database     | database         | 数据库                              |
+| table        | collection       | 数据库表/集合                       |
+| row          | document         | 数据记录行/文档                     |
+| column       | field            | 数据字段/域                         |
+| index        | index            | 索引                                |
+| table joins  |                  | 表连接,MongoDB不支持                |
+| primary key  | primary key      | 主键,MongoDB自动将_id字段设置为主键 |
+
+
+
+
+## 存储引擎及常见数据结构
+
+存储引擎要做的事情无外乎是将磁盘上的数据读到内存并返回给应用，或者将应用修改的数据由内存写到磁盘上。如何设计一种高效的数据结构和算法是所有存储引擎要考虑的根本问题，目前大多数流行的存储引擎是基于B-Tree或LSM(Log Structured Merge) Tree这两种数据结构来设计的。
+
+- **B-Tree**
+
+像Oracle、SQL Server、DB2、MySQL (InnoDB)和PostgreSQL这些传统的关系数据库依赖的底层存储引擎是基于B-Tree开发的；
+
+- **LSM Tree**
+
+像Cassandra、Elasticsearch (Lucene)、Google Bigtable、Apache HBase、LevelDB和RocksDB这些当前比较流行的NoSQL数据库存储引擎是基于LSM开发的。
+
+- **插件式兼容上述两种**
+
+当然有些数据库采用了插件式的存储引擎架构，实现了Server层和存储引擎层的解耦，可以支持多种存储引擎，如MySQL既可以支持B-Tree结构的InnoDB存储引擎，还可以支持LSM结构的RocksDB存储引擎。
+
+> 对于MongoDB来说，也采用了插件式存储引擎架构，底层的WiredTiger存储引擎还可以支持B-Tree和LSM两种结构组织数据,但MongoDB在使用WiredTiger作为存储引擎时，目前**默认配置是使用了B-Tree结构**。
+
+
+
+
+## WiredTiger引擎
+
+> MongoDB数据库文件和MongoDB存储的引擎有直接关系，MongoDB一共提供了三种存储引擎：WiredTiger，MMAPV1和In Memory；在MongoDB3.2之前采用的是MMAPV1; 后续版本v3.2开始默认采用WiredTiger； 且在v4.2版本中移除了MMAPV1的引擎。
+
+WiredTiger从被MongoDB收购到成为MongoDB的默认存储引擎的一年半得到了迅猛的发展，也逐步被外部熟知。WiredTiger（以下简称WT）是一个优秀的单机数据库存储引擎，它拥有诸多的特性，既支持BTree索引，也支持LSM Tree索引，支持行存储和列存储，实现ACID级别事务、支持大到4G的记录等。WT的产生不是因为这些特性，而是和计算机发展的现状息息相关。
+
+现代计算机近20年来CPU的计算能力和内存容量飞速发展，但磁盘的访问速度并没有得到相应的提高，WT就是在这样的一个情况下研发出来，它设计了充分利用CPU并行计算的内存模型的无锁并行框架，使得WT引擎在多核CPU上的表现优于其他存储引擎。针对磁盘存储特性，WT实现了一套基于BLOCK/Extent的友好的磁盘访问算法，使得WT在数据压缩和磁盘I/O访问上优势明显。实现了基于snapshot技术的ACID事务，snapshot技术大大简化了WT的事务模型，摒弃了传统的事务锁隔离又同时能保证事务的ACID。WT根据现代内存容量特性实现了一种基于Hazard Pointer 的LRU cache模型，充分利用了内存容量的同时又能拥有很高的事务读写并发。
+
+
+
+## Windows下运行
 
 要在Windows上安装MongoDB，首先从 http://www.mongodb.org/downloads 下载 MongoDB 的最新版本
 
@@ -35,6 +99,8 @@ C:\Program Files\MongoDB\Server\3.4\bin>mongod.exe --dbpath "D:\Temp\MongoDB"
 ```
 mongo.exe
 ```
+
+
 
 
 
