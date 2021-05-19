@@ -119,7 +119,7 @@ use database;
 
 db.createUser({
    user:"cloudSense",
-   pwd:"chada123",
+   pwd:"test",
    roles: ["readWrite"]
 }) 
 
