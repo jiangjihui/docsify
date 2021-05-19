@@ -457,10 +457,10 @@ docker logs --since 30m CONTAINER_ID
 docker logs -t --since="2018-02-08T13:23:37" --until "2018-02-09T12:23:37" CONTAINER_ID
 ```
 
-实时输出日志
+实时输出最后20行日志
 
 ```
-docker logs -f CONTAINER_ID
+docker logs -f --tail=20 CONTAINER_ID
 ```
 
 
