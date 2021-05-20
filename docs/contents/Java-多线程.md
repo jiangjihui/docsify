@@ -56,7 +56,7 @@
 
 **ThreadPoolTaskExecutor**
 
-这个类则是spring包下的，是sring为我们提供的线程池类
+这个类则是spring包下的，是sring为我们提供的线程池类，配合@EnableAsync和@Async实现方法或者类的异步调用。
 
 
 
