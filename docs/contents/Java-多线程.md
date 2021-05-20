@@ -2,24 +2,30 @@
 
 1. **corePoolSize**：核心线程数大小
 
-  不管它们创建以后是不是空闲的。线程池需要保持 corePoolSize 数量的线程，除非设置了 allowCoreThreadTimeOut。
+   不管它们创建以后是不是空闲的。线程池需要保持 corePoolSize 数量的线程，除非设置了 allowCoreThreadTimeOut。
 
 2. **maximumPoolSize**：最大线程数
+      
       线程池中最多允许创建 maximumPoolSize 个线程
-
+      
 3. **keepAliveTime**：存活时间
+
       如果经过 keepAliveTime 时间后，超过核心线程数的线程还没有接受到新的任务，那就回收。
 
 4. **unit**：时间单位
+
       keepAliveTime 的时间单位
 
 5. **workQueue**：存放待执行任务的队列
+
       当提交的任务数超过核心线程数大小后，再提交的任务就存放在这里。它仅仅用来存放被 execute 方法提交的 Runnable 任务。
 
 6. **threadFactory**：线程工厂
+
       用于指定如何创建一个线程。比如这里面可以自定义线程名称，当进行虚拟机栈分析时，看着名字就知道这个线程是哪里来的，不会懵逼。
 
 7. **handler** ：拒绝策略
+
       当队列里面放满了任务、最大线程数的线程都在工作时，这时继续提交的任务线程池就处理不了，应该执行怎么样的拒绝策略。
 
 
