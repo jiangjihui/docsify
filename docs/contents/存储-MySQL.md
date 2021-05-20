@@ -410,9 +410,21 @@ Mysql的大多数事务型存储引擎实现的都不是简单的行级锁。基
 
 在Mysql中MVCC是在Innodb存储引擎中得到支持的，Innodb为每行记录都实现了三个隐藏字段：
 
-- 6字节的事务ID（DB_TRX_ID ）
-- 7字节的回滚指针（DB_ROLL_PTR）
-- 隐藏的ID
+- **6字节的事务ID（DB_TRX_ID ）**
+
+  最近修改(`修改/插入`)事务ID：记录创建这条记录/最后一次修改该记录的事务ID
+
+- **7字节的回滚指针（DB_ROLL_PTR）**
+
+  回滚指针，指向这条记录的上一个版本（存储于rollback segment里）
+
+- **隐藏的ID（DB_ROW_ID）**
+
+  隐含的自增ID（隐藏主键），如果数据表没有主键，InnoDB会自动以`DB_ROW_ID`产生一个聚簇索引
+
+- deleted_bit
+
+  实际还有一个删除flag隐藏字段, 既记录被更新或删除并不代表真的删除，而是删除flag变了
 
 
 
@@ -422,6 +434,11 @@ Mysql的大多数事务型存储引擎实现的都不是简单的行级锁。基
 这就使得别的事务可以修改这条记录，反正每次修改都会在版本链中记录。SELECT可以去版本链中拿记录，这就实现了读-写，写-读的并发执行，提升了系统的性能。
 
  
+
+从前面的分析可以看出，为了实现InnoDB的MVCC机制，更新或者删除操作都只是设置一下老记录的deleted_bit，并不真正将过时的记录删除。
+
+为了节省磁盘空间，InnoDB有专门的purge线程来清理deleted_bit为true的记录。为了不影响MVCC的正常工作，purge线程自己也维护了一个read view（这个read view相当于系统中最老活跃事务的read view）;如果某个记录的deleted_bit为true，并且DB_TRX_ID相对于purge线程的read view可见，那么这条记录一定是可以被安全清除的。
+
 
  
 
