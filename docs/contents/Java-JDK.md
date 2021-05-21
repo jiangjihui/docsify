@@ -19,8 +19,9 @@ public interface TestInterface {
         System.out.println("");
     }
 }
-复制代码
 ```
+
+
 
 ### 匿名内部类也支持钻石（diamond）运算符
 
@@ -28,7 +29,6 @@ JAVA 5 就引入了泛型（generic），到了 JAVA 7 开始支持钻石（diam
 
 ```java
 List<Integer> numbers = new ArrayList<>();
-复制代码
 ```
 
 但是这个自动推断类型的钻石运算符可不支持匿名内部类，在 JAVA 9 中也对匿名内部类做了支持：
@@ -37,8 +37,9 @@ List<Integer> numbers = new ArrayList<>();
 List<Integer> numbers = new ArrayList<>() {
     ...
 }
-复制代码
 ```
+
+
 
 ### 增强的 `try-with-resources`
 
@@ -48,7 +49,6 @@ JAVA 7 中增加了`try-with-resources`的支持，可以自动关闭资源：
 try (BufferedReader bufferReader = new BufferedReader(...)) {
     return bufferReader.readLine();
 }
-复制代码
 ```
 
 但需要声明多个资源变量时，代码看着就有点恶心了，需要在 try 中写多个变量的创建过程：
@@ -58,7 +58,6 @@ try (BufferedReader bufferReader0 = new BufferedReader(...);
     BufferedReader bufferReader1 = new BufferedReader(...)) {
     return bufferReader0.readLine();
 }
-复制代码
 ```
 
 JAVA 9 中对这个功能进行了增强，可以引用 try 代码块之外的变量来自动关闭：
@@ -69,7 +68,6 @@ BufferedReader bufferReader1 = new BufferedReader(...);
 try (bufferReader0; bufferReader1) {
     System.out.println(br1.readLine() + br2.readLine());
 }
-复制代码
 ```
 
 
@@ -84,7 +82,6 @@ JAVA 10 带来了一个很有意思的语法 - `var`，它可以自动推断局�
 
 ```java
 var message = "Hello, Java 10";
-复制代码
 ```
 
 不过这个只是语法糖，编译后变量还是有类型的，使用时还是考虑下可维护性的问题，不然写多了可就成 JavaScript 风格了
@@ -106,8 +103,9 @@ String language = sampleList.stream()
   .collect(Collectors.joining(", "));
 
 assertThat(language).isEqualTo("Java, Groovy");
-复制代码
 ```
+
+
 
 ### javac + java 命令一把梭
 
@@ -116,8 +114,9 @@ assertThat(language).isEqualTo("Java, Groovy");
 ```bash
 $ java HelloWorld.java
 Hello Java 11!
-复制代码
 ```
+
+
 
 ### Java Flight Recorder 登陆 OpenJDK
 
@@ -148,7 +147,6 @@ switch (dayOfWeek) {
     case SUNDAY:
         typeOfDay = "Day Off";
 }
-复制代码
 ```
 
 到了 JAVA 12，这个事情就变得很简单了，几行搞定，而且！还支持返回值：
@@ -158,8 +156,9 @@ typeOfDay = switch (dayOfWeek) {
     case MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY -> "Working Day";
     case SATURDAY, SUNDAY -> "Day Off";
 };
-复制代码
 ```
+
+
 
 ### instanceof + 类型强转一步到位
 
@@ -171,7 +170,6 @@ if (obj instanceof String) {
     String s = (String) obj;
     int length = s.length();
 }
-复制代码
 ```
 
 现在 `instanceof` 支持直接类型转换了，不需要再来一次额外的强转：
@@ -181,7 +179,6 @@ Object obj = "Hello Java 12!";
 if (obj instanceof String str) {
     int length = str.length();
 }
-复制代码
 ```
 
 
@@ -202,8 +199,9 @@ typeOfDay = switch (dayOfWeek) {
     }
     case SATURDAY, SUNDAY -> "Day Off";
 };
-复制代码
 ```
+
+
 
 ### 文本块（Text Block）的支持
 
@@ -211,7 +209,6 @@ typeOfDay = switch (dayOfWeek) {
 
 ```java
 String json = "{\"id\":\"1697301681936888\",\"nickname\":\"空无\",\"homepage\":\"https://juejin.cn/user/1697301681936888\"}";
-复制代码
 ```
 
 JAVA 13 中帮你解决了这个恶心的问题，增加了文本块的支持，现在可以开心的换行拼字符串了，就像用模板一样：
@@ -224,7 +221,6 @@ String json = """
 				    "homepage":"https://juejin.cn/user/1697301681936888"
 				}
 				""";
-复制代码
 ```
 
 
@@ -246,10 +242,11 @@ public static void main( String[] args ){
     System.out.println(user.nickname);
     System.out.println(user.id);
 }
-复制代码
 ```
 
 IDEA 也早已支持了这个功能，创建类的时候直接就可以选： ![image (2) (1).png](../_images/38ee56982efd4cf888057470c2aa33dd~tplv-k3u1fbpfcp-zoom-1.image) **不过这个只是一个语法糖，编译后还是一个 Class，和普通的 Class 区别不大**
+
+
 
 ### 更直观的 NullPointerException 提示
 
@@ -266,7 +263,6 @@ boolean effected = wrapMap.get("innerMap").get("effected");
 // StackTrace:
 Exception in thread "main" java.lang.NullPointerException
 	at org.example.App.main(App.java:50)
-复制代码
 ```
 
 JAVA 14 也 get 到了 JAVAER 们的痛点，优化了 NullPointerException 的提示，让你不在困惑，一眼就能定位到底“空”在哪！
@@ -274,10 +270,11 @@ JAVA 14 也 get 到了 JAVAER 们的痛点，优化了 NullPointerException 的�
 ```java
 Exception in thread "main" java.lang.NullPointerException: Cannot invoke "java.lang.Boolean.booleanValue()" because the return value of "java.util.Map.get(Object)" is null
 	at org.example.App.main(App.java:50)
-复制代码
 ```
 
 现在的 StackTrace 就很直观了，直接告诉你 `effected` 变量为空，再也不用困惑！
+
+
 
 ### 安全的堆外内存读写接口，别再玩 Unsafe 的骚操作了
 
@@ -311,6 +308,8 @@ memorySegment.close();
 
 不了解 Unsafe 操作堆外内存方式的同学，可以参考我的另一篇文章《[JDK中为了性能大量使用的Unsafe类，你会用吗？](https://juejin.cn/post/6943391357935288351)》
 
+
+
 ### 新增的 jpackage 打包工具，直接打包二进制程序，再也不用装 JRE 了
 
 之前如果想构建一个可执行的程序，还需要借助三方工具，将 JRE 一起打包，或者让客户电脑也装一个 JRE 才可以运行我们的 JAVA 程序。 
@@ -327,6 +326,8 @@ memorySegment.close();
 
 在 JAVA 15中，ZGC 和 Shenandoah 再也不是实验功能，正式登陆了（不过 G1 仍然是默认的）。如果你升级到 JAVA 15 以后的版本，就赶快试试吧，性能更强，延迟更低
 
+
+
 ### 封闭（Sealed ）类
 
 JAVA 的继承目前只能选择允许继承和不允许继承（final 修饰），现在新增了一个封闭（Sealed ）类的特性，可以指定某些类才可以继承：
@@ -341,7 +342,6 @@ public sealed interface Service permits Car, Truck {
     }
 
 }
-复制代码
 ```
 
 
@@ -354,7 +354,7 @@ JAVA 16 在**用户可见的地方**变化并不多，基本都是 14/15 的实�
 
 
 
-> 作者：空无
-> 链接：https://juejin.cn/post/6964543834747322405
-> 来源：掘金
-> 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+> 作者：空无  
+> 链接：https://juejin.cn/post/6964543834747322405  
+> 来源：掘金  
+> 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。  
