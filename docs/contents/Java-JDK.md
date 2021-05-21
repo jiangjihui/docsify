@@ -244,7 +244,7 @@ public static void main( String[] args ){
 }
 ```
 
-IDEA 也早已支持了这个功能，创建类的时候直接就可以选： ![image (2) (1).png](../_images/38ee56982efd4cf888057470c2aa33dd~tplv-k3u1fbpfcp-zoom-1.image) **不过这个只是一个语法糖，编译后还是一个 Class，和普通的 Class 区别不大**
+IDEA 也早已支持了这个功能，创建类的时候直接就可以选： ![image (2) (1).png](../_images/38ee56982efd4cf888057470c2aa33dd~tplv-k3u1fbpfcp-zoom-1.png) **不过这个只是一个语法糖，编译后还是一个 Class，和普通的 Class 区别不大**
 
 
 
@@ -314,6 +314,7 @@ memorySegment.close();
 之前如果想构建一个可执行的程序，还需要借助三方工具，将 JRE 一起打包，或者让客户电脑也装一个 JRE 才可以运行我们的 JAVA 程序。 
 
 现在 JAVA 直接内置了 `jpackage` 打包工具，帮助你一键打包二进制程序包，终于不用乱折腾了
+
 
 
 
