@@ -303,7 +303,6 @@ varHandle.set(memoryAddress, value);
 
 // 释放就这么简单，想想 DirectByteBuffer 的释放……多奇怪
 memorySegment.close();
-复制代码
 ```
 
 不了解 Unsafe 操作堆外内存方式的同学，可以参考我的另一篇文章《[JDK中为了性能大量使用的Unsafe类，你会用吗？](https://juejin.cn/post/6943391357935288351)》
