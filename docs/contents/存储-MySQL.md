@@ -440,7 +440,7 @@ Mysql的大多数事务型存储引擎实现的都不是简单的行级锁。基
 为了节省磁盘空间，InnoDB有专门的purge线程来清理deleted_bit为true的记录。为了不影响MVCC的正常工作，purge线程自己也维护了一个read view（这个read view相当于系统中最老活跃事务的read view）;如果某个记录的deleted_bit为true，并且DB_TRX_ID相对于purge线程的read view可见，那么这条记录一定是可以被安全清除的。
 
 
- 
+
 
 ## **MySQL数据库**[**优化**](https://mp.weixin.qq.com/s?__biz=MzA4Nzg5Nzc5OA==&mid=2651669647&idx=1&sn=2a72d20d7485e2879a6b772d9e2248ea&chksm=8bcb8726bcbc0e30b62fb971b25c28ea962c27e17ee20ca8bd82ffc73b1e83e95d0dff1c7454&scene=21#wechat_redirect)
 
@@ -537,6 +537,8 @@ select * from b_program_publish where find_in_set ('0c52dab',terminals);
  
 
 ## **InnoDB存储引擎的**[**锁算法**](https://mp.weixin.qq.com/s/JUdSHpa1n6qt4w-lgL6rKQ)
+
+Mysql默认的事务隔离级别是**可重复读(Repeatable Read)**
 
 - 在不通过索引条件查询时，InnoDB会锁定表中的所有记录。所以，如果考虑性能，WHERE语句中的条件查询的字段都应该加上索引。
 - InnoDB通过**索引**来**实现行锁**，而不是通过锁住记录。因此，当操作的两条不同记录拥有相同的索引时，也会因为行锁被锁而发生等待。
