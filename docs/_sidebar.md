@@ -35,6 +35,11 @@
 - 网络
   - [HTTP](configuration.md)
   - [RPC](configuration.md)
+
+- 开发
+  - [设计模式](设计模式/开发-设计模式.md)
+  - [代码规范](contents/计算机基础-Shell.md)
+  - [事务理论ACID](contents/计算机基础-dos.md)
   
 - 微服务
   - [Docker](contents/微服务-Docker.md)

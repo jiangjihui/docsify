@@ -1,7 +1,7 @@
 * 入门
 
-  * [快速开始](https://docsify.js.org/#/zh-cn/quickstart)
-  * [None](zh-cn/more-pages.md)
+  * [首页](/)
+  * [设计模式](设计模式/)
 
 
 * 配置
