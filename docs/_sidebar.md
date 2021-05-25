@@ -23,7 +23,7 @@
   - [Oracle](contents/存储-Oracle.md)
   - [Redis](contents/存储-Redis.md)
   - [MongoDB](contents/存储-MongoDB.md)
-  - [MongoDB](contents/存储-Elasticsearch.md)
+  - [Elasticsearch](contents/存储-Elasticsearch.md)
 
 - web容器
   - [Nginx](contents/web容器-Nginx.md)
