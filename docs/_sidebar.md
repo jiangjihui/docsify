@@ -9,7 +9,7 @@
   - [JMM](contents/Java-JMM.md)
   - [JDK](contents/Java-JDK.md)
   - [多线程](contents/Java-多线程.md)
-  - [集合](configuration.md)
+  - [集合](contents/Java-集合.md)
   
 - web框架
   - [Spring](contents/web框架-Spring.md)
