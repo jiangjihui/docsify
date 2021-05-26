@@ -261,7 +261,7 @@ synchronized实际上是非公平的，新来的线程有可能立即获得监�
 
 
 
-# volatile
+## volatile
 
 > 相比Sychronized(重量级锁，对系统性能影响较大)，volatile提供了另一种解决可见性和有序性问题的方案。@pdai
 
