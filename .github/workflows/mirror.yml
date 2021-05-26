@@ -9,7 +9,7 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v1
       - name: 'Mirror to gitee'
-        uses: actions/checkout@v2
+        uses: pixta-dev/repository-mirroring-action@v1
         with:
           target_repo_url:
             git@gitee.com:xqlsrjjjh/docsify.git
