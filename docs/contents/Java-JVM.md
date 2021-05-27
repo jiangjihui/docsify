@@ -1,3 +1,13 @@
+# 体系
+
+![img](../_images/java-jvm-overview.png)
+
+
+
+
+
+
+
 # 类加载
 
 
@@ -163,7 +173,7 @@ JVM内存结构主要有三大块：**堆内存、方法区**和**栈**。堆内
 
  
 
-## **Java堆（Heap）**
+## **Java堆**
 
 对于大多数应用来说，Java堆（Java Heap）是Java虚拟机所管理的内存中**最大**的一块。Java堆是被所有线程共享的一块内存区域，在虚拟机启动时创建。**此内存区域的唯一目的就是存放对象实例**，**几乎所有的对象实例都在这里分配内存**。
 
@@ -187,42 +197,23 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
  
 
-## **方法区（Method Area）**
+## **方法区**
 
-方法区（Method Area）与Java堆一样，是各个线程共享的内存区域，**它用于存储已被虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码等数据。**虽然Java虚拟机规范把方法区描述为堆的一个逻辑部分，但是它却有一个别名叫做Non-Heap（非堆），目的应该是与Java堆区分开来。
+方法区用于存储已被虚拟机加载的类型信息、常量、静态变量、即时编译器编译后的代码缓存等。
 
-**注：**多人愿意把方法区称为“永久代”（Permanent Generation），本质上两者并不等价，仅仅是因为HotSpot虚拟机的设计团队选择把GC分代收集扩展至方法区，或者说使用永久代来实现方法区而已。
+- 方法区（Method Area）与 Java 堆一样，是所有**线程共享**的内存区域。
+- 虽然 Java 虚拟机规范把方法区描述为堆的一个逻辑部分，但是它却有一个别名叫 Non-Heap（非堆），目的应该是与 Java 堆区分开。
+- **运行时常量池**（Runtime Constant Pool）是方法区的一部分。Class 文件中除了有类的版本/字段/方法/接口等描述信息外，还有一项信息是常量池（Constant Pool Table），用于存放编译期生成的各种字面量和符号引用，这部分内容将类在加载后进入方法区的运行时常量池中存放。运行期间也可能将新的常量放入池中，这种特性被开发人员利用得比较多的是 `String.intern()`方法。受方法区内存的限制，当常量池无法再申请到内存时会抛出 `OutOfMemoryErro`r 异常。
+- 方法区的大小和堆空间一样，可以选择固定大小也可选择可扩展，方法区的大小决定了系统可以放多少个类，如果系统类太多，导致方法区溢出，虚拟机同样会抛出内存溢出错误。
+- JVM 关闭后方法区即被释放。
 
- 
-
-Java虚拟机规范对这个区域的限制非常宽松，除了和Java堆一样不需要连续的内存和可以选择固定大小或者可扩展外，还可以选择不实现垃圾收集。相对而言，垃圾收集行为在这个区域是比较少出现的，但并非数据进入了方法区就如永久代的名字一样“永久”存在了。这个区域的内存回收目标主要是针对常量池的回收和对类型的卸载
-
- 
-
-方法区有时被称为持久代（PermGen）。
-
-方法的执行都是伴随着线程的。原始类型的本地变量以及引用都存放在**线程栈**中。而引用关联的对象比如String，都存在在堆中。
-
-```java
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import org.apache.log4j.Logger;
-public class HelloWorld {
-   private static Logger LOGGER = Logger.getLogger(HelloWorld.class.getName());
-   public void sayHello(String message) {
-       SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.YYYY");
-       String today = formatter.format(new Date());
-       LOGGER.info(today + ": " + message);
-   }
-}
-```
+> 方法区（method area）只是 JVM 规范中定义的一个概念，用于存储类信息、常量池、静态变量、JIT编译后的代码等数据，并没有规定如何去实现它，不同的厂商有不同的实现。而永久代（PermGen）是 Hotspot 虚拟机特有的概念， Java8 的时候又被元空间取代了，永久代和元空间都可以理解为方法区的落地实现。
 
 
- ![image](../_images/6dd4e41b-25f7-4fba-ac0a-141d21efb849.png)
 
- 
 
-## **线程栈**
+
+## **数据栈**
 
 **程序计数器（Program Counter Register）**
 
@@ -238,15 +229,21 @@ public class HelloWorld {
 
  
 
-**JVM栈（JVM Stacks）**
+**虚拟机栈（JVM Stacks）**
 
-与程序计数器一样，Java虚拟机栈（Java Virtual Machine Stacks）也是线程私有的，**它的生命周期与线程相同。虚拟机栈描述的是Java方法执行的内存模型：**每个方法被执行的时候都会同时创建一个栈帧（Stack Frame）用于**存储局部变量表、操作栈、动态链接、方法出口**等信息。**每一个方法被调用直至执行完成的过程，就对应着一个栈帧在虚拟机栈中从入栈到出栈的过程。**
+与程序计数器一样，Java虚拟机栈（[Java Virtual Machine Stacks](https://www.pdai.tech/md/java/jvm/java-jvm-struct.html)）也是线程私有的，**它的生命周期与线程相同。虚拟机栈描述的是Java方法执行的内存模型：**每个方法被执行的时候都会同时创建一个栈帧（Stack Frame），其中存储着：
 
- 
+- **局部变量表**（Local Variables）：用于存储方法参数和定义在方法体内的局部变量，包括编译期可知的各种基本数据类型（boolean、byte、char、short、int、float、long、double）、对象引用
+- **操作数栈**（Operand Stack）(或称为表达式栈)：主要用于保存计算过程的中间结果，同时作为计算过程中变量临时的存储空间
+- **动态链接**（Dynamic Linking）：指向运行时常量池的方法引用
+- **方法返回地址**（Return Address）：方法正常退出或异常退出的地址，正常完成出口和异常完成出口的区别在于：*通过异常完成出口退出的不会给他的上层调用者产生任何的返回值*
+- 一些附加信息
 
-局部变量表存放了编译期可知的各种基本数据类型（boolean、byte、char、short、int、float、long、double）、对象引用
+每一个方法被调用直至执行完成的过程，就对应着一个栈帧在虚拟机栈中从入栈到出栈的过程。
 
- 
+虚拟机栈不存在垃圾回收问题。
+
+![jvm-stack-frame](../_images/0082zybply1gc8tjehg8bj318m0lbtbu.jpg)
 
 在Java虚拟机规范中，对这个区域规定了两种异常状况：如果线程请求的栈深度大于虚拟机所允许的深度，将抛出StackOverflowError异常；如果虚拟机栈可以动态扩展（当前大部分的Java虚拟机都可动态扩展，只不过Java虚拟机规范中也允许固定长度的虚拟机栈），当扩展时无法申请到足够的内存时会抛出OutOfMemoryError异常。
 
@@ -254,9 +251,17 @@ public class HelloWorld {
 
 **本地方法栈（Native Method Stacks）**
 
-本地方法栈（Native Method Stacks）与虚拟机栈所发挥的作用是非常相似的，其区别不过是虚拟机栈为虚拟机执行Java方法（也就是字节码）服务，而**本地方法栈则是为虚拟机使用到的Native方法服务。**虚拟机规范中对本地方法栈中的方法使用的语言、使用方式与数据结构并没有强制规定，因此具体的虚拟机可以自由实现它。甚至有的虚拟机（譬如Sun HotSpot虚拟机）直接就把本地方法栈和虚拟机栈合二为一。与虚拟机栈一样，本地方法栈区域也会抛出StackOverflowError和OutOfMemoryError异常。
+简单的讲，一个 Native Method 就是一个 Java 调用非 Java 代码的接口。与虚拟机栈所发挥的作用是非常相似的，其区别不过是虚拟机栈为虚拟机执行Java方法（也就是字节码）服务，而**本地方法栈则是为虚拟机使用到的Native方法服务。**虚拟机规范中对本地方法栈中的方法使用的语言、使用方式与数据结构并没有强制规定，因此具体的虚拟机可以自由实现它。甚至有的虚拟机（譬如Sun HotSpot虚拟机）直接就把本地方法栈和虚拟机栈合二为一。与虚拟机栈一样，本地方法栈区域也会抛出StackOverflowError和OutOfMemoryError异常。
 
- 
+
+
+## 栈和堆的区别
+
+**栈是运行时的单位，而堆是存储的单位**。
+
+栈解决程序的运行问题，即程序如何执行，或者说如何处理数据。堆解决的是数据存储的问题，即数据怎么放、放在哪。
+
+
 
  
 
