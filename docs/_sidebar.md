@@ -39,7 +39,6 @@
   - [HTTP](contents/网络-HTTP.md)
 
 - 开发
-  - [设计模式](设计模式/开发-设计模式.md)
   - [代码规范](contents/计算机基础-Shell.md)
   - [事务理论ACID](contents/计算机基础-dos.md)
   
