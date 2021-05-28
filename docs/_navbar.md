@@ -5,5 +5,5 @@
 
 
 * other
-  * [None](zh-cn/configuration.md)
+  * [实践](实践/)
   * [None](zh-cn/more-pages.md)

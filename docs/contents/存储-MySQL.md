@@ -616,6 +616,93 @@ redo log记录的东西是偏向于物理性质的，如：“对什么数据，
 
  
 
+刷入 bin log 有以下几种模式
+
+- **STATMENT**
+
+基于 SQL 语句的复制(statement-based replication, SBR)，每一条会修改数据的 SQL 语句会记录到 bin log 中
+
+【优点】：不需要记录每一行的变化，减少了 bin log 日志量，节约了 IO , 从而提高了性能
+
+【缺点】：在某些情况下会导致主从数据不一致，比如执行sysdate()、slepp()等
+
+- **ROW**
+
+基于行的复制(row-based replication, RBR)，不记录每条SQL语句的上下文信息，仅需记录哪条数据被修改了
+
+【优点】：不会出现某些特定情况下的存储过程、或 function、或 trigger 的调用和触发无法被正确复制的问题
+
+【缺点】：会产生大量的日志，尤其是 alter table 的时候会让日志暴涨
+
+- **MIXED**
+
+基于 STATMENT 和 ROW 两种模式的混合复制( mixed-based replication, MBR )，一般的复制使用 STATEMENT 模式保存 bin log ，对于 STATEMENT 模式无法复制的操作使用 ROW 模式保存 bin log
+
+那既然bin log也是日志文件，那它是在什么记录数据的呢？
+
+其实 MySQL 在提交事务的时候，不仅仅会将 redo log buffer  中的数据写入到redo log 文件中，同时也会将本次修改的数据记录到 bin log文件中，同时会将本次修改的bin log文件名和修改的内容在bin log中的位置记录到redo log中，最后还会在redo log最后写入 commit 标记，这样就表示本次事务被成功的提交了。
+
+
+
+
+
+## MySQL页
+
+InnoDB不能以单行基础上工作。InnoDB总是在页上操作。一旦页被加载，它就会扫描页以寻找所请求的行/记录。
+
+### 基础结构
+
+[**Page**](https://segmentfault.com/a/1190000008545713)是Innodb存储的最基本结构，也是Innodb磁盘管理的最小单位，与数据库相关的所有内容都存储在Page结构里。Page分为几种类型：`数据页（B-Tree Node）`，`Undo页（Undo Log Page）`，`系统页（System Page）`，`事务数据页（Transaction System Page）`等；每个数据页的大小为`16kb`，每个Page使用一个32位（一位表示的就是0或1）的int值来表示，正好对应Innodb最大64TB的存储容量(16kb * 2^32=64tib)
+
+page头部保存了两个指针，分别指向前一个Page和后一个Page，头部还有Page的类型信息和用来唯一标识Page的编号。根据这个指针分布可以想象到Page链接起来就是一个双向链表。
+
+在Page的主体部分，主要关注数据和索引的存储，他们都位于`User Records`部分，User Records占据Page的大部分空间，User Records由一条条的Record组成，每条记录代表索引树上的一个节点（非叶子节点和叶子节点）；在一个单链表的内部，单链表的头尾由两条记录来表示，字符串形式的“ Infimum”代表开头，“Supremum”表示结尾；System Record 和 User Record是两个平行的段；
+Innodb中存在四种不同的Record，分别是
+
+1. 主键索引树非叶子节点
+2. 主键索引树叶子节点
+3. 辅助键索引树非叶子节点
+4. 辅助键索引树叶子节点
+
+这四种节点Record格式上有差异，但是内部都存储着Next指针指向下一个Record
+
+### User Record
+
+User Record在Page内以单链表的形式存在，最初数据是按照插入的先后顺序排列的，但是随着新数据的插入和旧数据的删除，数据物理顺序发生改变，但是他们依然保持着逻辑上的先后顺序。同一页内数据顺续不一定一致，但不同页之间的数据顺续是一致的。
+
+![clipboard.png](../_images/bVJ1hN3578239192.jpg)
+
+把User Record组织形式和若干Page组织起来，就得到了稍微完整的形式：
+
+![clipboard.png](../_images/bVJ1hP.jpg)
+
+
+
+### 如何定位一个Record
+
+1. 通过根节点开始遍历一个索引的B+树，通过各层非叶子节点达到底层的叶子节点的数据页（Page），这个Page内部存放的都是叶子节点
+2. 在Page内部从“Infimum”节点开始遍历单链表（遍历一般会被优化），如果找到键则返回。如果遍历到了“Supremum”，说明当前Page里没有合适的键，这时借助Page页内部的next page指针，跳转到下一个page继续从“Infmum”开始逐个查找
+
+![clipboard.png](../_images/bVJ1hS.jpg)
+
+
+
+Page和B+树之间并没有一一对应的关系，Page只是作为一个Record的保存容器，它存在的目的是便于对磁盘空间进行批量管理。
+
+
+
+### 索引长度
+
+索引的长度决定不仅决定了索引占用的数据空间大小，也会影响查找数据的 IO 次数。
+
+在同等数据量下，索引长度过长会导致单个数据页存放的索引条目数减少，索引高度增加，磁盘 IO 增加，并且索引占用空间增大。所以应该在满足要求的前提下，尽量减少索引长度。
+
+**索引长度 = 字段长度 + 是否为空(+1) + 是否变长(+2)**
+
+
+
+
+
 
 
 ## **压测工具mysqlslap**
