@@ -126,7 +126,7 @@ private static class Node<E> {
 
 Java里有一个叫做*Stack*的类，却没有叫做*Queue*的类(它是个接口名字)。当需要使用栈时，Java已不推荐使用*Stack*，而是推荐使用更高效的*ArrayDeque*；既然*Queue*只是一个接口，当需要使用队列时也就首选*ArrayDeque*了(次选是*LinkedList*)。
 
-*ArrayDeque*和*LinkedList*是*Deque*的两个通用实现，由于官方更推荐使用*AarryDeque***用作栈和队列**。
+*ArrayDeque*和*LinkedList*是*Deque*的两个通用实现，由于官方更推荐使用*AarryDeque* **用作栈和队列** 。
 
 ### Queue
 
@@ -144,11 +144,11 @@ Java里有一个叫做*Stack*的类，却没有叫做*Queue*的类(它是个接�
 
 ### ArrayDeque
 
-从名字可以看出*ArrayDeque*底层通过数组实现，为了满足可以同时在数组两端插入或删除元素的需求，该数组还必须是循环的，即**循环数组(circular array)**，也就是说数组的任何一点都可能被看作起点或者终点。*ArrayDeque*是非线程安全的(not thread-safe)，当多个线程同时使用的时候，需要程序员手动同步；另外，该容器不允许放入`null`元素。
+从名字可以看出*ArrayDeque*底层通过数组实现，为了满足可以同时在数组两端插入或删除元素的需求，该数组还必须是循环的，即 **循环数组(circular array)** ，也就是说数组的任何一点都可能被看作起点或者终点。 *ArrayDeque* 是非线程安全的(not thread-safe)，当多个线程同时使用的时候，需要程序员手动同步；另外，该容器不允许放入`null`元素。
 
 ![ArrayDeque_base.png](../_images/pdai_ArrayDeque_base.png)
 
-上图中我们看到，**`head`指向首端第一个有效元素，`tail`指向尾端第一个可以插入元素的空位**。因为是循环数组，所以`head`不一定总等于0，`tail`也不一定总是比`head`大。
+上图中我们看到， **`head`指向首端第一个有效元素，`tail`指向尾端第一个可以插入元素的空位** 。因为是循环数组，所以`head`不一定总等于0，`tail`也不一定总是比`head`大。
 
 
 
