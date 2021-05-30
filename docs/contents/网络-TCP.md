@@ -2,6 +2,20 @@
 
 > 著作权归https://pdai.tech所有。 链接：https://www.pdai.tech/md/develop/protocol/dev-protocol-tcpip.html
 
+
+
+## 三次握手
+
+**为什么需要三次握手?**
+
+为了让通信的双方都知道对方的**发送**和**接收**都没有问题。
+
+对于建链接的3次握手，主要是要初始化Sequence Number 的初始值。通信的双方要互相通知对方自己的初始化的Sequence Number（缩写为ISN：Inital Sequence Number）——所以叫**SYN**，全称Synchronize Sequence Numbers。这个号要作为以后的数据通信的序号，以保证应用层接收到的数据不会因为网络上的传输的问题而乱序（TCP会用这个序号来拼接数据）。
+
+
+
+
+
 ## TCP滑动窗口
 
 需要说明一下，如果你不了解TCP的滑动窗口这个事，你等于不了解TCP协议。我们都知道，TCP必需要解决的可靠传输以及包乱序（reordering）的问题，所以，TCP必需要知道网络实际的数据处理带宽或是数据处理速度，这样才不会引起网络拥塞，导致丢包。
@@ -26,3 +40,4 @@
 
 - 1988年，TCP-Tahoe 提出了1）慢启动，2）拥塞避免，3）拥塞发生时的快速重传
 - 1990年，TCP Reno 在Tahoe的基础上增加了4）快速恢复
+

@@ -410,7 +410,34 @@ Default options are read from the following files in the given order:
 
  
 
+
+
+## 索引优化-MRR
+
+> MRR针对于辅助索引上的范围查询进行优化,收集辅助索引对应主键rowid。进行排序后回表查询，随机IO转顺序IO
+
+### 介绍
+
+当我们需要对大表(基于辅助索引)进行范围扫描时，会导致产生许多随机/O。而对于普通磁盘来说，随机的性能很差，会遇到瓶颈，在 MySQL 5.6/5.7和MariaDB5.3/5.5/10.0/10.1版本里对这种情况进行了优化，一个新的名词 **Multi Range Read([MRR](https://www.jianshu.com/p/3d9b9b4ea186))**出现了，优化器会先扫描辅助索引，然后收集每行的主键（rowid ），并对主键进行排序（排序结果存储到read_rnd_buffer)，此时就可以用主键顺序访问基表，即用顺序IO代替随机IO。**MRR 在本质上是一种用空间换时间的算法**。
+
+MRR 能够提升性能的核心在于，这条查询语句在索引上做的是一个范围查询（也就是说，这是一个多值查询），可以得到足够多的主键id。这样通过排序以后，再去主键索引查数据，才能体现出“顺序性”的优势。所以MRR优化可用于range，ref，eq_ref类型的查询。
+
+> 注意：MRR 只是针对优化回表查询的速度，当不需要回表访问的时候，MRR就失去意义了（比如覆盖索引）
+
+### 开启MRR
+
+mysql默认开启MRR优化。但是由优化器决定是否真正使用MRR（mrr=on,mrr_cost_based=on）。
+
+```
+-- 查询MRR的开启状态
+SHOW VARIABLES LIKE '%optimizer_switch%'
+```
+
+> mrr=on,mrr_cost_based=on
+
  
+
+
 
 ## **MySQL事务实现原理**
 
@@ -542,9 +569,9 @@ InnoDB 的辅助索引 data 域存储相应记录主键的值而不是地址。�
 
  
 
- 
+## InnoDB
 
-## **InnoDB存储引擎的**[**锁算法**](https://mp.weixin.qq.com/s/JUdSHpa1n6qt4w-lgL6rKQ)
+### InnoDB存储引擎的[锁算法](https://mp.weixin.qq.com/s/JUdSHpa1n6qt4w-lgL6rKQ)
 
 Mysql默认的事务隔离级别是**可重复读(Repeatable Read)**
 
@@ -561,7 +588,19 @@ Mysql默认的事务隔离级别是**可重复读(Repeatable Read)**
 >
 > Next-Key Lock: Gap Lock+Record Lock，锁定一个范围，并且锁定记录本身
 
- 
+
+
+ ### 写缓冲
+
+在MySQL5.5之前，叫插入缓冲(insert buffer)，只针对insert做了优化；现在对delete和update也有效，叫做写缓冲(change buffer)。
+
+它是一种应用在**非唯一普通索引页**(即二级索引且属性不是unique)，不在缓冲池中，对页进行了写操作，并不会立刻将磁盘页加载到缓冲池，而仅仅记录缓冲变更(buffer changes)，等未来数据被读取时，再将数据合并(merge)恢复到缓冲池中的技术。写缓冲的目的是**降低写操作的磁盘IO**，提升数据库性能。
+
+如果索引设置了唯一(unique)属性，在进行修改操作时，InnoDB必须进行唯一性检查。也就是说，索引页即使不在缓冲池，磁盘上的页读取无法避免(否则怎么校验是否唯一？)
+
+
+
+
 
  
 
