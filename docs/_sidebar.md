@@ -4,7 +4,7 @@
   - [Dos](contents/计算机基础-dos.md)
 
 - Java
-  - [OOP](contents/Java-OOP.md)
+  - [基础](contents/Java-基础.md)
   - [JVM](contents/Java-JVM.md)
   - [JMM](contents/Java-JMM.md)
   - [JDK](contents/Java-JDK.md)
