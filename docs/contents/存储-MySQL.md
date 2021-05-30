@@ -334,6 +334,18 @@ select concat(round(sum(data_length/1024/1024),2),'MB') as data from information
 
  
 
+
+
+## 处理逗号分隔的字符串
+
+```sql
+select * from b_program_publish where find_in_set ('0c52dab',terminals);
+```
+
+在翻这些函数的过程中，你应该已经深深地体会到mysql的设计者对[以逗号分割存储字段](https://blog.csdn.net/rovast/article/details/50519144)方法的肯定，因为有很多方法就是设计用来处理这种问题的。 
+
+ 
+
  
 
 ## **配置文件**
@@ -484,9 +496,19 @@ innodb_buffer_pool_size=2048M
 
 ## MySQL存储引擎[区别](http://www.cnblogs.com/y-rong/p/8110596.html)
 
-**MyISAM**：默认表类型，它是基于传统的ISAM类型，ISAM是Indexed Sequential Access Method (有索引的顺序访问方法) 的缩写，它是存储记录和文件的标准方法。不是事务安全的，而且不支持外键，如果执行大量的select，insert MyISAM比较适合。
+**MyISAM**：ISAM是Indexed Sequential Access Method (有索引的顺序访问方法) 的缩写，设计简单，数据以紧密格式存储。对于只读数据，或者表比较小、可以容忍修复操作，则依然可以使用它。。
 
-[**InnoDB**](https://rsy.me/posts/mysql-innodb-preliminary/?hmsr=toutiao.io&utm_medium=toutiao.io&utm_source=toutiao.io)：支持事务安全的引擎，支持外键、行锁、事务是他的最大特点。如果有大量的update和insert，建议使用InnoDB，特别是针对多个并发和QPS较高的情况。
+- 不支持事务，不支持外键。
+-  MyISAM是非聚集索引，也是使用B+Tree作为索引结构，索引和数据文件是分离的，索引保存的是数据文件的指针。主键索引和辅助索引是独立的。
+
+
+
+[**InnoDB**](https://rsy.me/posts/mysql-innodb-preliminary/?hmsr=toutiao.io&utm_medium=toutiao.io&utm_source=toutiao.io)：是 MySQL 默认的事务型存储引擎，**只有在需要它不支持的特性时，才考虑使用其它存储引擎**。
+
+- 支持事务、外键、行锁。
+- InnoDB是聚集索引，使用B+Tree作为索引结构，数据文件是和（主键）索引绑在一起的（表数据文件本身就是按B+Tree组织的一个索引结构），必须要有主键，通过主键索引效率很高。但是辅助索引需要两次查询，先查询到主键，然后再通过主键查询到数据。因此，主键不应该过大，因为主键太大，其他索引也都会很大。
+
+
 
 | [**差异**](https://juejin.im/post/5c6b9c09f265da2d8a55a855)  | **MyISAM**                                      | **Innodb**                               |
 | ------------------------------------------------------------ | ----------------------------------------------- | ---------------------------------------- |
@@ -498,9 +520,7 @@ innodb_buffer_pool_size=2048M
 | **外键**                                                     | 不支持                                          | 支持                                     |
 | **锁支持（锁是避免资源争用的一个机制，MySQL锁对用户几乎是透明的）** | 表级锁定                                        | 行级锁定、表级锁定，锁定力度小并发能力高 |
 
- 
-
- 
+  
 
  
 
@@ -519,18 +539,6 @@ innodb_buffer_pool_size=2048M
 因为 InnoDB 的数据文件本身要按主键聚集，所以 InnoDB 要求表必须有主键，如果没有显式指定，则 MySQL 系统会自动选择一个可以唯一标识数据记录的列作为主键，如果不存在这种列，则 MySQL 自动为 InnoDB 表生成一个隐含字段作为主键，这个字段长度为6个字节，类型为长整形。
 
 InnoDB 的辅助索引 data 域存储相应记录主键的值而不是地址。换句话说，InnoDB 的所有辅助索引都引用主键作为 data 域。聚集索引这种实现方式使得按主键的搜索十分高效，但是辅助索引搜索需要检索两遍索引：首先检索辅助索引获得主键，然后用主键到主索引中检索获得记录。
-
- 
-
- 
-
-## **Mysql中处理逗号存储多个字符串**
-
-```sql
-select * from b_program_publish where find_in_set ('0c52dab',terminals);
-```
-
-在翻这些函数的过程中，你应该已经深深地体会到mysql的设计者对[以逗号分割存储字段](https://blog.csdn.net/rovast/article/details/50519144)方法的肯定，因为有很多方法就是设计用来处理这种问题的。 
 
  
 
