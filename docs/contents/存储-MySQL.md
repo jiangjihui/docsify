@@ -37,8 +37,10 @@ service mysql restart
 -- 查看数据库端口号占用情况
 select * from information_schema.PROCESSLIST;
 
--- 查看所有连接：只列出前100条
+-- 查看所有连接
 show processlist; 
+-- 查看所有连接：如果没有FULL关键字， SHOW PROCESSLIST则只显示Info字段中每个语句的前 100 个字符 
+show full processlist; 
 
 -- 查看所有连接：全列出
 show full processlist;

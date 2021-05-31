@@ -1,7 +1,5 @@
 # SQL 优化
 
-> 文章来源：[掌门 MySQL 数据库规约落地及优化实战](https://mp.weixin.qq.com/s/GpRX1uEqUz4eRAQpEU3-eg)
-
 SQL 优化的方式方法很多，此处罗列一些比较重要，容易出现问题的优化点：
 
 - 尽量避免全表扫描，应考虑在 where 和 order by 涉及的列上建立索引
@@ -56,6 +54,8 @@ from students
 ```
 
 > 说明：改用 unio 后两个子查询中都能走各自对应的索引，并且因为是查询 ID 信息，查询走覆盖索引 using index，效率很高，该查询最终耗时 11.64s
+
+如果查询条件改为=，由于**索引合并**的存在，可能不会走全表扫描；即使查询条件为范围查询，也不一定都会都走全表扫描，视数据量而定。
 
 
 
@@ -293,6 +293,24 @@ where students.created_at>='2021-04-05'
 
 > 说明：查询根据 created_at 字段检索满足条件的记录构建为子查询。外层查询结果对子查询进行排序然后取得 100 条记录。
 > 此方法不会改变原始业务逻辑，如果满足条件结果集较小，效率很高；但是如果满足条件的中间结果集非常大，则查询效率也会较差
+
+
+
+> 文章来源：[掌门 MySQL 数据库规约落地及优化实战](https://mp.weixin.qq.com/s/GpRX1uEqUz4eRAQpEU3-eg)
+
+
+
+
+
+### null 查询
+
+```
+select * from staff where name like null;
+```
+
+即使union_id字段有索引，进行like null查询的话，也会进行全表扫描。而且和 `is null` 不一样，`like null`查不出任何结果。所以在平时使用的过程中，尽量避免出现like null查询，使用`is null` 或者`like ''`。
+
+
 
 
 
