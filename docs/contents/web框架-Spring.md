@@ -1,3 +1,101 @@
+
+
+## bean的注入过程
+
+Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh()` 方法，该方法是个模板方法，定义了加载到容器的[全部过程](https://blog.csdn.net/ajianyingxiaoqinghan/article/details/107218224)。
+
+整个 bean 注册过程核心功能包括；配置文件加载、工厂创建、XML解析、Bean定义、Bean注册
+
+
+
+### 过程
+
+注册bean定义 -> ① -> 实例化bean -> 依赖的装配 -> ② -> 初始化bean -> ③ -> OK
+
+> 其中①②③是Spring预留的三个埋点，可以在这些地方插入一些用户代码，进行一些[定制化](https://www.cnblogs.com/lixinjie/p/taste-spring-009.html)。
+
+ConfigurationClassPostProcessor不仅仅是一个bean工厂后处理器，还是一个专门用于注册bean定义的后处理器。这个类在容器启动时会被调用，因此把其它类的bean定义注册到了容器中。
+
+
+
+
+
+**Spring Bean 容器是什么？**
+
+Spring 包含并管理应用对象的配置和生命周期，在这个意义上它是一种用于承载对象的容器，你可以配置你的每个 Bean 对象是如何被创建的，这些 Bean 可以创建一个单独的实例或者每次需要时都生成一个新的实例，以及它们是如何相互关联构建和使用的。
+
+如果一个 Bean 对象交给 Spring 容器管理，那么这个 Bean 对象就应该以类似零件的方式被拆解后存放到 Bean 的定义中，这样相当于一种把对象解耦的操作，可以由 Spring 更加容易的管理，就像处理循环依赖等操作。
+
+当一个 Bean 对象被定义存放以后，再由 Spring 统一进行装配，这个过程包括 Bean 的初始化、属性填充等，最终我们就可以完整的使用一个 Bean 实例化后的对象了。
+
+
+
+**bean 是在什么时候被创建的，有哪些规则？**
+
+容器初始化的时候会预先对单例和非延迟加载的对象进行预先初始化。其他的都是延迟加载是在第一次调用getBean 的时候被创建。
+
+bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的。这里面将会完成对构造函数的选择、依赖注入等。
+
+GetBean 的大概过程：
+
+1. 先试着从单例缓存对象里获取。
+
+2. 从父容器里取定义，有则由父容器创建。
+
+3. 如果是单例，则走单例对象的创建过程：在 spring 容器里单例对象和非单例对象的创建过程是一样的。都会调用父类 AbstractAutowireCapableBeanFactory 的 createBean 方法。 不同的是单例对象只创建一次并且需要缓存起来。
+
+
+
+### refresh方法
+
+```java
+@Override
+	public void refresh() throws BeansException, IllegalStateException {
+		synchronized (this.startupShutdownMonitor) {
+			prepareRefresh();
+			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+			prepareBeanFactory(beanFactory);
+			try {
+				postProcessBeanFactory(beanFactory);
+				// 注册 BeanDefinition 到 BeanDefinitionRegistry 中
+				invokeBeanFactoryPostProcessors(beanFactory);
+				registerBeanPostProcessors(beanFactory);
+				initMessageSource();
+				initApplicationEventMulticaster();
+				onRefresh();
+				registerListeners();
+				// 将 BeanDefinition 转换为 Bean 实例
+				finishBeanFactoryInitialization(beanFactory);
+				finishRefresh();
+			} catch (BeansException ex) {
+				if (logger.isWarnEnabled()) {
+					logger.warn("Exception encountered during context initialization - " +
+							"cancelling refresh attempt: " + ex);
+				}
+				destroyBeans();
+				cancelRefresh(ex);
+				throw ex;
+			}
+			finally {
+				resetCommonCaches();
+			}
+		}
+	}
+```
+
+重要的来说，就是[四大步](https://www.cnblogs.com/lixinjie/p/taste-spring-009.html)：
+
+1. 准备好bean工厂（BeanFactory）。
+2. 调用已经注册的bean工厂后处理器（BeanFactoryPostProcessor）。
+3. 注册bean后处理器（BeanPostProcessor）。
+4. 实例化所有的单例bean。
+
+
+
+
+
+
+
 ## Web对象
 
 [**ServletContext**](https://blog.csdn.net/gavin_john/article/details/51399425)
