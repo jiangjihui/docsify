@@ -6,6 +6,15 @@ MyBatis通过XML或者注解的方式将要执行的sql语句配置起来，并�
 
 
 
+## 数据处理
+
+1. 参数映射：ParameterHandler
+2. SQL解析：SqlSource
+3. SQL执行：Executor
+4. 结果处理和映射：ResultSetHandler
+
+
+
  
 
 ## MyBatis的[执行流程](https://blog.csdn.net/qq_32166627/article/details/70741729)

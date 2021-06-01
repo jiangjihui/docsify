@@ -5,7 +5,7 @@
    不管它们创建以后是不是空闲的。线程池需要保持 corePoolSize 数量的线程，除非设置了 allowCoreThreadTimeOut。
 
 2. **maximumPoolSize**：最大线程数
-      
+   
       线程池中最多允许创建 maximumPoolSize 个线程
       
 3. **keepAliveTime**：存活时间
@@ -99,6 +99,30 @@ AsyncListenableTaskExecutor提供了监听任务方法(相当于添加一个任�
 3、前者spring自己用着爽，后者离开spring我们用ThreadPoolExecutor爽。
 
 注意：ThreadPoolTaskExecutor 不会自动创建ThreadPoolExecutor需要手动调initialize才会创建。如果@Bean 就不需手动，会自动InitializingBean的afterPropertiesSet来调initialize
+
+
+
+### 问答
+
+**线程池创建之后，会立即创建核心线程么**
+
+不会。从上面的源码可以看出，在刚刚创建ThreadPoolExecutor的时候，线程并不会立即启动，而是要等到有任务提交时才会启动，除非调用了prestartCoreThread/prestartAllCoreThreads事先启动核心线程。
+
+
+
+**核心线程永远不会销毁么**
+
+在JDK1.6之后，如果allowsCoreThreadTimeOut=true，核心线程也可以被终止。
+
+
+
+**keepAliveTime=0会怎么样**
+
+在JDK1.8中，keepAliveTime=0表示非核心线程执行完立刻终止。
+
+
+
+> [10问10答：你真的了解线程池吗？](https://mp.weixin.qq.com/s/axWymUaYaARtvsYqvfyTtw)
 
 
 

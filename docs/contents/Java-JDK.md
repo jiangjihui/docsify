@@ -1,4 +1,33 @@
-本文就带你快速了解 JAVA 9 - 16 的主要新特性
+本文就带你快速了解 JAVA 8 - 16 的主要新特性
+
+## JAVA 8（2014年3月）
+
+- **Lambda 表达式** − Lambda 允许把函数作为一个方法的参数（函数作为参数传递到方法中）。
+
+- **default方法** − default方法（默认方法）就是一个在接口里面有了一个实现的方法。
+
+- **Stream API** −新添加的Stream API（java.util.stream） 把真正的函数式编程风格引入到Java中。有两种模式: 顺序执行和并行执行。
+
+  ```java
+  // 获取部门列表中所有部门的ID列表
+  List<String> deptIdList = deptList.stream().map(SysDept::getId).collect(Collectors.toList());
+  ```
+
+  
+
+- **Date Time API** − 加强对日期与时间的处理。
+
+- **Optional 类** − Optional 类已经成为 Java 8 类库的一部分，用来解决空指针异常。
+
+- **方法引用** − 方法引用提供了非常有用的语法，可以直接引用已有Java类或对象（实例）的方法或构造器。与lambda联合使用，方法引用可以使语言的构造更紧凑简洁，减少冗余代码。方法引用使用一对冒号 **::** 。
+
+- **新工具** − 新的编译工具，如：Nashorn引擎 jjs、 类依赖分析器jdeps。
+
+- **Nashorn, JavaScript 引擎** − Java 8提供了一个新的Nashorn javascript引擎，它允许我们在JVM上运行特定的javascript应用。
+
+- **Java FX**：JavaFX主要致力于富客户端开发，以弥补swing的缺陷，主要提供图形库与media库，支持audio,video,graphics,animation,3D等，同时采用现代化的css方式支持界面设计。同时又采用XUI方式以XML方式设计UI界面，达到显示与逻辑的分离。
+
+
 
 
 

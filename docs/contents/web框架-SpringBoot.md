@@ -39,7 +39,39 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 
  
 
- 
+启动流程主要分为三个部分：
+
+1. 第一部分进行SpringApplication的初始化模块，配置一些基本的环境变量、资源、构造器、监听器
+2. 第二部分实现了应用具体的启动方案，包括启动流程的监听模块、加载配置环境模块、及核心的创建上下文环境模块
+3. 第三部分是自动化配置模块
+
+
+
+
+
+## Spring Boot扩展机制
+
+[java spi](https://blog.csdn.net/lldouble/article/details/80690446)的具体约定为:当服务的提供者，提供了服务接口的一种实现之后，在jar包的META-INF/services/目录里同时创建一个以服务接口命名的文件。该文件里就是实现该服务接口的具体实现类。而当外部程序装配这个模块的时候，就能通过该jar包META-INF/services/里的配置文件找到具体的实现类名，并装载实例化，完成模块的注入。 基于这样一个约定就能很好的找到服务接口的实现类，而不需要再代码里制定。
+
+在Spring中也有一种类似与Java SPI的加载机制。它在META-INF/spring.factories文件中配置接口的实现类名称，然后在程序中读取这些配置文件并实例化。这种自定义的SPI机制是Spring Boot Starter实现的基础。
+
+
+
+
+
+## 重要注解
+
+**@ComponentScan**注解的作用是扫描@SpringBootApplication所在的Application类（即spring-boot项目的入口类）所在的包（basepackage）下所有的@component注解（或拓展了@component的注解）标记的bean，并注册到spring容器中。
+
+
+  **@EnableAutoConfiguration** 自动配置：从classpath中搜寻所有的META-INF/spring.factories配置文件，并将其中EnableAutoConfiguration对应的配置项通过反射（Java Refletion）实例化为对应的标注了@Configuration的JavaConfig形式的IoC容器配置类，然后汇总为一个并加载到IoC容器。
+
+> 出处：[Springboot 启动原理详细解析](https://www.cnblogs.com/jstarseven/p/11087157.html)
+
+
+
+
+
 
 ## **程序发布（Maven build打包程序）**
 
@@ -121,9 +153,9 @@ Spring Boot 2.0 是建立在Spring Framework 5.0之上的（最低要求）
 - spring.JPA.database_platform=mysql
 
 
- 
 
- 
+
+
 
 ## **Spring Boot Admin** 
 
