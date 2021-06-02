@@ -18,6 +18,14 @@ ConfigurationClassPostProcessor不仅仅是一个bean工厂后处理器，还是
 
 
 
+**处理的问题**
+
+- 可能有 Bean 可能有别名、可能有依赖、也可能是被 BeanFactory 包装过，所以会有 transformedBeanName 来处理这些差异化行为。
+- 有没有循环依赖、有没有父工厂、是单例还是原型、是懒加载还是预加载、在不在缓冲区，所以就有各种组合判断来做不同的流程。
+- 提早暴漏对象、三级缓存、后置标记清楚，所有的优化处理都是为了让整个 Bean 的获取更加高效。
+
+
+
 
 
 **Spring Bean 容器是什么？**
@@ -36,9 +44,9 @@ Spring 包含并管理应用对象的配置和生命周期，在这个意义上�
 
 bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的。这里面将会完成对构造函数的选择、依赖注入等。
 
-GetBean 的大概过程：
+[GetBean](https://bugstack.cn/interview/2021/04/18/%E9%9D%A2%E7%BB%8F%E6%89%8B%E5%86%8C-%E7%AC%AC30%E7%AF%87-%E5%85%B3%E4%BA%8E-Spring-%E4%B8%AD-getBean-%E7%9A%84%E5%85%A8%E6%B5%81%E7%A8%8B%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90.html) 的大概过程：
 
-1. 先试着从单例缓存对象里获取。
+1. 先尝试从单例缓存对象里获取。这个位置就是三级缓存解决循环依赖的方法。
 
 2. 从父容器里取定义，有则由父容器创建。
 
@@ -91,6 +99,12 @@ GetBean 的大概过程：
 4. 实例化所有的单例bean。
 
 
+
+## ApplicationContextAware
+
+从已有的spring上下文取得已实例化的bean。通过[ApplicationContextAware](https://www.jianshu.com/p/4c0723615a52)接口进行实现。
+
+当一个类实现了这个接口（ApplicationContextAware）之后，这个类就可以方便获得ApplicationContext中的所有bean。换句话说，就是这个类可以直接获取 spring 配置文件中，所有有引用到的bean对象。
 
 
 

@@ -1,3 +1,15 @@
+## Linux查看系统版本
+
+```
+lsb_release -a
+```
+
+> 这个命令适用于所有的Linux发行版，包括RedHat、SUSE、Debian…等发行版
+
+
+
+
+
 ## **Authentication Failure（认证失败）**
 
 当第一次使用su命令时，可能出现这种情况，遇到这种情况时，使用sudo passwd root重置密码即可。

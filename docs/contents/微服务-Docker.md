@@ -510,6 +510,8 @@ nginx:
 语法：**ADD** <src> <dest>
 解释：**ADD**指令用于从指定路径拷贝一个文件或目录到容器的指定路径中，<src>是一个文件或目录的路径，也可以是一个url，路径是相对于该Dockerfile文件所在位置的相对路径，<dest>是目标容器的一个绝对路径。
 
+> COPY指令和ADD指令的唯一区别在于是否支持从远程URL获取资源。COPY指令只能从执行docker build所在的主机上读取资源并复制到镜像中。而ADD指令还支持通过URL从远程服务器读取资源并复制到镜像中。
+
 **WORKDIR**
 
 语法：**WORKDIR** /path/to/workdir
@@ -716,6 +718,12 @@ command: [bundle, exec, thin, -p, 3000]
 ```
 docker run -d -p 9001:9000 --name portainer --restart always -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/data:/data portainer/portainer
 ```
+
+
+
+## Docker端口映射
+
+在docker中运行第三方服务时，通常需要绑定服务端口到本地主机。但使用 -p 参数进行的端口映射，会**自动在iptables中建立规则**，绕过firewalld。
 
 
 
