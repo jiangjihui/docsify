@@ -118,6 +118,10 @@ private static class Node<E> {
 
 
 
+`remove()`方法也有两个版本，一个是`remove(int index)`删除指定位置的元素，另一个是`remove(Object o)`删除第一个满足`o.equals(elementData[index])`的元素。删除操作是`add()`操作的逆过程，需要**将删除点之后的元素向前移动一个位置**。需要注意的是为了让GC起作用，必须显式的为最后一个位置赋`null`值。
+
+
+
 
 
 ## ArrayDeque
@@ -473,4 +477,6 @@ public class TreeSet<E> extends AbstractSet<E>
     ......
 }
 ```
+
+
 
