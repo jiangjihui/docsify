@@ -19,8 +19,6 @@
 
 虚拟机规范并没有指明二进制字节流要从一个Class文件获取，或者说根本没有指明从哪里获取、怎样获取。这种开放使得Java在很多领域得到充分运用，例如：
 
- 
-
 - 从ZIP包中读取，这很常见，成为JAR，EAR，WAR格式的基础
 - 从网络中获取，最典型的应用就是Applet
 - 运行时计算生成，最典型的是动态代理技术，在java.lang.reflect.Proxy中，就是用了ProxyGenerator.generateProxyClass来为特定接口生成形式为“*$Proxy”的代理类的二进制字节流
@@ -33,12 +31,6 @@
 ## [**什么是类的加载**](https://www.cnblogs.com/ityouknow/p/5603287.html)
 
 **类的加载：**是将类的.class文件中的二进制数据读入到内存中，将其放在运行时数据区的方法区内，然后在堆区创建一个 java.lang.Class对象，用来封装类在方法区内的数据结构。类的加载的最终产品是位于**堆区**中的 Class对象， Class对象封装了类在方法区内的数据结构，并且向Java程序员提供了访问方法区内的数据结构的接口。
-
- 
-
-**注：**Java 虚拟机具有一个堆，堆是运行时数据区域，所有类实例和数组的内存均从此处分配。堆是在 Java 虚拟机启动时创建的。在JVM 中堆之外的内存称为非堆内存(Non-heap memory)”。 
-
-可以看出JVM主要管理两种类型的内存：堆和非堆。简单来说堆就是Java代码可及的内存，是留给开发人员使用的；非堆就是JVM 留给自己用的，所以方法区、JVM内部处理或优化所需的内存(如JIT编译后的代码缓存)、每个类结构(如运行时常数池、字段和方法数据)以及方法和构造方法的代码都在非堆内存中。
 
  
 
@@ -122,19 +114,66 @@
 
 - 调用类的静态方法
 
-- 反射（如     Class.forName(“com.shengsiyuan.Test”)）
+- 反射（如Class.forName(“com.shengsiyuan.Test”)）
 - 初始化某个类的子类，则其父类也会被初始化
-- Java虚拟机启动时被标明为启动类的类（     JavaTest），直接使用 java.exe命令来运行某个主类
+- Java虚拟机启动时被标明为启动类的类（JavaTest），直接使用 java.exe命令来运行某个主类
 
  
 
-## [JVM内存结构](https://mp.weixin.qq.com/s?__biz=MzI4NDY5Mjc1Mg==&mid=2247483949&idx=1&sn=8b69d833bbc805e63d5b2fa7c73655f5&chksm=ebf6da52dc815344add64af6fb78fee439c8c27b539b3c0e87d8f6861c8422144d516ae0a837&scene=21#wechat_redirect)
+## Class字节码文件
 
- ![image](../_images/23aa5e6a-91ed-4fce-87ca-a8967cee5d0f.png)
+[class](https://www.pdai.tech/md/java/jvm/java-jvm-class.html)文件本质上是一个以8位字节为基础单位的二进制流，各个数据项目严格按照顺序紧凑的排列在class文件中。jvm根据其特定的规则解析该二进制数据，从而得到相关信息。
 
- 
+Class文件采用一种伪结构来存储数据，它有两种类型：无符号数和表。
 
-JVM内存结构主要有三大块：**堆内存、方法区**和**栈**。堆内存是JVM中最大的一块由年轻代和老年代组成，而年轻代内存又被分成三部分，Eden空间、From Survivor空间、To Survivor空间,默认情况下年轻代按照8:1:1的比例来分配；
+### 结构
+
+- 魔数
+
+  文件开头的4个字节("cafe babe")称之为 `魔数`，唯有以"cafe babe"开头的class文件方可被虚拟机所接受，这4个字节就是字节码文件的身份识别。
+
+  0000是编译器jdk版本的次版本号0，0034转化为十进制是52,是主版本号，java的版本号从45开始，除1.0和1.1都是使用45.x外,以后每升一个大版本，版本号加一。也就是说，编译生成该class文件的jdk版本为1.8.0。
+
+- 常量池
+
+- 访问标志
+
+- 索引
+
+- 字段表属性
+
+- 方法表属性
+
+- 属性表属性
+
+
+
+### 符号引用
+
+在编译的时候一个每个java类都会被编译成一个class文件，但在编译的时候虚拟机并不知道所引用类的地址，多以用符号引用来代替，而在这个解析阶段就是为了把这个符号引用转化成为真正的地址的[阶段](https://blog.csdn.net/qq_34402394/article/details/72793119)。
+
+```java
+// 这个代码中在编译的时候对应的s会被解析成为符号引用
+public static void main() {
+ String s="adc";
+ System.out.println("s="+s);
+}
+
+// 这段代码执行的时候会直接解析成直接引用
+public static void main() {
+ System.out.println("s="+"abc");
+}
+```
+
+
+
+
+
+## JVM内存结构
+
+### 内存结构
+
+JVM[内存结构](https://mp.weixin.qq.com/s?__biz=MzI4NDY5Mjc1Mg==&mid=2247483949&idx=1&sn=8b69d833bbc805e63d5b2fa7c73655f5&chksm=ebf6da52dc815344add64af6fb78fee439c8c27b539b3c0e87d8f6861c8422144d516ae0a837&scene=21#wechat_redirect)主要有三大块：**堆内存、方法区**和**栈**。堆内存是JVM中最大的一块由年轻代和老年代组成，而年轻代内存又被分成三部分，Eden空间、From Survivor空间、To Survivor空间,默认情况下年轻代按照8:1:1的比例来分配；
 
  
 
@@ -148,21 +187,49 @@ JVM内存结构主要有三大块：**堆内存、方法区**和**栈**。堆内
 
  
 
+### JVM内存参数
+
 **控制参数**
 
-- -Xms设置堆的最小空间大小。
-- -Xmx设置堆的最大空间大小。
-- -XX:NewSize设置新生代最小空间大小。
-- -XX:MaxNewSize设置新生代最大空间大小。
-- -XX:PermSize设置永久代最小空间大小。
-- -XX:MaxPermSize设置永久代最大空间大小。
-- -Xss设置每个线程的堆栈大小。
+- -Xms 设置堆的最小空间大小。
+- -Xmx 设置堆的最大空间大小。
+- -Xmn 新生代大小，这个参数则是对 -XX:newSize、-XX:MaxnewSize两个参数的同时配置，即-XX:newSize = -XX:MaxnewSize = -Xmn
+- -XX:NewSize 设置新生代最小空间大小。
+- -XX:MaxNewSize 设置新生代最大空间大小。
+- -Xss 设置每个线程的堆栈大小。
 
-**注：**没有直接设置老年代的参数，但是可以设置堆空间大小和新生代空间大小两个参数来间接控制。
+**JDK1.7**
 
-老年代空间大小=堆空间大小-年轻代大空间大小
+- -XX:PermSize 设置永久代最小空间大小。
+- -XX:MaxPermSize 设置永久代最大空间大小。
+
+**JDK1.8**
+
+- -XX:MetaspaceSize 设置Metaspace最小空间大小。
+
+  MetaspaceSize表示metaspace首次使用不够而触发FGC的阈值，只对触发起作用。不设置则默认为20M左右。
+
+- -XX:MaxMetaspaceSize 设置Metaspace最大空间大小。
+
+  默认无穷大。
+
+> **注：**没有直接设置老年代的参数，但是可以设置堆空间大小和新生代空间大小两个参数来间接控制。
+>
+> 老年代空间大小=堆空间大小-年轻代大空间大小
 
  
+
+### 内存参数调优
+
+- Xmn 用于设置新生代的大小。过小会增加Minor GC频率，过大会减小老年代的大小。一般设为整个堆空间的1/4或1/3.
+- XX:SurvivorRatio 用于设置新生代中 survivor 空间(from/to)和eden空间的大小比例； XX:TargetSurvivorRatio 表示，当经历Minor GC后，survivor空间占有量(百分比)超过它的时候，就会压缩进入老年代(当然，如果survivor空间不够，则直接进入老年代)。默认值为50%。
+- 为了性能考虑，一开始尽量将新生代对象留在新生代，避免新生的大对象直接进入老年代。因为新生对象大部分都是短期的，这就造成了老年代的内存浪费，并且回收代价也高(Full GC发生在老年代和方法区Perm).
+- 当 Xms=Xmx ，可以使得堆相对稳定，避免不停震荡
+- 一般来说，MaxPermSize 设为64MB可以满足绝大多数的应用了。若依然出现方法区溢出，则可以设为128MB。若128MB还不能满足需求，那么就应该考虑程序优化了，减少**动态类**的产生。
+
+
+
+### 调用关系
 
 从更高的一个维度再次来看JVM和系统调用之间的关系  
 
@@ -172,6 +239,8 @@ JVM内存结构主要有三大块：**堆内存、方法区**和**栈**。堆内
 方法区和对是所有线程共享的内存区域；而java栈、本地方法栈和程序员计数器是运行是线程私有的内存区域。
 
  
+
+
 
 ## **Java堆**
 
@@ -197,9 +266,11 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
  
 
+
+
 ## **方法区**
 
-方法区用于存储已被虚拟机加载的类型信息、常量、静态变量、即时编译器编译后的代码缓存等。
+方法区用于存储已被虚拟机加载的**类型信息**、常量、静态变量、即时编译器编译后的代码缓存等。
 
 - 方法区（Method Area）与 Java 堆一样，是所有**线程共享**的内存区域。
 - 虽然 Java 虚拟机规范把方法区描述为堆的一个逻辑部分，但是它却有一个别名叫 Non-Heap（非堆），目的应该是与 Java 堆区分开。
@@ -209,7 +280,16 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
 > 方法区（method area）只是 JVM 规范中定义的一个概念，用于存储类信息、常量池、静态变量、JIT编译后的代码等数据，并没有规定如何去实现它，不同的厂商有不同的实现。而永久代（PermGen）是 Hotspot 虚拟机特有的概念， Java8 的时候又被元空间取代了，永久代和元空间都可以理解为方法区的落地实现。
 
+> `JDK8` 中将永久代移除，使用 `MetaSpace` 来保存类加载之后的类信息，**字符串常量池**也被移动到 Java **堆**。
 
+
+
+对于方法区，Java8 之后的变化：
+
+- 移除了永久代（PermGen），替换为元空间（Metaspace）；
+- 永久代中的 class metadata 转移到了 native memory（本地内存，而不是虚拟机）；
+- 永久代中的 interned Strings （字符串常量）和 class static variables （静态变量）转移到了 Java 堆；
+- 永久代参数 （PermSize MaxPermSize） -> 元空间参数（MetaspaceSize MaxMetaspaceSize）
 
 
 
@@ -255,11 +335,56 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
 
 
+
+
 ## 栈和堆的区别
 
 **栈是运行时的单位，而堆是存储的单位**。
 
 栈解决程序的运行问题，即程序如何执行，或者说如何处理数据。堆解决的是数据存储的问题，即数据怎么放、放在哪。
+
+
+
+
+
+## 堆外内存
+
+[堆外内存](https://www.jianshu.com/p/007052ee3773)是相对于堆内内存的一个概念。堆内内存是由JVM所管控的Java进程内存，我们平时在Java中创建的对象都处于堆内内存中，并且它们遵循JVM的内存管理机制，JVM会采用垃圾回收机制统一管理它们的内存。那么堆外内存就是存在于JVM管控之外的一块内存区域，因此它是不受JVM的管控。
+
+堆外内存有着零拷贝等特点，被 Netty 等各种 NIO 框架使用。
+
+### DirectByteBuffer
+
+DirectByteBuffer是Java用于实现堆外内存的一个重要类，我们可以通过该类实现堆外内存的创建、使用和销毁。使用native方法`unsafe.allocateMemory(size)`通过C的malloc来进行分配的。分配的内存是系统本地的内存。
+
+`unsafe.allocateMemory(size)`分配完堆外内存后就会返回分配的堆外内存基地址，并将这个地址赋值给了address属性。这样我们后面通过JNI对这个堆外内存操作时都是通过这个address来实现的了。
+
+DirectByteBuffer对象本身其实是很小的，但是它后面可能关联了一个非常大的堆外内存，因此我们通常称之为冰山对象。
+
+### 内存使用
+
+- 堆内内存与堆外内存之间数据拷贝的方式(并且在将堆内内存拷贝到堆外内存的过程JVM会保证不会进行GC操作)：比如我们要完成一个从文件中读数据到堆内内存的操作，即FileChannelImpl.read(HeapByteBuffer)。这里实际上File I/O会将数据读到堆外内存中，然后堆外内存再讲数据拷贝到堆内内存，这样我们就读到了文件中的内存。
+- **零拷贝** 直接使用堆外内存，如DirectByteBuffer：这种方式是直接在堆外分配一个内存(即，native memory)来存储数据，程序通过JNI直接将数据读/写到堆外内存中。因为数据直接写入到了堆外内存中，所以这种方式就不会再在JVM管控的堆内再分配内存来存储数据了，也就不存在堆内内存和堆外内存数据拷贝的操作了。
+
+### 内存回收
+
+先进行一次堆外内存资源回收后，还不够进行本次堆外内存分配的话，则调用 `System.gc()` 触发一个full gc，当然前提是你没有显示的设置 `-XX:+DisableExplicitGC` 来禁用显式GC。System.gc()并不能够保证full gc马上就能被执行。所以会进行最多9次尝试，看是否有足够的可用堆外内存来分配堆外内存。并且每次尝试之前，都对延迟等待时间，已给JVM足够的时间去完成full gc操作。如果9次尝试后依旧没有足够的可用堆外内存来分配本次堆外内存，则抛出`OutOfMemoryError("Direct buffer memory”)`异常。
+
+Cleaner是PhantomReference的子类，并通过自身的next和prev字段维护的一个双向链表。PhantomReference的作用在于跟踪垃圾回收过程，并不会对对象的垃圾回收过程造成任何的影响。
+
+### 使用堆外内存的原因
+
+- 对垃圾回收停顿的改善
+   因为full gc 意味着彻底回收，彻底回收时，垃圾收集器会对所有分配的堆内内存进行完整的扫描，这意味着一个重要的事实——这样一次垃圾收集对Java应用造成的影响，跟堆的大小是成正比的。过大的堆会影响Java应用的性能。如果使用堆外内存的话，堆外内存是直接受操作系统管理( 而不是虚拟机 )。这样做的结果就是能保持一个较小的堆内内存，以减少垃圾收集对应用的影响。
+- 在某些场景下可以提升程序I/O操纵的性能。少去了将数据从堆内内存拷贝到堆外内存的步骤。
+
+### 堆外内存的特点
+
+- 对于大内存有良好的伸缩性
+- 对垃圾回收停顿的改善可以明显感觉到
+- 在进程间可以共享，减少虚拟机间的复制
+
+
 
 
 
@@ -269,7 +394,13 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
 ## **概述**
 
-垃圾收集 Garbage Collection 通常被称为“GC”，它诞生于1960年 MIT 的 Lisp 语言，经过半个多世纪，目前已经十分成熟了。 jvm 中，程序计数器、虚拟机栈、本地方法栈都是随线程而生随线程而灭，栈帧随着方法的进入和退出做入栈和出栈操作，实现了自动的内存清理，因此，我们的内存垃圾回收主要集中于 java 堆和方法区中，在程序运行期间，这部分内存的分配和使用都是动态的
+垃圾收集 Garbage Collection 通常被称为“GC”，它诞生于1960年 MIT 的 Lisp 语言，经过半个多世纪，目前已经十分成熟了。 jvm 中，程序计数器、虚拟机栈、本地方法栈都是随线程而生随线程而灭，栈帧随着方法的进入和退出做入栈和出栈操作，实现了自动的内存清理，因此，我们的内存**垃圾回收**主要集中于 **堆**和**方法区**中，在程序运行期间，这部分内存的分配和使用都是动态的。
+
+**间接管理堆外内存**：在 Direct Memory 中，如果使用的是 DirectByteBuffer，那么在分配内存不够时则是 GC 通过 Cleaner#clean 间接管理。
+
+> 堆外内存必须要[手动释放](https://www.pdai.tech/md/java/jvm/java-jvm-cms-gc.html)，DirectByteBuffer 没有 Finalizer，它的 Native Memory 的清理工作是通过 `sun.misc.Cleaner` 自动完成的，是一种基于 PhantomReference 的清理工具，比普通的 Finalizer 轻量些。
+>
+> 为 DirectByteBuffer 分配空间过程中会显式调用 System.gc ，希望通过 Full GC 来强迫已经无用的 DirectByteBuffer 对象释放掉它们关联的 Native Memory
 
  
 
@@ -297,7 +428,7 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
 这样使得每次都是对其中的一块进行内存回收，内存分配时也就不用考虑内存碎片等复杂情况，只要移动堆顶指针，按顺序分配内存即可，实现简单，运行高效。只是这种算法的代价是将内存缩小为原来的一半，持续复制长生存期的对象则导致效率降低。
 
- ![image](../_images/49d67634-f232-495f-9c44-160c686737d3.png)
+![image](../_images/49d67634-f232-495f-9c44-160c686737d3.png)
 
 
 
@@ -305,7 +436,7 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
 根据老年代的特点，有人提出了另外一种**“标记-整理”（Mark-Compact）算法**，标记过程仍然与“标记-清除”算法一样，但后续步骤不是直接对可回收对象进行清理，而是让所有存活的对象都向一端移动，然后直接清理掉端边界以外的内存
 
- ![image](../_images/c6dbfd34-6820-4a17-8389-e0833c0fb492.png)
+![image](../_images/c6dbfd34-6820-4a17-8389-e0833c0fb492.png)
 
 
 
@@ -372,9 +503,75 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
 
 
- 
 
-# **jvm调优-命令篇**
+
+## 内存分配策略
+
+- **对象优先在 Eden 分配**
+
+	大多数情况下，对象在新生代 Eden 区分配，当 Eden 区空间不够时，发起 Minor GC。
+
+- **大对象直接进入老年代**
+
+	大对象是指需要连续内存空间的对象，最典型的大对象是那种很长的字符串以及数组。经常出现大对象会提前触发垃圾收集以获取足够的连续空间分配给大对象。
+
+	-XX:PretenureSizeThreshold，大于此值的对象直接在老年代分配，避免在 Eden 区和 Survivor 区之间的大量内存复制。
+
+- **长期存活的对象进入老年代**
+
+	为对象定义年龄计数器，对象在 Eden 出生并经过 Minor GC 依然存活，将移动到 Survivor 中，年龄就增加 1 岁，增加到一定年龄则移动到老年代中。
+
+	-XX:MaxTenuringThreshold 用来定义年龄的阈值。
+
+- **动态对象年龄判定**
+
+	虚拟机并不是永远地要求对象的年龄必须达到 MaxTenuringThreshold 才能晋升老年代，如果在 Survivor 中相同年龄所有对象大小的总和大于 Survivor 空间的一半，则年龄大于或等于该年龄的对象可以直接进入老年代，无需等到 MaxTenuringThreshold 中要求的年龄。
+
+- **空间分配担保**
+
+	在发生 Minor GC 之前，虚拟机先检查老年代最大可用的连续空间是否大于新生代所有对象总空间，如果条件成立的话，那么 Minor GC 可以确认是安全的。
+	
+	如果不成立的话虚拟机会查看 HandlePromotionFailure 设置值是否允许担保失败，如果允许那么就会继续检查老年代最大可用的连续空间是否大于历次晋升到老年代对象的平均大小，如果大于，将尝试着进行一次 Minor GC；如果小于，或者 HandlePromotionFailure 设置不允许冒险，那么就要进行一次 Full GC。
+
+
+
+
+
+## GC触发
+
+### Minor GC
+
+从年轻代空间（包括 Eden 和 Survivor 区域）回收内存被称为 Minor GC。
+
+**触发条件**
+
+当Eden区满时，触发Minor GC。
+
+
+
+### Full GC
+
+对老年代GC称为Major GC，而Full GC是对整个堆来说的。
+
+**触发条件**
+
+- 扩容缩容
+
+- 调用System.gc()方法
+
+  此方法的调用是建议JVM进行Full GC,虽然只是建议而非一定,但很多情况下它会触发 Full GC,从而增加Full GC的频率,也即增加了间歇性停顿的次数。
+
+- 老年代空间不足
+
+- MetaSpace空间不足
+
+- Young 区晋升失败
+
+
+
+
+
+ jvm调试
 
 ## **概述**
 
@@ -386,7 +583,7 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
 ## **jps**
 
-**jps [**options**] [**hostid**]**
+jps [options] [hostid]
 
 JVM Process Status Tool,显示指定系统内所有的HotSpot虚拟机进程。
 
@@ -403,19 +600,18 @@ option参数：
 
 ## **jstat**
 
-**jstat [**option**]** **LVMID** **[**interval**] [**count**]**
+jstat [option] LVMID [interval] [count]
 
-**jstat**(JVM statistics Monitoring)是用于监视虚拟机运行时状态信息的命令，它可以显示出虚拟机进程中的类装载、内存、垃圾收集、JIT编译等运行数据。
+**jstat** (JVM statistics Monitoring)是用于监视虚拟机运行时状态信息的命令，它可以显示出虚拟机进程中的类装载、内存、垃圾收集、JIT编译等运行数据。
 
-[option] : 操作参数
+- [option] : 操作参数
 
-LVMID : 本地虚拟机进程ID
+- LVMID : 本地虚拟机进程ID
 
-[interval] : 连续输出的时间间隔
+- [interval] : 连续输出的时间间隔
+- [count] : 连续输出的次数
 
-[count] : 连续输出的次数
-
- 
+ Option列表：
 
 | **Option**       | **Displays…**                                                |
 | ---------------- | ------------------------------------------------------------ |
@@ -434,17 +630,15 @@ LVMID : 本地虚拟机进程ID
 
 **示例：**
 
-监视类装载、卸载数量、总空间以及耗费的时间
-
-jstat -class 11589
-
-输出JIT编译过的方法数量耗时等
-
-jstat -compiler 1262
+> 监视类装载、卸载数量、总空间以及耗费的时间
+> jstat -class 11589
+>
+> 输出JIT编译过的方法数量耗时等
+> jstat -compiler 1262
 
  
 
-## **jstack**
+## jstack
 
 jstack用于生成java虚拟机当前时刻的线程快照。线程快照是当前java虚拟机内每一条线程正在执行的方法堆栈的集合，生成线程快照的主要目的是定位线程出现长时间停顿的原因，如**线程间死锁、死循环、请求外部资源导致的长时间等待**等。 线程出现停顿的时候通过jstack来查看各个线程的调用堆栈，就可以知道没有响应的线程到底在后台做什么事情，或者等待什么资源。 
 
@@ -452,15 +646,79 @@ jstack用于生成java虚拟机当前时刻的线程快照。线程快照是当�
 
 如果java程序崩溃生成core文件，jstack工具可以用来获得core文件的java stack和native stack的信息，从而可以轻松地知道java程序是如何崩溃和在程序何处发生问题。另外，jstack工具还可以附属到正在运行的java程序中，看到当时运行的java程序的java stack和native stack的信息, 如果现在运行的java程序呈现hung的状态，jstack是非常有用的。
 
-**示例：jstack** 10928 -J-d64 查看正在运行的java进程状态
+> **示例：jstack** 10928 -J-d64 查看正在运行的java进程状态
 
  
+
+
+
+## jmap
+
+[jmap](https://www.jianshu.com/p/a4ad53179df3)是一个多功能的命令。它可以生成 java 程序的 dump 文件， 也可以查看堆内对象示例的统计信息、查看 ClassLoader 的信息以及 finalizer 队列。
+
+参数：
+
+- **option：** 选项参数。
+- **pid：** 需要打印配置信息的进程ID。
+- **executable：** 产生核心dump的Java可执行文件。
+- **core：** 需要打印配置信息的核心文件。
+- **server-id** 可选的唯一id，如果相同的远程主机上运行了多台调试服务器，用此选项参数标识服务器。
+- **remote server IP or hostname** 远程调试服务器的IP地址或主机名。
+
+
+
+option选项：
+
+- **no option：** 查看进程的内存映像信息,类似 Solaris pmap 命令。
+- **heap：** 显示Java堆详细信息
+- **histo[:live]：** 显示堆中对象的统计信息
+- **clstats：**打印类加载器信息
+- **finalizerinfo：** 显示在F-Queue队列等待Finalizer线程执行finalizer方法的对象
+- **dump:<dump-options>：**生成堆转储快照
+- **F：** 当-dump没有响应时，使用-dump或者-histo参数. 在这个模式下,live子参数无效.
+- **help：**打印帮助信息
+- **J<flag>：**指定传递给运行jmap的JVM的参数
+
+ 
+
+**实践：**
+
+打印当前java堆中各个对象的数量、大小。
+
+```
+jmap -histo <pid>
+```
+
+> docker中为 ./jmap -histo 1
+
+关于字节码的类型对应如下：
+
+| 标识字符 | 含义                                       |
+| -------- | ------------------------------------------ |
+| B        | 基本类型byte                               |
+| C        | 基本类型char                               |
+| D        | 基本类型double                             |
+| F        | 基本类型float                              |
+| I        | 基本类型int                                |
+| J        | 基本类型long                               |
+| S        | 基本类型short                              |
+| Z        | 基本类型boolean                            |
+| V        | 特殊类型void                               |
+| L        | 对象类型，以分号结尾，如Ljava/lang/Object; |
+
+> 对于数组类型，每一位使用一个前置的`[`字符来描述，如定义一个`java.lang.String[][]`类型的维数组，将被记录为`[[Ljava/lang/String;`
+
+
+
+
 
 ## **调优的网站**
 
 [一只懂JVM参数的狐狸](http://xxfox.perfma.com/)
 
  
+
+
 
 ## **常用故障命令**
 
@@ -471,28 +729,7 @@ jstack <pid>
 
 > 注：docker中为 ./jstack 1
 
- 
 
-```
-#打印当前java堆中各个对象的数量、大小。
-jmap -histo <pid>
-```
-
-> docker中为 ./jmap -histo 1
-
-
-
- 输出结果[说明](https://blog.csdn.net/jueshengtianya/article/details/46315033)
-
-```
-[C is a char[]
-[S is a short[]
-[I is a int[]
-[B is a byte[]
-[[I is a int[][]
-```
-
- 
 
  
 
@@ -516,14 +753,9 @@ jstack {pid} |grep {tid} -A 30
 top -H -p {pid}
 ```
 
-
-
-
-## JDK11内存[回收](https://blog.csdn.net/goldenfish1919/article/details/82911948)
-
-G1垃圾收集器主要是为那些拥有大内存的多核处理器而设计的。
-
  
+
+
 
 ## [**CMS、G1、ZGC的堆内存实现区别**](https://blog.csdn.net/jyxmust/article/details/105086208)
 
@@ -531,6 +763,9 @@ G1垃圾收集器主要是为那些拥有大内存的多核处理器而设计的
 CMS堆内存和以往的垃圾回收器一样，分为新生代和老年代，新生代和老年代是物理隔离的。
 
 **G1**
+
+G1垃圾收集器主要是为那些拥有大内存的多核处理器而设计的。
+
 G1打破了以往将收集范围固定在新生代或老年代的模式，GI 将 Java 堆空间分割成了若干相同大小的 区域，即 region，包括 Eden、Survivor、 Old、 Humongous 四种类型。其中， Humongous 是特殊的 Old 类型，专门 放置大型对象。这样的划分方式意昧着不需要一个连续的内存空间管理对象。 GI 将 空间分为多个区域，优先回收垃圾最多的 区域。 GI 采用的是 好的空间整合能力’不会产生大量的空间碎片。
 
 Region的数值是在1M到32M字节之间的一个2的幂值数，JVM会尽量划分2048个左右、同等大小的Region。
@@ -550,9 +785,13 @@ zgc的region核心亮点就是：动态，表现为：动态地创建和销毁�
 
 
 
-## [**CMS 和 G1 收集器内存结构**](https://www.pdai.tech/md/java/jvm/java-jvm-cms-gc.html)
 
- 
+
+## CMS 和 G1 收集器内存结构
+
+ 目前使用最多的是 CMS 和 G1 收集器，二者都有分代的概念，主要内存结构如下：![img](../_images/pdai-cms-gc-7.png)
+
+
 
  
 

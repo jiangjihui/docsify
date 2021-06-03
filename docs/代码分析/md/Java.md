@@ -87,6 +87,8 @@ Hello Class B
 
 ## finally
 
+### return
+
 ```java
 public class FinallyTest {
     public static void main(String[] args) {
@@ -119,5 +121,90 @@ finally里面如果有return的话，将直接使用finally的return返回。
 
 
 
+### finally修改引用
 
+```java
+public class TestCode {
+    public int foo() {
+        int x;
+        try {
+            x = 1;
+            return x;
+        } catch (Exception e) {
+            x = 2;
+            return x;
+        } finally {
+            x = 3;
+        }
+    }
+}
+```
+
+试问当不发生异常和发生异常的情况下，foo()的返回值分别是多少
+
+输出[结果](https://www.pdai.tech/md/java/jvm/java-jvm-class.html)：
+
+```
+不发生异常时: return 1
+发生异常时: return 2
+发生非Exception及其子类的异常，抛出异常，不返回值
+```
+
+
+
+### finally修改对象
+
+```java
+public static List<Integer> fdd() {
+    List<Integer> x= new ArrayList<>();
+    try {
+        x.add(1);
+        int c = 1 / 0;
+        return x;
+    } catch (Exception e) {
+        x.add(2);
+        return x;
+    } finally {
+        x.add(3);
+    }
+}
+```
+
+fdd()的返回值是多少
+
+输出[结果](https://www.pdai.tech/md/java/jvm/java-jvm-class.html)：
+
+```
+[1, 2, 3]
+```
+
+
+
+
+
+## ==比较
+
+```java
+public static void main(String[] args) {
+    Integer a = 1;
+    Integer b = 1;
+    System.out.println(a == b);
+    int c = 1;
+    int d = 1;
+    System.out.println(c == d);
+    Integer e = new Integer(1);
+    Integer f = new Integer(1);
+    System.out.println(e == f);
+}
+```
+
+对同一个常量的引用地址是同一个地址。
+
+输出结果：
+
+```
+true
+true
+false
+```
 
