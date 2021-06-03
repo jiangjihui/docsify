@@ -268,9 +268,9 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
 
 
-## **方法区**
+## 方法区
 
-方法区用于存储已被虚拟机加载的**类型信息**、常量、静态变量、即时编译器编译后的代码缓存等。
+方法区用于存储已被虚拟机加载的 **类型信息、字段、方法、常量、** 即时编译器编译后的代码缓存等。
 
 - 方法区（Method Area）与 Java 堆一样，是所有**线程共享**的内存区域。
 - 虽然 Java 虚拟机规范把方法区描述为堆的一个逻辑部分，但是它却有一个别名叫 Non-Heap（非堆），目的应该是与 Java 堆区分开。
@@ -284,12 +284,15 @@ HotSpot JVM把**年轻代**分为了三部分：1个**Eden**区和2个**Survivor
 
 
 
-对于方法区，Java8 之后的变化：
+**方法区在 JDK6、7、8中的演进细节**
 
-- 移除了永久代（PermGen），替换为元空间（Metaspace）；
-- 永久代中的 class metadata 转移到了 native memory（本地内存，而不是虚拟机）；
-- 永久代中的 interned Strings （字符串常量）和 class static variables （静态变量）转移到了 Java 堆；
-- 永久代参数 （PermSize MaxPermSize） -> 元空间参数（MetaspaceSize MaxMetaspaceSize）
+只有 HotSpot 才有永久代的概念
+
+| JDK版本      | 变化                                                         |
+| ------------ | ------------------------------------------------------------ |
+| jdk1.6及之前 | 有永久代，静态变量存放在永久代上                             |
+| jdk1.7       | 有永久代，但已经逐步“去永久代”，字符串常量池、静态变量移除，保存在堆中 |
+| jdk1.8及之后 | 取消永久代，类型信息、字段、方法、常量保存在本地内存的元空间，但字符串常量池、静态变量仍在堆中 |
 
 
 
@@ -502,6 +505,44 @@ Cleaner是PhantomReference的子类，并通过自身的next和prev字段维护�
 | 组合7 | G1GC               | G1GC             | -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC #开启； -XX:MaxGCPauseMillis=50 #暂停时间目标； -XX:GCPauseIntervalMillis=200 #暂停间隔目标； -XX:+G1YoungGenSize=512m #年轻代大小； -XX:SurvivorRatio=6 #幸存区比例 |
 
 
+
+
+
+## 收集器的堆内存实现区别
+
+**CMS**
+CMS堆内存和以往的垃圾回收器一样，分为新生代和老年代，新生代和老年代是物理隔离的。
+
+**G1**
+
+G1垃圾收集器主要是为那些拥有大内存的多核处理器而设计的。
+
+G1打破了以往将收集范围固定在新生代或老年代的模式，GI 将 Java 堆空间分割成了若干相同大小的 区域，即 region，包括 Eden、Survivor、 Old、 Humongous 四种类型。其中， Humongous 是特殊的 Old 类型，专门 放置大型对象。这样的划分方式意昧着不需要一个连续的内存空间管理对象。 GI 将 空间分为多个区域，优先回收垃圾最多的 区域。 GI 采用的是 好的空间整合能力’不会产生大量的空间碎片。
+
+Region的数值是在1M到32M字节之间的一个2的幂值数，JVM会尽量划分2048个左右、同等大小的Region。
+
+G1的一大优势在于可预测的停顿时间， 能够尽可能快地在指定时间内完成垃圾回收任务。在 JDK11中，已经将 GI 设为默认 垃圾回收器。
+
+**ZGC**
+和G1类似，但ZGC的region的大小更加灵活和动态。zgc的region不会像G1那样在一开始就被划分为固定大小的region。
+
+zgc的region核心亮点就是：动态，表现为：动态地创建和销毁。
+动态地决定region的大小。它的最小单位是2MB的一个块。然后每个region的大小就是是2MB*N就是。*
+
+> 而且他有个概念叫：size groups。有三种：
+> Small：就是一个2MB的region。
+> Medium：32mb。2MB*16。
+> Large：N\*2MB。
+
+
+
+
+
+## CMS 和 G1 收集器内存结构
+
+ 目前使用最多的是 CMS 和 G1 收集器，二者都有分代的概念，主要内存结构如下：![img](../_images/pdai-cms-gc-7.png)
+
+ 
 
 
 
@@ -756,44 +797,6 @@ top -H -p {pid}
  
 
 
-
-## [**CMS、G1、ZGC的堆内存实现区别**](https://blog.csdn.net/jyxmust/article/details/105086208)
-
-**CMS**
-CMS堆内存和以往的垃圾回收器一样，分为新生代和老年代，新生代和老年代是物理隔离的。
-
-**G1**
-
-G1垃圾收集器主要是为那些拥有大内存的多核处理器而设计的。
-
-G1打破了以往将收集范围固定在新生代或老年代的模式，GI 将 Java 堆空间分割成了若干相同大小的 区域，即 region，包括 Eden、Survivor、 Old、 Humongous 四种类型。其中， Humongous 是特殊的 Old 类型，专门 放置大型对象。这样的划分方式意昧着不需要一个连续的内存空间管理对象。 GI 将 空间分为多个区域，优先回收垃圾最多的 区域。 GI 采用的是 好的空间整合能力’不会产生大量的空间碎片。
-
-Region的数值是在1M到32M字节之间的一个2的幂值数，JVM会尽量划分2048个左右、同等大小的Region。
-
-G1的一大优势在于可预测的停顿时间， 能够尽可能快地在指定时间内完成垃圾回收任务。在 JDK11中，已经将 GI 设为默认 垃圾回收器。
-
-**ZGC**
-和G1类似，但ZGC的region的大小更加灵活和动态。zgc的region不会像G1那样在一开始就被划分为固定大小的region。
-
-zgc的region核心亮点就是：动态，表现为：动态地创建和销毁。
-动态地决定region的大小。它的最小单位是2MB的一个块。然后每个region的大小就是是2MB*N就是。*
-
-> 而且他有个概念叫：size groups。有三种：
-> Small：就是一个2MB的region。
-> Medium：32mb。2MB*16。
-> Large：N\*2MB。
-
-
-
-
-
-## CMS 和 G1 收集器内存结构
-
- 目前使用最多的是 CMS 和 G1 收集器，二者都有分代的概念，主要内存结构如下：![img](../_images/pdai-cms-gc-7.png)
-
-
-
- 
 
 ## [JVM资料合集](https://zhuanlan.zhihu.com/p/25042028)
 
