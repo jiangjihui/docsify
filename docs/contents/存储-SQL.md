@@ -63,6 +63,8 @@ FROM CUSTOMERS C INNER JOIN ORDERS O ON C.ID=O.CUSTOMER_ID;
 
 
 
+
+
 ## **SQL函数**
 
 **length()**
@@ -74,11 +76,31 @@ select * from table where length(column)=1;
 
  
 
-**replac()**
+**replace()**
 
 ```sql
 -- 替换
 update table set column=replace(column,'我','*')
+```
+
+
+
+**IF表达式**
+
+```sql
+IF(expr1,expr2,expr3)
+```
+
+> 如果 expr1 是**TRUE** (expr1 <> 0 and expr1 <> NULL)，则 IF()的返回值为expr2; 否则返回值则为 expr3。IF() 的返回值为数字值或字符串值，具体情况视其所在语境而定。
+
+
+
+**count()**
+
+COUNT() 函数返回匹配指定条件的行数。COUNT(DISTINCT column_name) 函数返回指定列的不同值的数目。
+
+```sql
+SELECT COUNT(DISTINCT column_name) FROM table_name;
 ```
 
 
