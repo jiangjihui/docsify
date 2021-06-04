@@ -1109,21 +1109,15 @@ echo "--------------------------------------------------------------"
 
    ```
    [Unit]
-   
    Description=Java test service
-   
    After=network.target
    
    [Service]
-   
    Type=forking
-   
    ExecStart=/bin/bash /docker/auto-start/app-start.sh
-   
    ExecStop=/bin/kill -s QUIT $MAINPID
    
    [Install]
-   
    WantedBy=multi-user.target
    ```
    
