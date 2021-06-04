@@ -1073,3 +1073,73 @@ echo "重启192.168.10.3 web服务器完成"
 echo "--------------------------------------------------------------"
 ```
 
+
+
+
+
+## 应用开机启动
+
+这里以java应用[为例](https://zhuanlan.zhihu.com/p/81527659)：
+
+1. **创建启动脚本**
+
+   app-start.sh
+
+   ```sh
+   #!/bin/bash
+   
+   export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/jre"
+   
+   export PATH=$PATH:$JAVA_HOME/bin
+   
+   nohup java -jar /docker/auto-start/demo-0.0.1-SNAPSHOT.jar >> /docker/auto-start/logs/demo.log &
+   ```
+
+   赋可执行权限：
+
+   ```sh
+   chmod +x app-start.sh
+   ```
+
+   
+
+2. **注册服务**
+
+   vim /etc/systemd/system/demo.service
+
+   ```
+   [Unit]
+   
+   Description=Java test service
+   
+   After=network.target
+   
+   [Service]
+   
+   Type=forking
+   
+   ExecStart=/bin/bash /docker/auto-start/app-start.sh
+   
+   ExecStop=/bin/kill -s QUIT $MAINPID
+   
+   [Install]
+   
+   WantedBy=multi-user.target
+   ```
+   
+   
+   
+3. **设置服务开机启动**
+
+   ```sh
+   systemctl daemon-reload
+   
+   systemctl start demo.service
+   
+   systemctl enable demo.service
+   
+   systemctl status demo.service
+   ```
+
+   
+
