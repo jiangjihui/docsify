@@ -38,22 +38,6 @@ Spring 包含并管理应用对象的配置和生命周期，在这个意义上�
 
 
 
-**bean 是在什么时候被创建的，有哪些规则？**
-
-容器初始化的时候会预先对单例和非延迟加载的对象进行预先初始化。其他的都是延迟加载是在第一次调用getBean 的时候被创建。
-
-bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的。这里面将会完成对构造函数的选择、依赖注入等。
-
-[GetBean](https://bugstack.cn/interview/2021/04/18/%E9%9D%A2%E7%BB%8F%E6%89%8B%E5%86%8C-%E7%AC%AC30%E7%AF%87-%E5%85%B3%E4%BA%8E-Spring-%E4%B8%AD-getBean-%E7%9A%84%E5%85%A8%E6%B5%81%E7%A8%8B%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90.html) 的大概过程：
-
-1. 先尝试从单例缓存对象里获取。这个位置就是三级缓存解决循环依赖的方法。
-
-2. 从父容器里取定义，有则由父容器创建。
-
-3. 如果是单例，则走单例对象的创建过程：在 spring 容器里单例对象和非单例对象的创建过程是一样的。都会调用父类 AbstractAutowireCapableBeanFactory 的 createBean 方法。 不同的是单例对象只创建一次并且需要缓存起来。
-
-
-
 ### refresh方法
 
 ```java
@@ -97,6 +81,24 @@ bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的
 2. 调用已经注册的bean工厂后处理器（BeanFactoryPostProcessor）。
 3. 注册bean后处理器（BeanPostProcessor）。
 4. 实例化所有的单例bean。
+
+
+
+**bean 是在什么时候被创建的，有哪些规则？**
+
+容器初始化的时候会预先对单例和非延迟加载的对象进行预先初始化。其他的都是延迟加载是在第一次调用getBean 的时候被创建。
+
+bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的。这里面将会完成对构造函数的选择、依赖注入等。
+
+[GetBean](https://bugstack.cn/interview/2021/04/18/%E9%9D%A2%E7%BB%8F%E6%89%8B%E5%86%8C-%E7%AC%AC30%E7%AF%87-%E5%85%B3%E4%BA%8E-Spring-%E4%B8%AD-getBean-%E7%9A%84%E5%85%A8%E6%B5%81%E7%A8%8B%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90.html) 的大概过程：
+
+1. 先尝试从单例缓存对象里获取。这个位置就是三级缓存解决循环依赖的方法。
+
+2. 从父容器里取定义，有则由父容器创建。
+
+3. 如果是单例，则走单例对象的创建过程：在 spring 容器里单例对象和非单例对象的创建过程是一样的。都会调用父类 AbstractAutowireCapableBeanFactory 的 createBean 方法。 不同的是单例对象只创建一次并且需要缓存起来。
+
+
 
 
 
