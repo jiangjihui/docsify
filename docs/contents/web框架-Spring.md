@@ -135,31 +135,7 @@ ServletContext 被 Servlet 程序用来与 Web 容器通信。例如写日志，
 
  
 
- 
-
-## [整合web](https://blog.csdn.net/reliveit/article/details/47256559)
-
-**原理：让Spring容器随着tomcat容器ServletContext的启动而启动，并且在初始化完成后放到整个应用都可以访问的范围**。
-
-在非web环境下，使用Spring是需要我们手动把ApplicationContext对象创建出来使用。在web环境下，使用Spring也是需要把ApplicationContext对象创建出来，不过这个步骤大可交给服务器来做，你不必自己再去写个单例类，web环境中单例对象多了去了，servlet是单例的，filter是单例的，listener也是单例，这三个，随便找一个在初始化的时候把ApplicationContext对象创建出来，然后放到整个应用都可以访问的ServletContext容器中就可以了。
-
-**具体实现：**使用ServletContextListener监听ServletContext，当ServletContext创建时同时创建Spring容器，并将创建完成的容器放到ServletContext即application中，在Web中获取Spring容器，就可以访问对象了。ContextLoadListener是ServletContextListener的一个实现类。
-
-**总结：**
-
-1. 让ApplicationContext随着服务器的启动而启动，可以借助与Servlet/Filter/Listener任何一个；
-
-2. 把创建好的ApplicationContext放到ServletContext中，整个应用范围，想怎访问就怎么访问；
-
-**注：**导入一个jar包spring-web-x.x.x.RELEASE.jar，配置了一个侦听器listener，没错，上面的原理都被这个jar包中的这个侦听器给实现了。早期的Spring整合web，支持servlet和listener，不过在Spring 3.x的时候，Spring官方访问已经明确不支持Servlet方式并且已经将相关源码移出web的jar包，所以现在Spring整合WEB，就一条路，listener（在web.xml配置spring的监听器即可）。
-
-​    有了ApplicationContext对象，IOC/DI、AOP、Spring JDBC以及事务、国际化ResourceMessage、Spring事件机制、FactoryBean、Spring JNDI等等，想怎么用怎么用。
-
-Spring加载过程详解可以参考：https://blog.csdn.net/reliveit/article/details/47256559
-
- 
-
- 
+  
 
 ## 注解
 
