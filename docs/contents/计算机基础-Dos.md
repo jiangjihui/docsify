@@ -14,7 +14,7 @@ netstat -ano|findstr "8080"
 
 windows下进入某个盘的文件目录前，需要确定当前是否已经在这个盘里，如果不在则需要输入盘符之后再使用cd 命令进入：
 
-```
+```powershell
 Microsoft Windows [版本 10.0.15063]
 (c) 2017 Microsoft Corporation。保留所有权利。
 C:\Users\xqlsr>cd D:\Temp
@@ -23,7 +23,7 @@ C:\Users\xqlsr>
 
 上面操作无效，正确操作如下：
 
-```
+```powershell
 Microsoft Windows [版本 10.0.15063]
 (c) 2017 Microsoft Corporation。保留所有权利。
 C:\Users\xqlsr>D:
@@ -41,15 +41,33 @@ D:\Temp>
 
 **set** **path**：查看某一个环境变量
 
-```
+```powershell
 >set JAVA_HOME
 >JAVA_HOME=C:\Program Files\Java\jdk1.8.0_111
 ```
 
 echo %path%：查看某一环境变量
 
-```
+```powershell
 >echo %JAVA_HOME%
 >JAVA_HOME=C:\Program Files\Java\jdk1.8.0_111
 ```
+
+
+
+
+
+## 脚本文件示例
+
+### 运行Java程序
+
+```powershell
+chcp 65001
+
+@echo off
+
+java -server -jar -Duser.timezone=Asia/Shanghai -XX:-HeapDumpOnOutOfMemoryError D:\app\hro\app.jar --spring.profiles.active=prod
+```
+
+
 

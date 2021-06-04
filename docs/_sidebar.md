@@ -1,7 +1,7 @@
 - 计算机基础
   - [数据类型](contents/计算机基础-数据类型.md)
   - [Shell](contents/计算机基础-Shell.md)
-  - [Dos](contents/计算机基础-dos.md)
+  - [Dos](contents/计算机基础-Dos.md)
 
 - Java
   - [基础](contents/Java-基础.md)
