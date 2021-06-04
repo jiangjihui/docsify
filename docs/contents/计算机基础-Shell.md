@@ -1029,7 +1029,7 @@ echo "done"
 
 **自动部署**
 
-```shell
+```bash
 #!/bin/sh
 # 备份和替换生产工程
 _prod_home_path=/home/tomcat
@@ -1085,7 +1085,7 @@ echo "--------------------------------------------------------------"
 
    app-start.sh
 
-   ```sh
+   ```bash
    #!/bin/bash
    
    export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/jre"
@@ -1097,7 +1097,7 @@ echo "--------------------------------------------------------------"
 
    赋可执行权限：
 
-   ```sh
+   ```bash
    chmod +x app-start.sh
    ```
 
@@ -1107,7 +1107,7 @@ echo "--------------------------------------------------------------"
 
    vim /etc/systemd/system/demo.service
 
-   ```
+   ```bash
    [Unit]
    Description=Java test service
    After=network.target
@@ -1125,7 +1125,7 @@ echo "--------------------------------------------------------------"
    
 3. **设置服务开机启动**
 
-   ```sh
+   ```bash
    systemctl daemon-reload
    
    systemctl start demo.service
