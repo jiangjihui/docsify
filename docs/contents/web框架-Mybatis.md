@@ -256,6 +256,14 @@ select * from user where id in
 
 
 
+## Mapper方法不可重载
+
+mybatis在动态代理调用方法时，Mybatis使用package+Mapper+method全限名作为key，去xml内寻找唯一sql来执行的。类似：key=x.y.UserMapper.getUserById，那么，重载方法时将导致矛盾。对于Mapper接口，[Mybatis禁止方法重载（overLoad）](https://blog.csdn.net/yuandengta/article/details/108645364)。
+
+
+
+
+
 ## FAQ
 
 >**Mybatis 无法注入mapper**
