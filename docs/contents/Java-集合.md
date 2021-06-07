@@ -53,6 +53,17 @@ private int size;
 
 
 
+### 多线程替代
+
+当在并发的情况下需要使用arrayList的话，可以通过下面2种方式：
+
+- 使用工具类对list进行转换：`Collections.synchronizedList(new ArrayList<>())`
+- 将LinkedList替换成CopyOnWriteArrayList
+
+> CopyOnWriteArrayList 写数组的拷贝，支持高效率并发且是线程安全的,读操作无锁的ArrayList。所有可变操作都是通过对底层数组进行一次新的复制来实现。合适读多写少的场景。缺点是内存占用大；只能保证数据的最终一致性，不能保证数据的实时一致性。
+
+
+
 
 
 ## LinkedList
@@ -119,6 +130,17 @@ private static class Node<E> {
 
 
 `remove()`方法也有两个版本，一个是`remove(int index)`删除指定位置的元素，另一个是`remove(Object o)`删除第一个满足`o.equals(elementData[index])`的元素。删除操作是`add()`操作的逆过程，需要**将删除点之后的元素向前移动一个位置**。需要注意的是为了让GC起作用，必须显式的为最后一个位置赋`null`值。
+
+
+
+### 多线程替代
+
+当在并发的情况下需要使用linkedList的话，可以通过下面2种方式：
+
+- 使用工具类对list进行转换：`Collections.synchronizedList(new LinkedList<>())`
+- 将LinkedList替换成ConcurrentLinkedQueue
+
+> ConcurrentLinkedQueue 的非阻塞算法使用了CAS 原子指令处理并发访问，相比使用工具类的粒度更细，性能更好。
 
 
 
@@ -241,7 +263,7 @@ treeifyBin,是一个链表转树的方法，但不是所有的链表长度为8�
 
 **知识点**
 
-1. 链表树化的条件有两点；**链表长度大于等于8、桶容量大于64，否则只是扩容，不会树化**。
+1. 链表树化的条件有两点；**链表长度大于等于8、桶容（数组长度）量大于64，否则只是扩容，不会树化**。
 2. 链表树化的过程中是先由链表转换为树节点，此时的树可能不是一颗平衡树。同时在树转换过程中会记录链表的顺序，`tl.next = p`，这主要方便后续树转链表和拆分更方便。
 3. 链表转换成树完成后，在进行红黑树的转换。先简单介绍下，红黑树的转换需要染色和旋转，以及比对大小。在比较元素的大小中，有一个比较有意思的方法，`tieBreakOrder`加时赛，这主要是因为HashMap没有像TreeMap那样本身就有Comparator的实现。
 

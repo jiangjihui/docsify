@@ -262,7 +262,7 @@ mysqldump -u mysql_user --lock-tables=false --default-character-set=utf8 -p mysq
 
  
 
-## **配置**
+## 配置
 
 **查看和设置MySQL最大连接数**
 
@@ -575,7 +575,7 @@ InnoDB 的辅助索引 data 域存储相应记录主键的值而不是地址。�
 
 ### InnoDB存储引擎的[锁算法](https://mp.weixin.qq.com/s/JUdSHpa1n6qt4w-lgL6rKQ)
 
-Mysql默认的事务隔离级别是**可重复读(Repeatable Read)**
+Mysql默认的事务隔离级别是**可重复读(Repeatable Read)**，即保证在同一个事务中多次读取同样数据的结果是一样的。
 
 - 在不通过索引条件查询时，InnoDB会锁定表中的所有记录。所以，如果考虑性能，WHERE语句中的条件查询的字段都应该加上索引。
 - InnoDB通过**索引**来**实现行锁**，而不是通过锁住记录。因此，当操作的两条不同记录拥有相同的索引时，也会因为行锁被锁而发生等待。
