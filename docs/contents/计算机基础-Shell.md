@@ -298,6 +298,46 @@ netstat -n | awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'
 
 
 
+## **文件上传下载**
+
+**rz 文件上传**
+
+从本地上传文件到Linux，在Linux终端输入命令回车后，选择本地要上传的文件即可，可一次指定多个文件
+
+```
+rz
+```
+
+
+
+**sz 文件下载**
+
+从Linux下载文件到本机 , 在Linux终端输入命令回车后，选择本地存储路径即可。
+
+```
+# 下载文件filename
+sz filename
+
+# 下载多个文件
+sz file1 file2
+
+# 下载dir目录下所有文件
+sz dir/*
+```
+
+> 如果机器上没有安装过 lrzsz 安装包，则无法使用rz和sz命令。
+>
+> - 可使用yum命令安装：yum install -y lrzsz
+> - 或者下载源码进行安装。下载地址：https://ohse.de/uwe/software/lrzsz.html
+> 
+> 上传和下载都默认使用Linux当前登录的用户，使用时要根据个人需要修改文件的权限。
+
+
+
+
+
+
+
 ## **打包文件**
 
 | tar   | tar czvf  My.tar File1                                       | 文件                                                     |
@@ -345,9 +385,17 @@ rm -rf {fileName}
 
 ## **查看文件内容**
 
+head（查看前几行）、tail（查看末尾几行）
+
 ```shell
 #查看所有内容
 cat {fileName}
+
+# 查看fileName的前10行内容
+head -n 10 {fileName}
+
+# 查看fileName的最后5行内容
+tail  -n 5 /etc/profile
 
 #实时输出文件最新内容
 tail -f {fileName}
