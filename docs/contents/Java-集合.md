@@ -502,3 +502,46 @@ public class TreeSet<E> extends AbstractSet<E>
 
 
 
+
+
+## ConcurrentHashMap
+
+JDK1.7之前的ConcurrentHashMap使用**分段锁**机制实现，JDK1.8则使用数组+链表+红黑树数据结构和**CAS**原子操作实现ConcurrentHashMap；本文将分别介绍这两种方式的实现方案及其区别。@pdai
+
+**为什么HashTable慢**
+
+Hashtable之所以效率低下主要是因为其实现使用了synchronized关键字对put等操作进行加锁，而synchronized关键字加锁是对整个对象进行加锁，也就是说在进行put等修改Hash表的操作时，锁住了整个Hash表，从而使得其表现的效率低下。
+
+
+
+### JDK1.7之前的实现
+
+在JDK1.5~1.7版本，Java使用了**分段锁**机制实现ConcurrentHashMap，所以其最大并发度受Segment的个数（默认16个Segments）限制。
+
+简而言之，ConcurrentHashMap在对象中保存了一个Segment数组，即将整个Hash表划分为多个分段；而每个Segment元素，即每个分段则类似于一个Hashtable；这样，在执行put操作时首先根据hash算法定位到元素属于哪个Segment，然后对该Segment加锁即可。因此，ConcurrentHashMap在多线程并发编程中可是实现多线程put操作。接下来分析JDK1.7版本中ConcurrentHashMap的实现原理。
+
+
+
+### JDK1.8的实现
+
+选择了与HashMap类似的数组+链表+红黑树的方式实现，而加锁则采用CAS和synchronized实现。
+
+结构上和 Java8 的 HashMap 基本上一样，不过它要保证线程安全性，所以在源码上确实要复杂一些。
+
+
+
+大概有多少种情况会导致get在并发的情况下可能[取不到值](https://www.cnblogs.com/huaizuo/archive/2016/04/20/5413069.html)。
+
+- 一个线程在get的时候，另一个线程在对同一个key的node进行remove操作；
+- 一个线程在get的时候，另一个线程正则重排table。可能导致旧table取不到值。
+
+那么get是怎么保证同步性的呢？我们看到e = tabAt(tab, (n - 1) & h)) != null，在看下tablAt到底是干嘛的：
+
+```java
+static final <K,V> Node<K,V> tabAt(Node<K,V>[] tab, int i) {
+    return (Node<K,V>)U.getObjectVolatile(tab, ((long)i << ASHIFT) + ABASE);
+}
+```
+
+它是对tab[i]进行原子性的读取，因为我们知道putVal等对table的桶操作是有加锁的，那么一般情况下我们对桶的读也是要加锁的，但是我们这边为什么不需要加锁呢？因为我们用了Unsafe的getObjectVolatile，因为table是volatile类型，所以对tab[i]的原子请求也是可见的。因为如果同步正确的情况下，根据happens-before原则，**对volatile域的写入操作happens-before于每一个后续对同一域的读操作**。所以不管其他线程对table链表或树的修改，都对get读取可见。
+
