@@ -385,3 +385,63 @@ server {
 
 
 
+
+
+## CentOS安装Nginx
+
+centos7下[安装](https://zhuanlan.zhihu.com/p/144143399)nginx
+
+1. 编译nginx
+
+   ```bash
+   # 安装依赖
+   yum install -y gcc-c++
+   yum install -y pcre pcre-devel
+   yum install -y zlib zlib-devel
+   yum install -y openssl openssl-devel
+   
+   # 下载nginx安装包
+   cd /usr/local/
+   mkdir nginx
+   cd nginx
+   wget -c https://nginx.org/download/nginx-1.20.1.tar.gz
+   tar -zxvf nginx-1.20.1.tar.gz
+   cd nginx-1.20.1
+   
+   # 编译nginx
+   ./configure --with-http_ssl_module
+   make
+   make install
+   
+   # 启动nginx
+   cd /usr/local/nginx/sbin/
+   ./nginx
+   
+   # 测试nginx是否启动成功
+   curl localhost
+   ```
+
+2. 添加nginx到环境变量
+
+   ```bash
+   # 编辑/etc/profile
+   vim /etc/profile
+   
+   # 在最后一行添加配置，:wq保存
+   PATH=$PATH:/usr/local/nginx/sbin
+   export PATH
+   
+   # 使配置立即生效
+   source /etc/profile
+   ```
+
+   
+
+
+
+
+
+
+
+
+
