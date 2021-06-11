@@ -383,3 +383,49 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 - 有了二级缓存都能解决 Spring 依赖了，怎么要有三级缓存呢。其实我们在前面分析源码时也提到过，三级缓存主要是解决 Spring AOP 的特性。AOP 本身就是对方法的增强，是 `ObjectFactory<?>` 类型的 lambda 表达式，而 Spring 的原则又不希望将此类类型的 Bean 前置创建，所以要存放到三级缓存中处理。
 - 其实整体处理过程类似，唯独是 B 在填充属性 A 时，先查询成品缓存、再查半成品缓存，最后在看看有没有单例工程类在三级缓存中。最终获取到以后调用 getObject 方法返回代理引用或者原始引用。
 - 至此也就解决了 Spring AOP 所带来的三级缓存问题。*本章节涉及到的 AOP 依赖有源码例子，可以进行调试*
+
+
+
+
+
+## @Autowired 与@Resource的区别
+
+### 相同点
+
+@Resource的作用相当于@Autowired，均可标注在字段或属性的[setter方法](https://blog.51cto.com/qiangmzsx/1359952)上。
+
+### 不同点
+
+- **提供方**不一样： `@Autowired` 是由Spring提供； `@Resource` 是由java提供，是Java标准，绝大部分框架都支持。需要JDK1.6及以上。
+
+- **注入方式**不一样： `@Autowired` 只按照**类型**（byType）注入； `@Resource` 默认按**名称**（byName）自动注入，也提供按照byType 注入；
+
+  > @Qualifier一般跟Autowired配合使用，需要指定一个bean的名称，通过bean名称就能找到需要装配的bean。
+
+- **属性参数**有区别：Autowired只包含一个参数：required，表示是否开启自动准入，默认是true，也就是默认情况下它要求依赖对象必须存在。而@Resource包含七个参数，其中最重要的两个参数是：name 和 type。
+
+
+
+
+
+## @Component, @Repository, @Service的区别
+
+> 参考：[@Component, @Repository, @Service的区别](https://blog.csdn.net/fansili/article/details/78740877)
+
+- @Component, @Service, @Controller, @Repository是spring注解，注解后可以被spring框架所扫描并注入到spring容器来进行管理
+- @Component是通用注解，其他三个注解是这个注解的**拓展**，并且具有了特定的功能
+- @Repository注解在持久层中，具有将数据库操作抛出的原生异常翻译转化为spring的持久层异常的功能。
+- @Controller层是spring-mvc的注解，具有将请求进行转发，重定向的功能。
+- @Service层是业务逻辑层注解，这个注解只是标注该类处于业务逻辑层。
+
+用这些注解对应用进行分层之后，就能将请求处理，义务逻辑处理，数据库操作处理分离出来，为代码解耦，也方便了以后项目的维护和开发。
+
+| 注解        | 含义                                         |
+| ----------- | -------------------------------------------- |
+| @Component  | 最普通的组件，可以被注入到spring容器进行管理 |
+| @Repository | 作用于持久层                                 |
+| @Service    | 作用于业务逻辑层                             |
+| @Controller | 作用于表现层（spring-mvc的注解）             |
+
+
+
