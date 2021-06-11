@@ -1086,3 +1086,19 @@ select host,user from user;
 >
 > http://blog.csdn.net/xyang81/article/details/51792144
 
+
+
+## CentOS7安装MySQL
+
+在CentOS中默认安装有MariaDB，这个是MySQL的分支，但为了需要，还是要在系统中安装[MySQL](https://blog.csdn.net/qq_36582604/article/details/80526287)，而且安装完成之后可以直接覆盖掉MariaDB。
+
+```bash
+wget -i -c http://dev.mysql.com/get/mysql57-community-release-el7-10.noarch.rpm
+
+yum -y install mysql57-community-release-el7-10.noarch.rpm
+# 安装MySQL服务器
+yum -y install mysql-community-server
+```
+
+
+
