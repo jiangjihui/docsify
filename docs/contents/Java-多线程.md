@@ -1,4 +1,98 @@
-## **线程**[**参数**](https://mp.weixin.qq.com/s?__biz=MzIxNTQ4MzE1NA==&mid=2247485631&idx=1&sn=b0d7cd3f337246c79cd08431d9a6d8ec&chksm=9796dec2a0e157d4b8a05b5bc1adcd53bc6ef81112cac5c7dc93370fbbc3baaab717aa5db628&scene=21#wechat_redirect)
+## 为什么要有线程池
+
+线程池能够对线程进行统一分配，调优和监控:
+
+- 降低资源消耗(线程无限制地创建，然后使用完毕后销毁)
+- 提高响应速度(无须创建线程)
+- 提高线程的可管理性
+
+
+
+## 线程池实现
+
+Java是如何实现和管理线程池的?
+
+从JDK 5开始，把工作单元与执行机制分离开来，工作单元包括Runnable和Callable，而执行机制由Executor框架提供。
+
+
+
+- WorkerThread
+
+  ```java
+  public class WorkerThread implements Runnable {
+       
+      private String command;
+       
+      public WorkerThread(String s){
+          this.command=s;
+      }
+   
+      @Override
+      public void run() {
+          System.out.println(Thread.currentThread().getName()+" Start. Command = "+command);
+          processCommand();
+          System.out.println(Thread.currentThread().getName()+" End.");
+      }
+   
+      private void processCommand() {
+          try {
+              Thread.sleep(5000);
+          } catch (InterruptedException e) {
+              e.printStackTrace();
+          }
+      }
+   
+      @Override
+      public String toString(){
+          return this.command;
+      }
+  }
+  ```
+
+  
+
+- SimpleThreadPool
+
+  ```java
+  import java.util.concurrent.ExecutorService;
+  import java.util.concurrent.Executors;
+   
+  public class SimpleThreadPool {
+   
+      public static void main(String[] args) {
+          ExecutorService executor = Executors.newFixedThreadPool(5);
+          for (int i = 0; i < 10; i++) {
+              Runnable worker = new WorkerThread("" + i);
+              executor.execute(worker);
+            }
+          executor.shutdown(); // This will make the executor accept no new threads and finish all existing threads in the queue
+          while (!executor.isTerminated()) { // Wait until all threads are finish,and also you can use "executor.awaitTermination();" to wait
+          }
+          System.out.println("Finished all threads");
+      }
+  
+  }
+  ```
+
+
+
+程序中我们创建了固定大小为五个工作线程的线程池。然后分配给线程池十个工作，因为线程池大小为五，它将启动五个工作线程先处理五个工作，其他的工作则处于等待状态，一旦有工作完成，空闲下来工作线程就会捡取等待队列里的其他工作进行执行。
+
+Executors 类提供了使用了 ThreadPoolExecutor 的简单的 ExecutorService 实现，但是 ThreadPoolExecutor 提供的功能远不止于此。我们可以在创建 ThreadPoolExecutor 实例时指定活动线程的数量，我们也可以限制线程池的大小并且创建我们自己的 RejectedExecutionHandler 实现来处理不能适应工作队列的工作。
+
+
+
+## ThreadPoolExecutor详解
+
+其实java线程池的实现原理很简单，说白了就是一个线程集合 workerSet 和一个阻塞队列 workQueue。当用户向线程池提交一个任务(也就是线程)时，线程池会先将任务放入 workQueue 中。workerSet 中的线程会不断的从 workQueue 中获取线程然后执行。当 workQueue 中没有任务的时候，worker 就会阻塞，直到队列中有任务了就取出来继续执行。
+
+![img](../_images/pdai-java-thread-x-executors-1.png)
+
+
+
+
+
+## 线程[参数](https://mp.weixin.qq.com/s?__biz=MzIxNTQ4MzE1NA==&mid=2247485631&idx=1&sn=b0d7cd3f337246c79cd08431d9a6d8ec&chksm=9796dec2a0e157d4b8a05b5bc1adcd53bc6ef81112cac5c7dc93370fbbc3baaab717aa5db628&scene=21#wechat_redirect)
 
 1. **corePoolSize**：核心线程数大小
 
@@ -40,7 +134,13 @@
 
 说明：使用线程池的好处是减少在创建和销毁线程上所花的时间以及系统资源的开销，解决资源不足的问题。如果不使用线程池，有可能造成系统创建大量同类线程而导致消耗完内存或者“过度切换”的问题。
 
- 【强制】线程池不允许使用Executors去创建，而是通过ThreadPoolExecutor的方式，这样的处理方式让写的同学更加明确线程池的运行规则，规避资源耗尽的风险。
+ 【强制】线程池不允许使用**Executors**去创建，而是通过**ThreadPoolExecutor**的方式，这样的处理方式让写的同学更加明确线程池的运行规则，规避资源耗尽的风险。
+
+- Executors.newCachedThreadPool()：无界线程池，可以进行自动线程回收
+- Executors.newFixedThreadPool(int)：固定大小的线程池
+- Executors.newSingleThreadExecutor()：单个后台线程的线程池
+- Executors.newScheduledThreadPool()：执行定时任务的线程池
+- Executors.newWorkStealingPool(int)：支持并行执行的线程池
 
 > 说明：Executors返回的线程池对象的弊端如下：
 >
@@ -102,7 +202,11 @@ AsyncListenableTaskExecutor提供了监听任务方法(相当于添加一个任�
 
 
 
-### 问答
+## 问答
+
+
+> 参考：[10问10答：你真的了解线程池吗？](https://mp.weixin.qq.com/s/axWymUaYaARtvsYqvfyTtw)
+
 
 **线程池创建之后，会立即创建核心线程么**
 
@@ -122,7 +226,6 @@ AsyncListenableTaskExecutor提供了监听任务方法(相当于添加一个任�
 
 
 
-> [10问10答：你真的了解线程池吗？](https://mp.weixin.qq.com/s/axWymUaYaARtvsYqvfyTtw)
 
 
 
