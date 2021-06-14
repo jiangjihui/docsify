@@ -259,3 +259,38 @@ AsyncListenableTaskExecutor提供了监听任务方法(相当于添加一个任�
 
 
 
+
+
+## ThreadLocal
+
+**提供线程局部变量，实现线程数据隔离**
+
+ThreadLocal是一个将在多线程中为每一个线程创建单独的变量副本的类；当使用ThreadLocal来维护变量时，ThreadLocal会为每个线程创建单独的变量副本，避免因多线程操作共享变量而导致的数据不一致的情况。
+
+**使用**
+
+提到ThreadLocal被提到应用最多的是session管理和数据库链接管理。在Spring中提供了事务相关的操作，事务保证一组操作同时成功或者失败，这意味着我们一次事务的所有操作都需要再同一个数据库连接上。Spring使用ThreadLocal来实现连接共享；ThreadLocal的存储类型是一个Map，Map中的key是DataSource，value是Connection，用ThreadLocal保证了同一个线程获取同一个Connection对象，保证一次事务的所有操作在同一个数据库连接上。
+
+**示例**
+
+Session的管理
+
+```java
+private static final ThreadLocal threadSession = new ThreadLocal();  
+  
+public static Session getSession() throws InfrastructureException {  
+    Session s = (Session) threadSession.get();  
+    try {  
+        if (s == null) {  
+            s = getSessionFactory().openSession();  
+            threadSession.set(s);  
+        }  
+    } catch (HibernateException ex) {  
+        throw new InfrastructureException(ex);  
+    }  
+    return s;  
+}  
+```
+
+
+

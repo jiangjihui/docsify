@@ -80,7 +80,43 @@ DispatcherServlet在初始化的时候就会根据 `DispatcherServlet.properties
 
 所有上述组件，即: HandlerMapping，Controller和ViewResolver是WebApplicationContext的一部分，它是普通ApplicationContext的扩展，带有Web应用程序所需的一些额外功能。
 
-注：需要通过使用**web.xml**文件中的URL映射来映射希望**DispatcherServlet处理**的请求。
+> 注：需要通过使用**web.xml**文件中的URL映射来映射希望**DispatcherServlet处理**的请求。
+
+
+
+
+
+## HandlerMapping
+
+> HandlerMapping负责映射用户的URL和对应的处理类。
+
+HandlerMapping在这个SpringMVC体系结构中有着举足轻重的地位，充当着**url和Controller之间映射**关系**配置**的角色。HandlerMapping是接口，Spring MVC提供了一系列HandlerMapping的实现，根据一定的规则选择controller。如果当前的HandlerMappign实现中没有能够满足你所需要的规则是，可以通过实现HandlerMapping接口进行扩展。它主要有三部分组成：HandlerMapping映射注册、根据url获取对应的处理器、拦截器注册。
+
+HandlerMapping是处理器映射器，根据请求找到处理器Handler，但并不是简单的返回处理器，而是将处理器和拦截器封装，形成一个处理器执行链(HandlerExecuteChain)。
+
+
+
+
+
+## HandlerAdapter
+
+HandlerAdapter是处理器适配器，Spring MVC通过HandlerAdapter来实际调用处理函数。它是SpringMvc处理流程的第二步,当HandlerMapping获取了定位请求处理器Handler，DispatcherServlet会将得到的Handler告知HandlerAdapter，HandlerAdapter再根据请求去**定位请求的具体处理方法**是哪一个。
+
+### 流程
+
+DispatcherServlter会根据handlerMapping传过来的controller与已经注册好了的HandlerAdapter 一一匹配，看哪一种HandlerAdapter是支持该controller类型的，如果找到了其中一种HandlerAdapter是支持传过来的 controller类型，那么该HandlerAdapter会调用自己的handle方法，handle方法运用Java的 反射机制执行controller的具体方法来获得ModelAndView。
+
+> 例如SimpleControllerHandlerAdapter是支持 实现了controller接口的控制器，如果自己写的控制器实现了controller接口，那么 SimpleControllerHandlerAdapter就会去执行自己写控制器中的具体方法来完成请求。
+
+### 作用
+
+1. HandlerAdapter定义了如何处理请求的策略，通过请求url、请求Method和处理器的requestMapping定义，最终确定使用处理类的哪个方法来处理请求，并检查处理类相应处理方法的参数以及相关的Annotation配置，确定如何转换需要的参数传入调用方法，并最终调用返回ModelAndView。
+
+2. DispatcherServlet中根据HandlerMapping找到对应的handler method后，首先检查当前工程中注册的所有可用的handlerAdapter，根据handlerAdapter中的supports方法找到可以使用的handlerAdapter。
+
+3. 通过调用handlerAdapter中的handler方法来处理及准备handler method的参数及annotation(这就是spring mvc如何将request中的参数变成handle method中的输入参数的地方)，最终调用实际的handler method。
+
+
 
 
 
