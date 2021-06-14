@@ -23,7 +23,6 @@
 
 ## GitHub
 
-- [bugstack虫洞栈](https://bugstack.cn/)
 - [Java3y](https://github.com/ZhongFuCheng3y/3y)
 - [王下邀月熊](https://github.com/kdn251/interviews/blob/master/README-zh-cn.md)
 - [GitHub热门](https://www.githubs.cn/trending)
