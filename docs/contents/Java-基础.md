@@ -227,6 +227,116 @@ Java 具有四种强度不同的引用类型。
 
 
 
+## 注解
+
+注解是JDK1.5版本开始引入的一个特性，用于对代码进行说明，可以对包、类、接口、字段、方法参数、局部变量等进行注解。它主要的作用有以下四方面：
+
+- 生成文档，通过代码里标识的元数据生成javadoc文档。
+- 编译检查，通过代码里标识的元数据让编译器在编译期间进行检查验证。
+- 编译时动态处理，编译时通过代码里标识的元数据动态处理，例如动态生成代码。
+- 运行时动态处理，运行时通过代码里标识的元数据动态处理，例如使用反射注入实例。
+
+
+
+注解的常见分类：
+
+- **Java自带的标准注解**，包括`@Override`、`@Deprecated`和`@SuppressWarnings`，分别用于标明重写某个方法、标明某个类或方法过时、标明要忽略的警告，用这些注解标明后编译器就会进行检查。
+- **元注解**，元注解是用于定义注解的注解，包括`@Retention`、`@Target`、`@Inherited`、`@Documented`，`@Retention`用于标明注解被保留的阶段，`@Target`用于标明注解使用的范围，`@Inherited`用于标明注解可继承，`@Documented`用于标明是否生成javadoc文档。
+- **自定义注解**，可以根据自己的需求定义注解，并可用元注解对自定义注解进行注解。
+
+
+
+### 元注解
+
+**@Target**
+
+Target注解的作用是：描述注解的使用范围（即：被修饰的注解可以用在什么地方） 。
+
+```java
+public enum ElementType {
+    TYPE, // 类、接口、枚举类
+    FIELD, // 成员变量（包括：枚举常量）
+    METHOD, // 成员方法
+    PARAMETER, // 方法参数
+    CONSTRUCTOR, // 构造方法
+    LOCAL_VARIABLE, // 局部变量
+    ANNOTATION_TYPE, // 注解类
+    PACKAGE, // 可用于修饰：包
+    TYPE_PARAMETER, // 类型参数，JDK 1.8 新增
+    TYPE_USE // 使用类型的任何地方，JDK 1.8 新增
+}
+```
+
+
+
+**@Retention**
+
+Reteniton注解的作用是：描述注解保留的时间范围（即：被描述的注解在它所修饰的类中可以被保留到何时） 。
+
+```java
+public enum RetentionPolicy {
+    SOURCE,    // 源文件保留
+    CLASS,       // 编译期保留，默认值
+    RUNTIME   // 运行期保留，可通过反射去获取注解信息
+}
+```
+
+
+
+
+
+## String
+
+String 被声明为 final，因此它不可被继承。
+
+内部使用 char 数组存储数据，该数组被声明为 final，这意味着 value 数组初始化之后就不能再引用其它数组。并且 String 内部没有改变 value 数组的方法，因此可以保证 String 不可变。
+
+
+
+### 不可变的好处
+
+**1. 可以缓存 hash 值**
+
+因为 String 的 hash 值经常被使用，例如 String 用做 HashMap 的 key。不可变的特性可以使得 hash 值也不可变，因此只需要进行一次计算。
+
+**2. String Pool 的需要**
+
+如果一个 String 对象已经被创建过了，那么就会从 String Pool 中取得引用。只有 String 是不可变的，才可能使用 String Pool。
+
+**3. 安全性**
+
+String 经常作为参数，String 不可变性可以保证参数不可变。例如在作为网络连接参数的情况下如果 String 是可变的，那么在网络连接过程中，String 被改变，改变 String 对象的那一方以为现在连接的是其它主机，而实际情况却不一定是。
+
+**4. 线程安全**
+
+String 不可变性天生具备线程安全，可以在多个线程中安全地使用。
+
+
+
+### String,StringBuffer,StringBuilder
+
+**1. 可变性**
+
+- String 不可变
+- StringBuffer 和 StringBuilder 可变
+
+**2. 线程安全**
+
+- String 不可变，因此是线程安全的
+- StringBuilder **不是线程安全**的
+- StringBuffer 是**线程安全**的，内部使用 synchronized 进行同步
+
+
+
+### String.intern()
+
+使用 String.intern() 可以保证相同内容的字符串变量引用同一的内存对象。
+
+
+
+
+
+
 ## Java 的危与机
 
 Java 并不是一个优秀的开发语言，这一点我是非常承认且确定的。但是 Java 有一个庞大的用户群体和异常丰富的生态，这是它的护城河。所以短时间内还倒不下来。
