@@ -1102,3 +1102,72 @@ yum -y install mysql-community-server
 
 
 
+## Red Hat安装MYSQL
+
+> 参考：[Red Hat环境下安装MYSQL（图文）](https://blog.csdn.net/weixin_43931875/article/details/103500815)
+
+首先根据RedHat的版本到mysql官网https://downloads.mysql.com/archives/community/下载安装包：
+
+```bash
+cat /etc/redhat-release
+cat /etc/system-release
+```
+
+在服务器上创建文件夹：
+
+```java
+mkdir /mysql
+```
+
+比如下载到`mysql-8.0.25-1.el7.x86_64.rpm-bundle.tar`，使用`tar`指令进行解压：
+
+```bash
+tar -xf  mysql-8.0.18-1.el7.x86_64.rpm-bundle.tar
+```
+
+开始安装：
+由于系统中存在mariadb 包会导致 mysql安装时报错mariadb-libs 被 mysql-community-libs-8.0.11-1.el7.x86_64 取代
+
+需要先卸载mariadb 包：
+
+```bash
+yum remove mariadb*
+```
+
+之后开始安装，注意顺序不能乱！
+
+```bash
+rpm -ivh mysql-community-common-8.0.18-1.el7.x86_64.rpm
+
+rpm -ivh mysql-community-libs-8.0.11-1.el7.x86_64.rpm
+
+rpm -ivh mysql-community-client-8.0.18-1.el7.x86_64.rpm 
+
+rpm -ivh mysql-community-server-8.0.18-1.el7.x86_64.rpm 
+```
+
+安装完成后初始化mysql数据库：
+
+```bash
+cd /etc
+mysqld --initialize --user=mysql
+```
+
+初始密码每个人都不一样，查看初始随机密码：
+
+```bash
+cat /var/log/mysqld.log
+```
+
+接下来，登陆mysql
+
+```bash
+mysql -u root -p
+```
+
+最后一步，修改密码：
+
+```mysql
+alter user 'root'@'localhost'identified by '123456';
+```
+
