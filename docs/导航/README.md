@@ -10,6 +10,7 @@
 - [segmentFault](https://segmentfault.com/)
 - [开源中国](https://www.oschina.net/)
 - [掘金](https://juejin.im/)
+- [51CTO](https://blog.51cto.com/)
 
 
 
@@ -18,6 +19,12 @@
 - [bugstack虫洞栈](https://bugstack.cn/)
 - [Java 全栈知识体系](https://www.pdai.tech/)
 - [Java3y](https://segmentfault.com/u/java_3y)
+
+
+
+## 资源
+
+- [Gitee](https://gitee.com/explore)
 
 
 
@@ -32,4 +39,11 @@
 ## 在线教程
 
 - [JAVASchool](http://www.51gjie.com/)
+- [w3cschool.cn](https://www.w3cschool.cn/tutorial)
+
+
+
+## 友链交换
+
+- [仙人指路](https://bingoyyy.gitee.io/website-navigation/#/)
 
