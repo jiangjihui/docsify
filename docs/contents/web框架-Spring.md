@@ -4,7 +4,23 @@
 
 Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh()` 方法，该方法是个模板方法，定义了加载到容器的[全部过程](https://blog.csdn.net/ajianyingxiaoqinghan/article/details/107218224)。
 
-整个 bean 注册过程核心功能包括；配置文件加载、工厂创建、XML解析、Bean定义、Bean注册
+整个 bean 注册过程核心功能可以概括为：
+
+1. 创建bean工厂
+2. 注册bean定义
+3. 调用bean工厂后处理器
+4. 注册bean后处理器
+5. bean实例化
+   - bean初始化
+   - bean赋值
+   - bean注册
+
+
+
+> 后处理器：
+>
+> - BeanFactoryPostProcessor，是由 Spring 框架组建提供的容器扩展机制，允许在 Bean 对象注册后但**未实例化**之前，对 Bean 的定义信息 `BeanDefinition` 执行修改操作。
+> - BeanPostProcessor，也是 Spring 提供的扩展机制，不过 BeanPostProcessor 是在 Bean 对象**实例化之后**修改 Bean 对象，也可以替换 Bean 对象。这部分与后面要实现的 AOP 有着密切的关系。
 
 
 
@@ -97,6 +113,10 @@ bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的
 2. 从父容器里取定义，有则由父容器创建。
 
 3. 如果是单例，则走单例对象的创建过程：在 spring 容器里单例对象和非单例对象的创建过程是一样的。都会调用父类 AbstractAutowireCapableBeanFactory 的 createBean 方法。 不同的是单例对象只创建一次并且需要缓存起来。
+
+
+
+> 如果想要详细了解原理，推荐阅读：[《Spring 手撸专栏》第 2 章：小试牛刀(让新手能懂)，实现一个简单的Bean容器](https://segmentfault.com/a/1190000040031724)
 
 
 
