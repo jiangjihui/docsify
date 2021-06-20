@@ -13,6 +13,7 @@ Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh
 5. bean实例化
    - bean初始化
    - bean赋值
+   - 执行bean后处理器（before、after）
    - bean注册
 
 
@@ -122,6 +123,15 @@ bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的
 
 
 
+## BeanDefinition
+
+BeanDefinition的实例用来描述对象的信息，比如说，Spring用BeanDefinition来存储着我们日常给SpringBean定义的元数据(@Scope、@Lazy、@DependsOn等等）
+可以理解为：Class只描述了类的信息，而BeanDefinition描述了对象的信息
+
+
+
+
+
 ## ApplicationContextAware
 
 从已有的spring上下文取得已实例化的bean。通过[ApplicationContextAware](https://www.jianshu.com/p/4c0723615a52)接口进行实现。
@@ -132,32 +142,9 @@ bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的
 
 
 
-## Web对象
-
-[**ServletContext**](https://blog.csdn.net/gavin_john/article/details/51399425)
-
-ServletContext 被 Servlet 程序用来与 Web 容器通信。例如写日志，转发请求。每一个 Web 应用程序含有一个Context，被Web应用内的各个**程序共享**。因为Context可以用来保存资源并且共享，所以我所知道的 ServletContext 的最大应用是Web缓存----把不经常更改的内容读入内存，所以服务器响应请求的时候就不需要进行慢速的磁盘I/O了。
-
-**创建**
-
-- WEB容器在启动时，它会为每个Web应用程序都创建一个对应的ServletContext，它代表当前Web应用。并且它被所有客户端共享。
-- ServletContext对象可以通过ServletConfig.getServletContext()方法获得对ServletContext对象的引用，也可以通过this.getServletContext()方法获得其对象的引用。
-- 由于一个WEB应用中的所有Servlet共享同一个ServletContext对象，因此Servlet对象之间可以通过ServletContext对象来实现通讯。ServletContext对象通常也被称之为context域对象。公共聊天室就会用到它。
-- 当web应用关闭、Tomcat关闭或者Web应用reload的时候，ServletContext对象会被销毁
-
-**应用场景** 
-
-1. 网站计数器 
-
-2. 网站的在线用户显示 
-
-3. 简单的聊天系统
-
- 
-
   
 
-## 注解
+## Spring注解
 
 注解对分层中的类进行注释：
 
@@ -392,7 +379,7 @@ AOP代理（AOP Proxy）
 
 Spring 通过三级缓存提前暴露对象解决循环依赖
 
-一级缓存存放的是完整对象，也叫成品对象。二级缓存存放的是半成品对象，就是那些属性还没赋值的对象。三级缓存存放的是 `ObjectFactory<?>` 类型的 lambda 表达式，就是这用于处理 AOP 循环依赖的。
+一级缓存存放的是完整对象，也叫成品对象。二级缓存存放的是半成品对象，就是那些属性还没赋值的对象。三级缓存存放的是对象工厂，就是这用于处理 AOP 循环依赖的。
 
 - 循环依赖分为三种，自身依赖于自身、互相循环依赖、多组循环依赖。
 - 但无论循环依赖的数量有多少，循环依赖的本质是一样的。就是你的完整创建依赖于我，而我的完整创建也依赖于你，但我们互相没法解耦，最终导致依赖创建失败。

@@ -20,6 +20,29 @@ Tomcat访问所有的资源，都是用Servlet来实现的。所以Tomcat又叫S
 
  
 
+
+
+## ServletContext
+
+ServletContext 被 Servlet 程序用来与 Web 容器通信。例如写日志，转发请求。每一个 Web 应用程序含有一个Context，被Web应用内的各个**程序共享**。因为Context可以用来保存资源并且共享，所以我所知道的 [ServletContext](https://blog.csdn.net/gavin_john/article/details/51399425) 的最大应用是Web缓存----把不经常更改的内容读入内存，所以服务器响应请求的时候就不需要进行慢速的磁盘I/O了。
+
+**创建**
+
+- WEB容器在启动时，它会为每个Web应用程序都创建一个对应的ServletContext，它代表当前Web应用。并且它被所有客户端共享。
+- ServletContext对象可以通过ServletConfig.getServletContext()方法获得对ServletContext对象的引用，也可以通过this.getServletContext()方法获得其对象的引用。
+- 由于一个WEB应用中的所有Servlet共享同一个ServletContext对象，因此Servlet对象之间可以通过ServletContext对象来实现通讯。ServletContext对象通常也被称之为context域对象。公共聊天室就会用到它。
+- 当web应用关闭、Tomcat关闭或者Web应用reload的时候，ServletContext对象会被销毁
+
+**应用场景** 
+
+1. 网站计数器 
+
+2. 网站的在线用户显示 
+
+3. 简单的聊天系统
+
+ 
+
  
 
 ## Tomcat[调优](https://blog.csdn.net/wangyonglin1123/article/details/50986524)
