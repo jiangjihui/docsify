@@ -41,7 +41,7 @@
   - [网络编程](contents/网络-网络编程.md)
 
 - 开发
-  - [代码规范](contents/代码规范.md)
+  - [代码规范](contents/开发-代码规范.md)
   
 - 微服务
   - [Docker](contents/微服务-Docker.md)
