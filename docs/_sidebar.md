@@ -41,8 +41,7 @@
   - [网络编程](contents/网络-网络编程.md)
 
 - 开发
-  - [代码规范](contents/计算机基础-Shell.md)
-  - [事务理论ACID](contents/计算机基础-dos.md)
+  - [代码规范](contents/代码规范.md)
   
 - 微服务
   - [Docker](contents/微服务-Docker.md)
