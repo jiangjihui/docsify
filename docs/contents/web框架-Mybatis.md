@@ -220,8 +220,11 @@ SqlSessionTemplate的内部类SqlSessionInterceptor动态代理创建sqlSession�
 
 ## **mybatis和hibernate的区别**
 
-- hibernate入门门槛高，是一个标准的ORM矿建（对象关系映射），不需要程序写sql，sql语句自动生成，对sql语句进行优化、修改比较困难。mybatis专注于sql本身，需要程序员自己编写sql语句，sql修改、优化比较方便。是一个不完全的ORM框架，虽然程序员自己写sql，mybatis也可以实现映射（输入映射，输出映射）
-- hibernate适用于**需求变化不多**的中小型项目，比如：后台管理系统；mybatis适用于**需求变化较多**的项目，比如：互联网项目。
+- hibernate入门门槛高，是一个标准的ORM矿建（对象关系映射），不需要程序写sql，sql语句自动生成，对sql语句进行优化、修改比较困难。
+
+- mybatis专注于sql本身，需要程序员自己编写sql语句，sql修改、优化比较方便。是一个不完全的ORM框架，而且比较重要的一点是mybatis对于**输入参数和返回参数的自动映射**使得开发更加方便。
+
+  > hibernate适用于**需求变化不多**的中小型项目，比如：后台管理系统；mybatis适用于**需求变化较多**的项目，比如：互联网项目。
 
 
 
