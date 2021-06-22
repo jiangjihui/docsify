@@ -8,10 +8,10 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 
 ## **作用**
 
-- 自动配置：针对很多Spring应用程序常见的应用功能，Spring     Boot能自动提供相关配置
-- 起步依赖：告诉Spring     Boot需要什么功能，它就能引入需要的库。
-- 命令行界面：这是Spring     Boot的可选特性，借此你只需写代码就能完成完整的应用程序，无需传统项目构建。
-- Actuator：让你能够深入运行中的Spring     Boot应用程序，一探究竟。
+- 自动配置：针对很多Spring应用程序常见的应用功能，Spring Boot能自动提供相关配置
+- 起步依赖：告诉Spring Boot需要什么功能，它就能引入需要的库。
+- 命令行界面：这是Spring Boot的可选特性，借此你只需写代码就能完成完整的应用程序，无需传统项目构建。
+- Actuator：让你能够深入运行中的Spring Boot应用程序，一探究竟。
 
  
 
@@ -144,7 +144,7 @@ Spring Boot 2.0 是建立在Spring Framework 5.0之上的（最低要求）
 
 - **松绑定改善**
 
-下面的属性最终都会被映射为spring.jpa.databaseplatform=mysql
+下面的属性最终都会被映射为 spring.jpa.databaseplatform=mysql
 
 - spring.jpa.database-platform=mysql
 
