@@ -375,5 +375,165 @@ public static Session getSession() throws InfrastructureException {
 
 
 
+### 容易用错的地方
+
+> 内容来源：[细数ThreadLocal三大坑，内存泄露仅是小儿科](https://mp.weixin.qq.com/s/eWgTmP283kD_M2VxSxvYag)
+
+- 内存泄露
+- 线程池中线程上下文丢失
+- 并行流中线程上下文丢失
+
+
+
+#### 内存泄露
+
+由于`ThreadLocal`的`key`是弱引用，因此如果使用后不调用`remove`清理的话会导致对应的`value`内存泄露。
+
+```java
+@Test
+public void testThreadLocalMemoryLeaks() {
+    ThreadLocal<List<Integer>> localCache = new ThreadLocal<>();
+   List<Integer> cacheInstance = new ArrayList<>(10000);
+    localCache.set(cacheInstance);
+    localCache = new ThreadLocal<>();
+}
+```
+
+当`localCache`的值被重置之后`cacheInstance`被`ThreadLocalMap`中的`value`引用，无法被GC，但是其`key`对`ThreadLocal`实例的引用是一个弱引用，本来`ThreadLocal`的实例被`localCache`和`ThreadLocalMap`的`key`同时引用，但是当`localCache`的引用被重置之后，则`ThreadLocal`的实例只有`ThreadLocalMap`的`key`这样一个弱引用了，此时这个实例在GC的时候能够被清理。
+
+
+
+#### 线程池中线程上下文丢失
+
+`ThreadLocal`不能在父子线程中传递，因此最常见的做法是把父线程中的`ThreadLocal`值拷贝到子线程中，因此大家会经常看到类似下面的这段代码：
+
+```java
+for(value in valueList){
+     //提交任务，并设置拷贝Context到子线程
+     Future<?> taskResult = threadPool.submit(new BizTask(ContextHolder.get()));
+     results.add(taskResult);
+}
+for(result in results){
+    result.get();//阻塞等待任务执行完成
+}
+```
+
+提交的任务定义长这样：
+
+```java
+class BizTask<T> implements Callable<T>  {
+    private String session = null;
+    
+    public BizTask(String session) {
+        this.session = session;
+    }
+    
+    @Override
+    public T call(){
+        try {
+            ContextHolder.set(this.session);
+            // 执行业务逻辑
+        } catch(Exception e){
+            //log error
+        } finally {
+            ContextHolder.remove(); // 清理 ThreadLocal 的上下文，避免线程复用时context互串
+        }
+        return null;
+    }
+}
+```
+
+对应的线程上下文管理类为：
+
+```java
+class ContextHolder {
+    private static ThreadLocal<String> localThreadCache = new ThreadLocal<>();
+    
+    public static void set(String cacheValue) {
+        localThreadCache.set(cacheValue);
+    }
+    
+    public static String get() {
+        return localThreadCache.get();
+    }
+    
+    public static void remove() {
+        localThreadCache.remove();
+    }
+    
+}
+```
+
+这么写倒也没有问题，我们再看看线程池的设置：
+
+```java
+ThreadPoolExecutor executorPool = new ThreadPoolExecutor(20, 40, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(40), new XXXThreadFactory(), ThreadPoolExecutor.CallerRunsPolicy);
+```
+
+其中最后一个参数控制着当线程池满时，该如何处理提交的任务，内置有4种策略：
+
+- ThreadPoolExecutor.AbortPolicy *//直接抛出异常*
+- ThreadPoolExecutor.DiscardPolicy *//丢弃当前任务*
+- ThreadPoolExecutor.DiscardOldestPolicy *//丢弃工作队列头部的任务*
+- ThreadPoolExecutor.CallerRunsPolicy *//转串行执行*
+
+可以看到，我们初始化线程池的时候指定如果线程池满，则新提交的任务转为串行执行，那我们之前的写法就会有问题了，串行执行的时候调用`ContextHolder.remove();`会将主线程的上下文也清理，即使后面线程池继续并行工作，传给子线程的上下文也已经是`null`了，而且这样的问题很难在预发测试的时候发现。
+
+
+
+#### 并行流中线程上下文丢失
+
+如果`ThreadLocal`碰到并行流，也会有很多有意思的事情发生，比如有下面的代码：
+
+```java
+class ParallelProcessor<T> {
+    public void process(List<T> dataList) {
+        // 先校验参数，篇幅限制先省略不写
+        dataList.parallelStream().forEach(entry -> {
+            doIt();
+        });
+    }
+    private void doIt() {
+        String session = ContextHolder.get();
+        // do something
+    }
+}
+```
+
+这段代码很容易在线下测试的过程中发现不能按照预期工作，因为并行流底层的实现也是一个`ForkJoin`线程池，既然是线程池，那`ContextHolder.get()`可能取出来的就是一个`null`。我们顺着这个思路把代码再改一下：
+
+```java
+class ParallelProcessor<T> {
+    
+    private String session;
+    
+    public ParallelProcessor(String session) {
+        this.session = session;
+    }
+    
+    public void process(List<T> dataList) {
+        // 先校验参数，篇幅限制先省略不写
+        dataList.parallelStream().forEach(entry -> {
+            try {
+                ContextHolder.set(session);
+                // 业务处理
+                doIt();
+            } catch (Exception e) {
+                // log it
+            } finally {
+                ContextHolder.remove();
+            }
+        });
+    }
+    
+    private void doIt() {
+        String session = ContextHolder.get();
+        // do something
+    }
+}
+```
+
+修改完后的这段代码可以工作吗？如果运气好，你会发现这样改又有问题，运气不好，这段代码在线下运行良好，这段代码就顺利上线了。不久你就会发现系统中会有一些其他很诡异的bug。原因在于并行流的设计比较特殊，父线程也有可能参与到并行流线程池的调度，那如果上面的`process`方法被父线程执行，那么父线程的上下文会被清理。导致后续拷贝到子线程的上下文都为`null`，同样产生丢失上下文的问题。
+
 
 
