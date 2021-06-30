@@ -527,6 +527,115 @@ echo $LANG
 
  
 
+
+
+## Curl
+
+curl 是常用的命令行工具，用来请求 Web 服务器。它的名字就是客户端（client）的 URL 工具的意思。它的功能非常强大，命令行参数多达几十种。如果熟练的话，完全可以取代 Postman 这一类的图形界面工具。
+
+- **GET请求**
+
+    ```bash
+    curl https://www.example.com
+    ```
+
+    
+
+- **保存到指定的文件**
+
+    -o: 将文件保存为命令行中指定的文件名的文件中 
+
+    -O: 使用URL中默认的文件名保存文件到本地
+
+    ```bash
+    # 将文件下载到本地并命名为mygettext.html
+    curl -o mygettext.html http://www.gnu.org/software/gettext/manual/gettext.html
+     
+    # 将文件保存到本地并命名为gettext.html
+    curl -O http://www.gnu.org/software/gettext/manual/gettext.html
+    
+    # 同时获取多个文件
+    curl -O URL1 -O URL2
+    ```
+
+    
+
+- **断点续传**
+
+  通过使用-C选项可对大文件使用断点续传功能
+
+  ```bash
+  # 当文件在下载完成之前结束该进程
+  $ curl -O http://www.gnu.org/software/gettext/manual/gettext.html
+  #############             20.1%
+  # 通过添加-C选项继续对该文件进行下载，已经下载过的文件不会被重新下载
+  curl -C - -O http://www.gnu.org/software/gettext/manual/gettext.html
+  ##############            21.1%
+  ```
+
+  
+
+- **打印连接过程详细信息**
+
+  ```bash
+  curl -v baidu.com
+  ```
+
+  
+
+- **发送POST请求**
+
+  `-d`参数用于发送 POST 请求的数据体
+
+  ```bash
+  curl -d'login=emma＆password=123'-X POST https://google.com/login
+  # 或者
+  curl -d 'login=emma' -d 'password=123' -X POST  https://google.com/login
+  ```
+
+  > 使用`-d`参数以后，HTTP 请求会自动加上标头`Content-Type : application/x-www-form-urlencoded`。并且会自动将请求转为 POST 方法，因此可以省略`-X POST`。
+
+  `-d`参数可以读取本地文本文件的数据，向服务器发送
+
+  ```bash
+  # 下面命令读取data.txt文件的内容，作为数据体向服务器发送。
+  curl -d '@data.txt' https://google.com/login
+  ```
+
+  
+
+- **添加 HTTP 请求Header**
+
+  `-H`参数添加 HTTP 请求的标头
+
+  ```bash
+  # 下面命令添加 HTTP 标头Accept-Language: en-US
+  curl -H 'Accept-Language: en-US' https://google.com
+  ```
+
+  
+
+- **模拟慢网速的环境**
+
+  `--limit-rate`用来限制 HTTP 请求和回应的带宽，模拟慢网速的环境
+
+  ```bash
+  # 上面命令将带宽限制在每秒 200K 字节
+  curl --limit-rate 200k https://google.com
+  ```
+
+  
+
+- **上传文件**
+
+  ```bash
+  curl --form "fileupload=@filename.txt" http://hostname/resource
+  ```
+
+
+
+
+
 ## **nano编辑器**
 
 | ctrl+o | 保存 |
