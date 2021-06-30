@@ -634,6 +634,14 @@ curl 是常用的命令行工具，用来请求 Web 服务器。它的名字就�
 
 
 
+- **发送json请求**
+
+  ```bash
+  curl -X POST -H "Content-Type:application/json" -d "{\"password\":admin,\"username\":\"admin\"}" http://localhost:80/api/login
+  ```
+
+  
+
 
 
 ## **nano编辑器**
