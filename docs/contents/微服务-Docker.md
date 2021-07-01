@@ -558,7 +558,7 @@ Compose 是 Docker 公司推出的一个[工具软件](https://www.jianshu.com/p
 \# 下载docker-compose，将下载好的文件放入/usr/local/bin/docker-compose目录，并赋予可执行权限。
 
 ```
-sudo curl -L "[https://github.com/docker/compose/releases/download/1.26.2/docker-compose-$(uname -s)-$(uname -m)](https://github.com/docker/compose/releases/download/1.26.2/docker-compose-$(uname -s)-$(uname -m))" -o /usr/local/bin/docker-compose
+sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 
 chmod +x /usr/local/bin/docker-compose
 ```

@@ -359,6 +359,7 @@ Redis通过创建一个新的AOF文件来替换现有的AOF，新旧两个AOF文
 
 - 对于相同的数据集来说，AOF文件的**体积**通常要**大**于RDB文件的体积（保存的是命令列表，相较于直接保存数据更占用空间）
 - 根据所使用的fsync策略，AOF的持久化**速度**可能会**慢**于RDB
+- 即使你配置的 AOF 刷盘策略是 appendfsync everysec，也依旧会有阻塞主线程的风险。产生这个问题的重点在于，磁盘 IO 负载过高导致 fynsc 阻塞，进而导致主线程写 AOF page cache 也发生阻塞。所以，你一定要保证磁盘有充足的 IO 资源，[避免这个问题](https://mp.weixin.qq.com/s/UqHTJUbefC7WSm2Rb5xCvQ)。无论如何，即使 AOF 配置为每秒刷盘，在发生极端情况时，AOF 丢失的数据其实是 2 秒。
 
 
 
