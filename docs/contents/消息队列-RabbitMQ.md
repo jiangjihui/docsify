@@ -52,9 +52,11 @@ BindingKey是Exchange和Queue绑定的规则描述，这个描述用来解析当
 
 
 
-**生产者**关心exchange、routingKey
+**生产者 **关心exchange、queue、routingKey
 
-**消费者**关心queue
+> 在direct类型的exchange中，只有这两个routingkey完全相同，exchange才会选择对应的binging进行消息路由。
+
+**消费者** 关心queue
 
 
 
