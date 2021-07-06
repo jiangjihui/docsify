@@ -7,32 +7,54 @@
 > [RabbitMQ Exchange Queue RoutingKey BindingKey解析](https://blog.csdn.net/ad132126/article/details/83539213)
 >
 > [springboot集成RabbitMQ](https://blog.csdn.net/qq_38455201/article/details/80308771)
+>
+> [RabbitMQ快速入门（详细）](https://blog.csdn.net/kavito/article/details/91403659)
 
 
 
-## 构成
-
-### ConnectionFactory
-
-首先，想要让队列不在本地运行，而在网络中运行，肯定会有连接这个概念，所以就会有Connection，我们发一条消息连接一次，这样很显然是浪费资源的，建立连接的过程也很耗时，所以我们就会做一个东西让他来管理连接，当我用的时候，直接从里边拿出来已经建立好的连接发信息，那么ConnectionFactory应运而生。
 
 
+## 消息模型
 
-### Channel
+消息模型可分为以下六种：
 
-接下来，当程序开发时，可能不止用到一个队列，可能有订单的队列、消息的队列、任务的队列等等，那么就需要给不同的queue发信息，那么和每一个队列连接的这个概念，就叫Channel
+1. **基本消息模型**
+
+   生产者、消费者、消息队列组成。
+
+2. **work消息模型**
+
+   工作队列或者竞争消费者模式，work queues与入门程序相比，多了一个消费端，两个消费端共同消费同一个队列中的消息，但是一个消息只能被一个消费者获取。
+
+   这个消息模型在Web应用程序中特别有用，可以处理短的HTTP请求窗口中无法处理复杂的任务。
+
+3. **Publish/subscribe**
+
+   交换机类型：Fanout，也称为广播
+
+   和前面两种模式不同，1  声明Exchange，不再声明Queue，2 发送消息到Exchange，不再发送到Queue
+
+4. **Routing路由模型**
+
+   交换机类型：direct
+
+   - 生产者，向Exchange发送消息，发送消息时，会指定一个routing key
+   - Exchange（交换机），接收生产者的消息，然后把消息递交给 与routing key完全匹配的队列
+   - 消费者，其所在队列指定了需要routing key 为 error 的消息
+   - 消费者，其所在队列指定了需要routing key 为 info、error、warning 的消息
+
+5. **Topic通配符模式**
+
+   交换机类型：topics
+
+   每个消费者监听自己的队列，并且设置带统配符的routingkey,生产者将消息发给broker，由交换机根据routingkey来转发消息到指定的队列。通配符规则：
+
+   - `#`：匹配一个或多个词
+   - `*`：匹配不多不少恰好1个词
+
+6. **RPC**
 
 
-
-### Exchange
-
-再往下来，当我们开发的时候还有时候会用到这样一种功能，就是当我发送一条消息，需要让几个queue都收到，那么怎么解决这个问题呢，难道我要给每一个queue发送一次消息？那岂不是浪费带宽又浪费资源，我们能想到什么办法呢，当然是我们发送给RabbitMQ服务器一次，然后让RabbitMQ服务器自己解析需要给哪个Queue发，那么Exchange就是干这件事的
-
-
-
-### BindingKey
-
-BindingKey是Exchange和Queue绑定的规则描述，这个描述用来解析当Exchange接收到消息时，Exchange接收到的消息会带有RoutingKey这个字段，Exchange就是根据这个RoutingKey和当前Exchange所有绑定的BindingKey做匹配，如果满足要求，就往BindingKey所绑定的Queue发送消息，这样我们就解决了我们向RabbitMQ发送一次消息，可以分发到不同的Queue的过程
 
 
 
@@ -57,6 +79,38 @@ BindingKey是Exchange和Queue绑定的规则描述，这个描述用来解析当
 > 在direct类型的exchange中，只有这两个routingkey完全相同，exchange才会选择对应的binging进行消息路由。
 
 **消费者** 关心queue
+
+
+
+
+
+## 订阅模型分类
+
+- 一个生产者多个消费者
+- 每个消费者都有一个自己的队列
+- 生产者没有将消息直接发送给队列，而是发送给exchange(交换机、转发器)
+- 每个队列都需要绑定到交换机上
+- 生产者发送的消息，经过交换机到达队列，实现一个消息被多个消费者消费
+
+
+
+### Exchanges
+
+（Exchanges）：交换机一方面：接收生产者发送的消息。另一方面：知道如何处理消息，例如递交给某个特别队列、递交给所有队列、或是将消息丢弃。到底如何操作，取决于Exchange的类型。
+
+Exchange类型有以下几种：
+
+- Fanout：广播，将消息交给所有绑定到交换机的队列
+
+- Direct：定向，把消息交给符合指定routing key 的队列
+
+- Topic：通配符，把消息交给符合routing pattern（路由模式） 的队列
+
+- Header：header模式与routing不同的地方在于，header模式取消routingkey，使用header中的 key/value（键值对）匹配队列。
+
+> **Exchange（交换机）只负责转发消息，不具备存储消息的能力**，因此如果没有任何队列与Exchange绑定，或者没有符合路由规则的队列，那么消息会丢失！
+
+
 
 
 
