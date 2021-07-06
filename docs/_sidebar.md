@@ -50,6 +50,7 @@
   - [Docker](contents/微服务-Docker.md)
   - [Spring-Cloud](contents/微服务-Spring-Cloud.md)
   - [Spring-Cloud-Alibaba](contents/微服务-Spring-Cloud-Alibaba.md)
+  - [消息队列](contents/消息队列-RabbitMQ.md)
   
 - 大数据
   - [Hadoop](contents/大数据-Hadoop.md)
