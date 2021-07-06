@@ -135,6 +135,24 @@ show parameter open_cursors;
 
 
 
+## 函数
+
+### 字符串函数
+
+| [函数](https://blog.csdn.net/qq_35868412/article/details/79102613) | 返回    | 描述                           | 例子                                              |
+| :----------------------------------------------------------- | :------ | :----------------------------- | :------------------------------------------------ |
+| to_char(timestamp, text)                                     | text    | 把 timestamp 转换成 string     | to_char(table.createTime,'yyyy-MM-dd hh24:mi:ss') |
+| to_char(int, text)                                           | text    | 把 int4/int8 转换成 string     | to_char(125, '999')                               |
+| to_char(float, text)                                         | text    | 把 float4/float8 转换成 string | to_char(125.8, '999D9')                           |
+| to_char(numeric, text)                                       | text    | 把 numeric 转换成 string       | to_char(numeric '-125.8', '999D99S')              |
+| to_date(text, text)                                          | date    | 把 string 转换成 date          | to_date('05 Dec 2000', 'DD Mon YYYY')             |
+| to_timestamp(text, text)                                     | date    | 把 string 转换成 timestamp     | to_timestamp('05 Dec 2000', 'DD Mon YYYY')        |
+| to_number(text, text)                                        | numeric | 把 string 转换成 numeric       | to_number('12,454.8-', '99G999D9S')               |
+
+
+
+
+
 ## 控制台乱码设置
 
 ```
