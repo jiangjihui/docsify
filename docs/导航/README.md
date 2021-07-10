@@ -12,6 +12,7 @@
 - [掘金](https://juejin.im/)
 - [51CTO](https://blog.51cto.com/)
 - [博客园48小时](https://www.cnblogs.com/aggsite/topviews/)
+- [InfoQ](https://www.infoq.cn/)
 
 
 
@@ -20,6 +21,7 @@
 - [bugstack虫洞栈](https://bugstack.cn/)
 - [Java 全栈知识体系](https://www.pdai.tech/)
 - [Java3y](https://segmentfault.com/u/java_3y)
+- [凤凰架构](https://icyfenix.cn/)
 
 
 
@@ -42,6 +44,12 @@
 - [JAVASchool](http://www.51gjie.com/)
 - [w3cschool.cn](https://www.w3cschool.cn/tutorial)
 - [易百](https://www.yiibai.com/)
+
+
+
+## 其他导航
+
+- [编程导航](https://www.code-nav.cn/recommend)
 
 
 
