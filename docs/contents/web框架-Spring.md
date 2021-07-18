@@ -142,6 +142,70 @@ BeanDefinition的实例用来描述对象的信息，比如说，Spring用BeanDe
 
 
 
+## ApplicationEvent
+
+`ApplicationEvent`以及`Listener`是Spring为我们提供的一个事件监听、订阅的实现，内部实现原理是观察者设计模式，设计初衷也是为了系统业务逻辑之间的解耦，提高可扩展性以及可维护性。事件发布者并不需要考虑谁去监听，监听具体的实现内容是什么，发布者的工作只是为了[发布事件](https://segmentfault.com/a/1190000011433514)而已。
+
+结合springboot，实现简单的事件发布和订阅（异步消费）：
+
+**EchoEvent.java**：自定义事件
+
+```
+/**
+ * 自定义事件
+ **/
+@Getter
+@Setter
+@Builder
+public class EchoEvent implements Serializable {
+    private String msg;
+}
+```
+
+**MsgListener.java**：事件监听处理
+
+```
+/**
+ * 事件监听处理
+ **/
+@Slf4j
+@Component
+public class MsgListener {
+
+    @Async
+    @EventListener
+    public void onEcho(EchoEvent event) {
+        log.info("listener is call");
+        log.info("the EchoEvent msg is " + event.getMsg());
+    }
+}
+```
+
+测试推送
+
+```
+@Slf4j
+@SpringBootTest
+class EventListenerApplicationTests implements ApplicationContextAware {
+
+    private ApplicationContext applicationContext;
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+
+    @Test
+    void doEvent() {
+        applicationContext.publishEvent(EchoEvent.builder().msg("hei, boy").build());
+        log.info("push finish");
+    }
+
+}
+```
+
+
+
   
 
 ## Spring注解
