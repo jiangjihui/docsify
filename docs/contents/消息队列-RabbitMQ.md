@@ -74,7 +74,7 @@
 
 
 
-**生产者 **关心exchange、queue、routingKey
+**生产者** 关心exchange、queue、routingKey
 
 > 在direct类型的exchange中，只有这两个routingkey完全相同，exchange才会选择对应的binging进行消息路由。
 
