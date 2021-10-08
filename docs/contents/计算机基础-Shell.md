@@ -196,6 +196,23 @@ yum -y update
 
 
 
+## 主流Linux系统包管理器
+
+以包管理器的角度，把当下使用比较主流的一些Linux发行版系统做过一个[简单分类](https://juejin.cn/post/7016477601736687653)：
+
+| 包管理器名称 | 常用代表性指令 | 代表系统举例      |
+| ------------ | -------------- | ----------------- |
+| DPKG         | dpkg、apt      | Debain、Ubuntu 等 |
+| RPM          | rpm、yum       | RedHat、CentOS 等 |
+| Pacman       | pacman         | Arch、Manjaro 等  |
+| DNF          | dnf            | Fedora 等         |
+| Zypper       | zypper         | SUSE 等           |
+| Portage      | emerge         | Gentoo 等         |
+
+
+
+
+
 ## [**SSH使用前的准备**](http://www.linuxidc.com/Linux/2015-03/115056.htm)
 
 | **被控制端** | SSH 服务器的安装 | sudo apt-get install  openssh-server | 出现问题，可重启 SSH 服务器：sudo  service ssh restart |
