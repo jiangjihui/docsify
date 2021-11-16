@@ -77,7 +77,9 @@ DevOps原则不关心你身处哪个团队，你是否是系统架构师，DBA�
 
  
 
-## **Docker启动关闭**
+## Docker启动关闭
+
+### CentOS
 
 启动：
 
@@ -95,6 +97,28 @@ systemctl stop docker
 
 ```
 systemctl restart docker
+```
+
+ 
+
+### Ubuntu
+
+启动：
+
+```
+sudo service docker start
+```
+
+关闭：
+
+```
+sudo service docker stop
+```
+
+重启：
+
+```
+sudo service docker restart
 ```
 
  

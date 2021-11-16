@@ -25,9 +25,9 @@
 
 
 
-## 资源
+## 知识系列
 
-- [Gitee](https://gitee.com/explore)
+- [互联网 Java 工程师进阶知识完全扫盲](https://adjava.netlify.app)
 
 
 
