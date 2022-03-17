@@ -41,6 +41,7 @@
   - [网络编程](contents/网络-网络编程.md)
 
 - 开发
+  - [版本控制](contents/开发-版本控制.md)
   - [代码规范](contents/开发-代码规范.md)
   - [安全防护](contents/开发-安全防护.md)
   - [依赖管理](contents/开发-依赖管理.md)
