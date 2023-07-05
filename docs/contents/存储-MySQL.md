@@ -126,6 +126,13 @@ FLUSH PRIVILEGES;
 ```sql
 REVOKE SELECT ON *.* FROM 'pig'@'%';
 ```
+ 
+
+**删除用户**
+
+```sql
+ DROP USER 'root'@'%';
+```
 
  
 
