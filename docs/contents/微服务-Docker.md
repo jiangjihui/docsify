@@ -208,6 +208,7 @@ yum makecache fast
 #NO.2 指定版本安装
 yum list docker-ce --showduplicates|sort -r  
 yum install docker-ce-18.06.3.ce -y
+# （安装最新版本命令）: yum install docker-ce -y
 
 # 启动
 systemctl start docker
