@@ -18,8 +18,6 @@
 
 所以称为**微服务**。
 
- 
-
 微服务场景下，进程多，更新快，于是出现100个进程，每天一个镜像。
 
 容器乐了，每个容器镜像小，没啥问题，虚拟机哭了，因为虚拟机每个镜像太大了。
@@ -27,10 +25,6 @@
 所以微服务场景下，可以开始考虑用**容器**了。**容器的本质是基于镜像的跨环境迁移。**
 
 镜像是容器的根本性发明，是封装和运行的标准，其它什么namespace，cgroups，早就有了。这是技术方面。
-
- 
-
- 
 
 ## **DevOps**
 
@@ -67,15 +61,9 @@ DevOps原则不关心你身处哪个团队，你是否是系统架构师，DBA�
 - 保持系统运作流程不可中断
 - 随时提升和优化工作流程
 
- 
-
 **总结**
 
 使用现代化的DevOps工具，如Chef、Docker、Ansible、Packer、Troposphere、Consul、Jenkins、SonarQube、AWS等，并不代表你就在正确的应用DevOps的原则。DevOps是一种思维方式。我们所有人都是该系统流程的一部分，我们一起分享共同的时光和交付价值。每个参加到这个软件交付流程上来的成员都能够加速或减缓整个系统的运作速度。系统出现的一个缺陷，以及错误配置的团队之间的“防火墙”，都可能会使得整个系统瘫痪，所有的人都是DevOps的一部分，一旦你的组织明白了这一点，能够帮你管理好这些的工具和技术栈就自然而然的会出现在你眼前了。
-
- 
-
- 
 
 ## Docker启动关闭
 
@@ -99,8 +87,6 @@ systemctl stop docker
 systemctl restart docker
 ```
 
- 
-
 ### Ubuntu
 
 启动：
@@ -120,10 +106,6 @@ sudo service docker stop
 ```
 sudo service docker restart
 ```
-
- 
-
-
 
 ## **Ubuntu 18.04** **安装** [**Docker**](http://www.runoob.com/docker/ubuntu-docker-install.html)
 
@@ -154,10 +136,6 @@ sudo apt-get -y install docker-ce
 # sudo apt-get -y install docker-ce=[VERSION]
 ```
 
-
-
-
-
 ## **Ubuntu删除卸载**
 
 删除所有 Docker 容器
@@ -183,10 +161,6 @@ docker volume rm $(docker volume ls -q)
 ```
 apt-get remove docker-ce
 ```
-
-
-
-
 
 ## **CenOS 7 安装** [**Docker**](http://blog.51cto.com/11887934/2050590)
 
@@ -225,8 +199,6 @@ yum remove docker-ce
 rm -rf /var/lib/docker
 ```
 
-
-
 ## **Debian 安装** [**Docker**](https://www.runoob.com/docker/debian-docker-install.html)
 
 ```
@@ -247,7 +219,7 @@ add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/debian \
   $(lsb_release -cs) \
   stable"
-  
+
 # 更新 apt 包索引
 apt-get update
 
@@ -257,10 +229,6 @@ apt-get install docker-ce=<VERSION_STRING>
 # 测试 Docker 是否安装成功
 docker run hello-world
 ```
-
-
-
- 
 
 ## **Docker默认配置文件**
 
@@ -278,8 +246,6 @@ docker run hello-world
 ```
 
 > 部分参数（registry-mirrors、insecure-registries ...）修改，只要reconfigure(systemctl reload docker) 就[生效](https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-user-namespace-options)。
-
-
 
 **更新Docker镜像源**
 
@@ -300,13 +266,7 @@ curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s http://2fce9c54
 }
 ```
 
-
-
-
-
 ## **基础命令操作**
-
- 
 
 ### **文件**[**上传下载**](https://imnerd.org/docker-in-action.html?hmsr=toutiao.io&utm_medium=toutiao.io&utm_source=toutiao.io)
 
@@ -318,8 +278,6 @@ curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s http://2fce9c54
 docker cp /root/app/jjh.txt 87fdc5475352:/home
 ```
 
- 
-
 **docker cp** [OPTIONS] CONTAINER**:**SRC_PATH DEST_PATH
 
 从docker容器下载文件。
@@ -327,8 +285,6 @@ docker cp /root/app/jjh.txt 87fdc5475352:/home
 ```
 docker cp 87fdc5475352:/home /root/app/jjh.txt
 ```
-
-
 
 ### **进入Docker容器**
 
@@ -340,23 +296,19 @@ docker cp 87fdc5475352:/home /root/app/jjh.txt
 docker attach 87fdc5475352
 ```
 
-
-
 **docker** **exec** [OPTIONS] CONTAINER COMMAND[ARG...]
 
 执行exit或者ctrl+D不会停止容器。
 
 > -d :分离模式: 在后台运行
->
+> 
 > -i :即使没有附加也保持STDIN 打开
->
+> 
 > -t :分配一个伪终端
 
 ```
 docker exec -it 87fdc5475352 /bin/sh
 ```
-
-
 
 ### **Docker容器打包导出导入**
 
@@ -368,8 +320,6 @@ docker exec -it 87fdc5475352 /bin/sh
 docker commit 87fdc5475352 docker-image
 ```
 
-
-
 **docker save -o** FILENAME IMAGENAME 
 
 保存镜像为文件，第一个参数为要保存的文件名，第二个为要保存的镜像(保存的文件存在当前命令[pwd]所在的目录下，保存完可ls查看)
@@ -378,8 +328,6 @@ docker commit 87fdc5475352 docker-image
 docker save -o redis.tar docker-image
 ```
 
- 
-
 **docker** **load** **--input** FILENAME **或者** **docker load** < FILENAME
 
 从文件载入镜像，第一个参数为要导入的文件名
@@ -387,8 +335,6 @@ docker save -o redis.tar docker-image
 ```
 docker load < redis.tar
 ```
-
- 
 
 ### **镜像操作**
 
@@ -400,8 +346,6 @@ docker load < redis.tar
 docker inspect jjh-docker-redis
 ```
 
-
-
 **docker** **tag** IMAGEID REPOSITORY:TAG 
 
 重命名镜像，第一个参数为镜像ID，第二个为新镜像名称（仓库：标签）。
@@ -410,8 +354,6 @@ docker inspect jjh-docker-redis
 docker tag 87fdc5475352 jjh-redis:v1.0
 ```
 
-
-
 **docker** **rmi** IMAGEID|IMAGENAME 
 
 删除镜像，第一个参数为镜像ID或者镜像名称。
@@ -419,10 +361,6 @@ docker tag 87fdc5475352 jjh-redis:v1.0
 ```
 docker rmi jjh-docker-redis
 ```
-
-
-
- 
 
 ### **容器操作**
 
@@ -434,8 +372,6 @@ docker rmi jjh-docker-redis
 docker inspect redis
 ```
 
-
-
 **docker** **top** [CONTAINER...]
 
 查看容器中正在运行的进程。
@@ -444,8 +380,6 @@ docker inspect redis
 docker top redis
 ```
 
-
-
 **docker** **rm** CONTAINER [CONTAINER...]
 
 删除一个或者多个容器。如果删除所有停止的容器，使用：docker rm $(docker ps -a -q)，慎用。
@@ -453,8 +387,6 @@ docker top redis
 ```
 docker rm redis
 ```
-
-
 
 ### **Docker日志**
 
@@ -488,8 +420,6 @@ docker logs -t --since="2018-02-08T13:23:37" --until "2018-02-09T12:23:37" CONTA
 docker logs -f --tail=20 CONTAINER_ID
 ```
 
-
-
 设置容器服务的日志大小[上限](https://blog.csdn.net/yjk13703623757/article/details/80283729)，要从根本上解决问题，需要限制容器服务的日志大小上限。这个通过配置容器docker-compose的max-size选项来实现：
 
 ```
@@ -502,17 +432,11 @@ nginx:
       max-size: “5g”
 ```
 
-
-
 ### **Docker容器路径**
 
 在默认情况下，Docker镜像和容器的默认存放位置为**:/var/lib/docker**
 
 该路径存放docker所使用的镜像文件。
-
-
-
- 
 
 ## **Dockerfile**
 
@@ -563,16 +487,12 @@ nginx:
 
 语法：
 
-​	① **CMD** ["executable", "param1", "param2"]  #将会调用exec执行，首选方式
-​	② **CMD** ["param1", "param2"]    #当使用ENTRYPOINT指令时，为该指令传递默认参数
+​    ① **CMD** ["executable", "param1", "param2"]  #将会调用exec执行，首选方式
+​    ② **CMD** ["param1", "param2"]    #当使用ENTRYPOINT指令时，为该指令传递默认参数
 ​    ③ **CMD** <command>     #将会调用/bin/sh -c执行
 解释：**CMD**指令中指定的命令会在镜像运行时执行，在Dockerfile中只能存在一个，如果使用了多个CMD指令，则只有最后一个CMD指令有效。当出现ENTRYPOINT指令时，CMD中定义的内容会作为ENTRYPOINT指令的默认参数，也就是说可以使用CMD指令给ENTRYPOINT传递参数。
 
 > 注意：**RUN**和CMD都是执行命令，他们的差异在于RUN中定义的命令会在执行docker build命令创建镜像时执行，而CMD中定义的命令会在执行docker run命令运行镜像时执行，另外使用第一种语法也就是调用exec执行时，命令必须为绝对路径。
-
-
-
-
 
 ## **Docker-Compose**
 
@@ -589,10 +509,8 @@ chmod +x /usr/local/bin/docker-compose
 ```
 
 > 注意：如果命令docker-compose在安装后失败，也可以创建指向/usr/bin或路径中任何其他目录的符号链接。
->
+> 
 > sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-
-
 
 **使用**
 
@@ -630,10 +548,8 @@ elk:
   volumes:
     - /root/soft/elk/data/logstash:/opt/logstash/data
   command:
-	sh tracker.sh
+    sh tracker.sh
 ```
-
- 
 
 **部分**[**语法**](https://blog.csdn.net/pushiqiang/article/details/78682323)
 
@@ -653,8 +569,6 @@ environment:
 - SESSION_SECRET
 ```
 
- 
-
 **ports**
 
 映射端口，使用HOST:CONTAINER格式或者只是指定容器的端口，宿主机会随机映射端口。**（如果是udp要注意要声明）**
@@ -672,8 +586,6 @@ ports:
 ```
 - "21000-21020:1000-1020"
 ```
-
- 
 
 **volumes**
 
@@ -693,8 +605,6 @@ volumes:
 - datavolume:/var/lib/mysql
 ```
 
- 
-
 **network_mode**
 
 网络模式，yml文件中与ports同级。与Docker client的--net参数类似，只是相对多了一个service:[service name] 的格式。
@@ -707,8 +617,6 @@ network_mode: "service:[service name]"
 network_mode: "container:[container name/id]"
 ```
 
- 
-
 **restart**
 
 ```
@@ -717,8 +625,6 @@ restart: always
 restart: on-failure
 restart: unless-stopped
 ```
-
- 
 
 **command**
 
@@ -734,8 +640,6 @@ command: bundle exec thin -p 3000
 command: [bundle, exec, thin, -p, 3000]
 ```
 
-
-
 ## **Docker轻量级管理**[**工具**](https://segmentfault.com/a/1190000016413932)
 
 **[Portainer](https://portainer.readthedocs.io/en/latest/deployment.html)**
@@ -744,19 +648,11 @@ command: [bundle, exec, thin, -p, 3000]
 docker run -d -p 9001:9000 --name portainer --restart always -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/data:/data portainer/portainer
 ```
 
-
-
 ## Docker端口映射
 
 在docker中运行第三方服务时，通常需要绑定服务端口到本地主机。但使用 -p 参数进行的端口映射，会**自动在iptables中建立规则**，绕过firewalld。
 
-
-
-
-
 ## Docker应用
-
-
 
 ### Docker-MySQL5.6
 
@@ -790,8 +686,6 @@ services:
                         - MYSQL_ROOT_PASSWORD=root
 ```
 
-
-
 ### **Docker-MySQL5.7**
 
 **docker run -p** 3307:3306 **--name** mysql5.7 **-v** $PWD/logs:/logs **-v** $PWD/data:/var/lib/mysql **-e** MYSQL_ROOT_PASSWORD=root **-d mysql:5.7** 
@@ -802,15 +696,11 @@ services:
 
 **具体操作：**首先需要创建将要映射到容器中的目录以及.cnf文件，然后再创建容器
 
-
-
 ### **MySQL主从库**
 
 **docker run -d -e** REPLICATION_MASTER=true **-e** REPLICATION_PASS=mypass **-p** 3306:3306 **--name** mysql tutum/mysql
 
 **docker run -d -e** REPLICATION_SLAVE=true **-p** 3307:3306 **--link** mysql:mysql tutum/mysql
-
- 
 
 ### **Docker-Redis**
 
@@ -819,16 +709,14 @@ services:
 命令说明：
 
 > -p 6379:6379 : 将容器的6379端口映射到主机的6379端口
->
+> 
 > -v $PWD/data:/data : 将主机中当前目录下的data挂载到容器的/data
->
+> 
 > redis-server --appendonly yes : 在容器执行redis-server启动命令，并打开redis持久化配置
 
 运行redis容器设置redis访问密码：
 
 **docker run** -d --name myredis -p 6379:6379 redis --requirepass "mypassword"
-
-
 
 ### **Docker-influxdb**
 
@@ -837,20 +725,18 @@ docker-compose.yml
 ```
 version: '2'
 services:
-	    influxdb:
-	        image: influxdb
-	        environment:
-	            INFLUXDB_ADMIN_ENABLED: "true"
-	            INFLUXDB_ADMIN_USER: "root"
-	            INFLUXDB_ADMIN_PASSWORD: "123456"
-	            INFLUXDB_DB: railway
-	        volumes:
-	            - ./data:/var/lib/influxdb
-	        ports:
+        influxdb:
+            image: influxdb
+            environment:
+                INFLUXDB_ADMIN_ENABLED: "true"
+                INFLUXDB_ADMIN_USER: "root"
+                INFLUXDB_ADMIN_PASSWORD: "123456"
+                INFLUXDB_DB: railway
+            volumes:
+                - ./data:/var/lib/influxdb
+            ports:
             - "8086:8086"
 ```
-
-
 
 ### **Docker-PostgreSQL**
 
@@ -859,12 +745,10 @@ services:
 命令说明：
 
 > -p 54321:5432 : 将容器的5432端口映射到主机的54321端口
->
+> 
 > -e POSTGRES_PASSWORD=root : 设置环境变量，指定数据库的登录口令为root
->
+> 
 > -d postgres : 所使用镜像的名称
-
-
 
 ### **Docker-OracleXE**
 
@@ -873,12 +757,10 @@ services:
 **docker run -d -p** 49160:22 **-p** 49161:1521 **wnameless/oracle-xe-11g**
 
 > 注：
->
+> 
 > docker pull 比较耗时，中间可能会中断，继续[拉取即可](https://blog.csdn.net/wm5920/article/details/78770556)
->
+> 
 > 数据库信息：**username**: system/sys **password**: oracle
-
-
 
 ### **Docker-SQLServer**
 
@@ -899,11 +781,9 @@ services:
 ```
 
 > [注：](https://blog.csdn.net/xyh153996626/article/details/79022703)
->
+> 
 > ACCEPT_EULA=Y的意思是同意许可协议，必选；
 > MSSQL_SA_PASSWORD为密码，要求是最少8位的强密码，要有大写字母，小写字母，数字以及特殊符号，不然会有一个大坑（docker启动sqlserver容器后过几秒就停止了）；
-
-
 
 ### **Docker-WordPress**
 
@@ -912,14 +792,12 @@ services:
 命令说明：
 
 > -p 8081:80 : 将容器的80端口映射到主机的8081端口
->
+> 
 > --name mywordpress : 指定新实例名称
->
+> 
 > --link 23144a2854f0:mysql：指定要使用的Docker MySQL实例
->
+> 
 > -d postgres : 所使用镜像的名称
-
-
 
 ### Docker-Java
 
@@ -946,8 +824,6 @@ services:
             - "18610:8084"
         command: java -server -jar /app/app.jar --spring.profiles.active=test
 ```
-
-
 
 ### Docker-Tomcat
 
@@ -976,10 +852,143 @@ services:
 ```
 
 > FAQ：映射tomcat的catalina.sh错误
->
+> 
 > ERROR: for my_tm Cannot start service my_tm: b'OCI runtime create failed: container_linux.go:348: starting container process caused "exec: [\\"catalina.sh\\](file://"catalina.sh/)": executable file not found in $PATH": unknown'
->
+> 
 > 解决：需要给映射的文件赋权：chmod 777 ./catalina.sh
+
+
+
+### Docker-RocketMQ
+
+> 来源：[使用docker-compose部署RocketMQ5.x 单机部署+配置参数详解_docker rocketmq单机_kerwin_code的博客-CSDN博客](https://blog.csdn.net/weixin_44606481/article/details/129780540)
+
+**初始化配置文件**
+
+```shell
+# 创建NameServer需要挂载的文件夹和文件
+mkdir /docker/rocketmq/nameserver/logs -p
+mkdir /docker/rocketmq/nameserver/bin -p
+chmod 777 -R /docker/rocketmq/nameserver/*
+
+docker run -d \
+--privileged=true \
+--name rmqnamesrv \
+apache/rocketmq:5.1.0 sh mqnamesrv
+
+docker cp rmqnamesrv:/home/rocketmq/rocketmq-5.1.0/bin/runserver.sh /docker/rocketmq/nameserver/bin/runserver.sh
+
+docker stop rmqnamesrv
+docker rm rmqnamesrv
+
+mkdir /docker/rocketmq/broker/logs -p \
+mkdir /docker/rocketmq/broker/data -p \
+mkdir /docker/rocketmq/broker/conf -p \
+mkdir /docker/rocketmq/broker/bin -p
+
+chmod 777 -R /docker/rocketmq/broker/*
+
+vi /docker/rocketmq/broker/conf/broker.conf
+
+
+```
+
+添加以下配置信息到broker.conf
+
+```apacheconf
+# 集群名称
+brokerClusterName = DefaultCluster
+# 节点名称
+brokerName = broker-a
+# broker id节点ID， 0 表示 master, 其他的正整数表示 slave，不能小于0 
+brokerId = 0
+# Broker服务地址	String	内部使用填内网ip，如果是需要给外部使用填公网ip
+brokerIP1 = 192.168.1.7
+# Broker角色
+brokerRole = ASYNC_MASTER
+# 刷盘方式
+flushDiskType = ASYNC_FLUSH
+# 在每天的什么时间删除已经超过文件保留时间的 commit log，默认值04
+deleteWhen = 04
+# 以小时计算的文件保留时间 默认值72小时
+fileReservedTime = 72
+# 是否允许Broker 自动创建Topic，建议线下开启，线上关闭
+autoCreateTopicEnable=true
+# 是否允许Broker自动创建订阅组，建议线下开启，线上关闭
+autoCreateSubscriptionGroup=true
+
+
+```
+
+说明：建立broker.conf文件，通过这个文件把RocketMQ的broker管理起来
+
+
+
+**编写docker-compose.yml文件**
+
+```yml
+version: '3.8'
+services:
+  rmqnamesrv:
+    image: apache/rocketmq:5.1.0
+    container_name: rmqnamesrv
+    ports:
+      - 9876:9876
+    restart: always
+    privileged: true
+    volumes:
+      - /docker/rocketmq/nameserver/logs:/home/rocketmq/logs
+      - /docker/rocketmq/nameserver/bin/runserver.sh:/home/rocketmq/rocketmq-5.1.0/bin/runserver.sh
+    environment:
+      - MAX_HEAP_SIZE=256M
+      - HEAP_NEWSIZE=128M
+    command: ["sh","mqnamesrv"]
+  broker:
+    image: apache/rocketmq:5.1.0
+    container_name: rmqbroker
+    ports:
+      - 10909:10909
+      - 10911:10911
+    restart: always
+    privileged: true
+    volumes:
+      - /docker/rocketmq/broker/logs:/home/rocketmq/logs
+      - /docker/rocketmq/broker/store:/home/rocketmq/logs
+      - /docker/rocketmq/broker/conf/broker.conf:/home/rocketmq/broker.conf
+    depends_on:
+      - 'rmqnamesrv'
+    environment:
+      - NAMESRV_ADDR=rmqnamesrv:9876
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=256M
+    command: ["sh","mqbroker","-c","/home/rocketmq/broker.conf"]
+  rmqdashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rocketmq-dashboard
+    ports:
+      - 8080:8080
+    restart: always
+    privileged: true
+    depends_on:
+      - 'rmqnamesrv'
+    environment:
+      - JAVA_OPTS= -Xmx256M -Xms256M -Xmn128M -Drocketmq.namesrv.addr=rmqnamesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
+
+
+```
+
+**启动**
+
+```shell
+# docker Compose v2版本命令
+docker compose up -d #  -d 指后台运行
+# docker Compose v1版本命令
+docker-compose up -d #  -d 指后台运行
+```
+
+**访问控制台**
+
+> http://192.168.1.7:8080
 
 
 
@@ -998,35 +1007,21 @@ ExecStart=
 ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375 -H unix://var/run/docker.sock
 ```
 
- 
-
 ## **重启docker**
 
 systemctl daemon-reload //重新读取配置文件 
 
 systemctl restart docker //重新启动服务
 
- 
-
- 
-
 ## **Docker-Machine**
 
 [Docker Machine](https://www.jianshu.com/p/0d9659080bd5) 是 Docker 官方提供的一个工具，它可以帮助我们在远程的机器上安装 Docker，或者在虚拟机 host 上直接安装虚拟机并在虚拟机中安装 Docker。我们还可以通过 docker-machine 命令来管理这些虚拟机和 Docker。
-
- 
-
- 
 
 ## **Docker** **版本**
 
 **有关docker,docker.io,docker-engine,lxc-docker 的**[**区别**](https://www.cnblogs.com/lizichao1991/p/7646917.html)**？**
 
 其中，RHEL/CentOS 软件源中的 Docker 包名为 docker；Ubuntu 软件源中的 Docker 包名为 docker.io；而很古老的 Docker 源中 Docker 也曾叫做 lxc-docker。这些都是非常老旧的 Docker 版本，并且基本不会更新到最新的版本，而对于使用 Docker 而言，使用最新版本非常重要。另外，17.04 以后，包名从 docker-engine 改为 docker-ce，因此从现在开始安装，应该都使用 docker-ce 这个包。
-
-
-
-
 
 ## **Docker时区**
 
@@ -1061,8 +1056,6 @@ environment:
 ```
 docker cp /etc/localtime [容器ID或者NAME]:/etc/localtime
 ```
-
-
 
 ## **Docker搭建私有仓库**
 
@@ -1113,8 +1106,6 @@ docker rmi 192.168.66.100:5000/centos7
 #下载本地仓库的镜像
 docker pull 192.168.66.100:5000/centos7
 ```
-
-
 
 ## **DockerWine**
 
@@ -1171,25 +1162,21 @@ docker run --rm -it -v /home/app/wine/file:/file mywine:latest
 wine /file/xxx.exe
 ```
 
-
-
 ## **日志驱动**
 
-| **驱动**                                                     | **描述**                                                     |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| none                                                         | 没有可用于容器的日志，docker logs也不返回任何输出。          |
-| [json-file](https://docs.docker.com/config/containers/logging/json-file/) | 日志格式为JSON。Docker的默认日志记录驱动程序。               |
-| [syslog](https://docs.docker.com/config/containers/logging/syslog/) | 将日志消息写入syslog设施。该syslog守护程序必须在主机上运行。 |
-| [journald](https://docs.docker.com/config/containers/logging/journald/) | 将日志消息写入journald。该journald守护程序必须在主机上运行。 |
-| [gelf](https://docs.docker.com/config/containers/logging/gelf/) | 将日志消息写入Graylog扩展日志格式（GELF）端点，例如Graylog或Logstash。 |
-| [fluentd](https://docs.docker.com/config/containers/logging/fluentd/) | 将日志消息写入fluentd（转发输入）。该fluentd守护程序必须在主机上运行。 |
-| [awslogs](https://docs.docker.com/config/containers/logging/awslogs/) | 将日志消息写入Amazon CloudWatch Logs。                       |
-| [splunk](https://docs.docker.com/config/containers/logging/splunk/) | splunk使用HTTP事件收集器将日志消息写入。                     |
-| [etwlogs](https://docs.docker.com/config/containers/logging/etwlogs/) | 将日志消息写为Windows事件跟踪（ETW）事件。仅适用于Windows平台。 |
-| [gcplogs](https://docs.docker.com/config/containers/logging/gcplogs/) | 将日志消息写入Google Cloud Platform（GCP）日志记录。         |
-| [logentries](https://docs.docker.com/config/containers/logging/logentries/) | 将日志消息写入Rapid7 Logentries。                            |
-
-
+| **驱动**                                                                      | **描述**                                           |
+| --------------------------------------------------------------------------- | ------------------------------------------------ |
+| none                                                                        | 没有可用于容器的日志，docker logs也不返回任何输出。                  |
+| [json-file](https://docs.docker.com/config/containers/logging/json-file/)   | 日志格式为JSON。Docker的默认日志记录驱动程序。                     |
+| [syslog](https://docs.docker.com/config/containers/logging/syslog/)         | 将日志消息写入syslog设施。该syslog守护程序必须在主机上运行。             |
+| [journald](https://docs.docker.com/config/containers/logging/journald/)     | 将日志消息写入journald。该journald守护程序必须在主机上运行。           |
+| [gelf](https://docs.docker.com/config/containers/logging/gelf/)             | 将日志消息写入Graylog扩展日志格式（GELF）端点，例如Graylog或Logstash。 |
+| [fluentd](https://docs.docker.com/config/containers/logging/fluentd/)       | 将日志消息写入fluentd（转发输入）。该fluentd守护程序必须在主机上运行。       |
+| [awslogs](https://docs.docker.com/config/containers/logging/awslogs/)       | 将日志消息写入Amazon CloudWatch Logs。                   |
+| [splunk](https://docs.docker.com/config/containers/logging/splunk/)         | splunk使用HTTP事件收集器将日志消息写入。                        |
+| [etwlogs](https://docs.docker.com/config/containers/logging/etwlogs/)       | 将日志消息写为Windows事件跟踪（ETW）事件。仅适用于Windows平台。         |
+| [gcplogs](https://docs.docker.com/config/containers/logging/gcplogs/)       | 将日志消息写入Google Cloud Platform（GCP）日志记录。           |
+| [logentries](https://docs.docker.com/config/containers/logging/logentries/) | 将日志消息写入Rapid7 Logentries。                        |
 
 ## 查看docker的连接（获取docker连接数）
 
@@ -1211,8 +1198,6 @@ sudo nsenter -t <pid> -n netstat | grep ESTABLISHED
 > $ nsenter -t 1840 -n netstat |grep ESTABLISHED
 > udp    0   0 node-2:45963    10.254.0.2:domain    ESTABLISHED
 
-
-
 ## **Docker Swarm**
 
 创建主[节点](https://www.cnblogs.com/franknihao/p/8490416.html)
@@ -1233,17 +1218,9 @@ docker swarm join --token SWMTKN-1-2mi0u8jhfqe1ihvx2n9nc569cxe77pggoq71nl9lkf033
 docker swarm leave
 ```
 
-
-
- 
-
 ## **进入容器内命令行闪退**
 
 当docker容器的命令行进入闪退的时候，有可能是由于所使用的shell版本不一样导致的，可以更换/bin/bash为/bin/sh[再试](https://blog.csdn.net/qq_34018840/article/details/94397743)
-
-
-
- 
 
 ## **Docker Stack**
 
@@ -1260,8 +1237,6 @@ docker stack deploy example --compose-file=docker-compose.yml
 - docker stack ps    列出堆栈中的任务
 - docker stack rm    删除一个或多个堆栈
 - docker stack services    列出堆栈中的服务
-
-
 
 ## **修改docker容器**[**目录**](https://segmentfault.com/a/1190000039426040)
 
@@ -1291,10 +1266,6 @@ $ sudo mv /var/lib/docker /data/docker
 $ sudo cp -arv /data/docker /data2/docker
 ```
 
-
-
-
-
 ## [创建不自动关闭的容器](https://blog.csdn.net/xiaojinran/article/details/104112874)
 
 ```yaml
@@ -1313,4 +1284,3 @@ services:
             - /etc/localtime:/etc/localtime:ro
         entrypoint: ping baidu.com
 ```
-
