@@ -1,4 +1,8 @@
+## Spring历史更新
 
+![](assets/2023-07-28-15-58-53-image.png)
+
+> 来源： https://www.pdai.tech/md/spring/spring-x-framework-helloworld.html
 
 ## bean的注入过程
 
@@ -16,14 +20,10 @@ Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh
    - 执行bean后处理器（before、after）
    - bean注册
 
-
-
 > 后处理器：
->
+> 
 > - BeanFactoryPostProcessor，是由 Spring 框架组建提供的容器扩展机制，允许在 Bean 对象注册后但**未实例化**之前，对 Bean 的定义信息 `BeanDefinition` 执行修改操作。
 > - BeanPostProcessor，也是 Spring 提供的扩展机制，不过 BeanPostProcessor 是在 Bean 对象**实例化之后**修改 Bean 对象，也可以替换 Bean 对象。这部分与后面要实现的 AOP 有着密切的关系（动态代理）。
-
-
 
 ### 过程
 
@@ -33,17 +33,11 @@ Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh
 
 ConfigurationClassPostProcessor不仅仅是一个bean工厂后处理器，还是一个专门用于注册bean定义的后处理器。这个类在容器启动时会被调用，因此把其它类的bean定义注册到了容器中。
 
-
-
 **处理的问题**
 
 - 可能有 Bean 可能有别名、可能有依赖、也可能是被 BeanFactory 包装过，所以会有 transformedBeanName 来处理这些差异化行为。
 - 有没有循环依赖、有没有父工厂、是单例还是原型、是懒加载还是预加载、在不在缓冲区，所以就有各种组合判断来做不同的流程。
 - 提早暴漏对象、三级缓存、后置标记清楚，所有的优化处理都是为了让整个 Bean 的获取更加高效。
-
-
-
-
 
 **Spring Bean 容器是什么？**
 
@@ -53,43 +47,41 @@ Spring 包含并管理应用对象的配置和生命周期，在这个意义上�
 
 当一个 Bean 对象被定义存放以后，再由 Spring 统一进行装配，这个过程包括 Bean 的初始化、属性填充等，最终我们就可以完整的使用一个 Bean 实例化后的对象了。
 
-
-
 ### refresh方法
 
 ```java
 @Override
-	public void refresh() throws BeansException, IllegalStateException {
-		synchronized (this.startupShutdownMonitor) {
-			prepareRefresh();
-			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
-			prepareBeanFactory(beanFactory);
-			try {
-				postProcessBeanFactory(beanFactory);
-				// 注册 BeanDefinition 到 BeanDefinitionRegistry 中
-				invokeBeanFactoryPostProcessors(beanFactory);
-				registerBeanPostProcessors(beanFactory);
-				initMessageSource();
-				initApplicationEventMulticaster();
-				onRefresh();
-				registerListeners();
-				// 将 BeanDefinition 转换为 Bean 实例
-				finishBeanFactoryInitialization(beanFactory);
-				finishRefresh();
-			} catch (BeansException ex) {
-				if (logger.isWarnEnabled()) {
-					logger.warn("Exception encountered during context initialization - " +
-							"cancelling refresh attempt: " + ex);
-				}
-				destroyBeans();
-				cancelRefresh(ex);
-				throw ex;
-			}
-			finally {
-				resetCommonCaches();
-			}
-		}
-	}
+    public void refresh() throws BeansException, IllegalStateException {
+        synchronized (this.startupShutdownMonitor) {
+            prepareRefresh();
+            ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+            prepareBeanFactory(beanFactory);
+            try {
+                postProcessBeanFactory(beanFactory);
+                // 注册 BeanDefinition 到 BeanDefinitionRegistry 中
+                invokeBeanFactoryPostProcessors(beanFactory);
+                registerBeanPostProcessors(beanFactory);
+                initMessageSource();
+                initApplicationEventMulticaster();
+                onRefresh();
+                registerListeners();
+                // 将 BeanDefinition 转换为 Bean 实例
+                finishBeanFactoryInitialization(beanFactory);
+                finishRefresh();
+            } catch (BeansException ex) {
+                if (logger.isWarnEnabled()) {
+                    logger.warn("Exception encountered during context initialization - " +
+                            "cancelling refresh attempt: " + ex);
+                }
+                destroyBeans();
+                cancelRefresh(ex);
+                throw ex;
+            }
+            finally {
+                resetCommonCaches();
+            }
+        }
+    }
 ```
 
 重要的来说，就是[四大步](https://www.cnblogs.com/lixinjie/p/taste-spring-009.html)：
@@ -98,8 +90,6 @@ Spring 包含并管理应用对象的配置和生命周期，在这个意义上�
 2. 调用已经注册的bean工厂后处理器（BeanFactoryPostProcessor）。
 3. 注册bean后处理器（BeanPostProcessor）。
 4. 实例化所有的单例bean。
-
-
 
 **bean 是在什么时候被创建的，有哪些规则？**
 
@@ -115,32 +105,18 @@ bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的
 
 3. 如果是单例，则走单例对象的创建过程：在 spring 容器里单例对象和非单例对象的创建过程是一样的。都会调用父类 AbstractAutowireCapableBeanFactory 的 createBean 方法。 不同的是单例对象只创建一次并且需要缓存起来。
 
-
-
 > 如果想要详细了解原理，推荐阅读：[《Spring 手撸专栏》第 2 章：小试牛刀(让新手能懂)，实现一个简单的Bean容器](https://segmentfault.com/a/1190000040031724)
-
-
-
-
 
 ## BeanDefinition
 
 BeanDefinition的实例用来描述对象的信息，比如说，Spring用BeanDefinition来存储着我们日常给SpringBean定义的元数据(@Scope、@Lazy、@DependsOn等等）
 可以理解为：Class只描述了类的信息，而BeanDefinition描述了对象的信息
 
-
-
-
-
 ## ApplicationContextAware
 
 从已有的spring上下文取得已实例化的bean。通过[ApplicationContextAware](https://www.jianshu.com/p/4c0723615a52)接口进行实现。
 
 当一个类实现了这个接口（ApplicationContextAware）之后，这个类就可以方便获得ApplicationContext中的所有bean。换句话说，就是这个类可以直接获取 spring 配置文件中，所有有引用到的bean对象。
-
-
-
-
 
 ## ApplicationEvent
 
@@ -204,36 +180,28 @@ class EventListenerApplicationTests implements ApplicationContextAware {
 }
 ```
 
-
-
-  
-
 ## Spring注解
 
 注解对分层中的类进行注释：
 
-| 注解        | 作用                                                         |
-| ----------- | ------------------------------------------------------------ |
-| @Service    | 用于标注业务层组件                                           |
-| @Controller | 用于标注控制层组件（如struts中的action）                     |
-| @Repository | 用于标注数据访问组件，即DAO组件                              |
+| 注解          | 作用                              |
+| ----------- | ------------------------------- |
+| @Service    | 用于标注业务层组件                       |
+| @Controller | 用于标注控制层组件（如struts中的action）      |
+| @Repository | 用于标注数据访问组件，即DAO组件               |
 | @Component  | 泛指组件，当组件不好归类的时候，我们可以使用这个注解进行标注。 |
-
- 
-
- 
 
 ## 事务管理
 
 当使用声明式事务模型时，您必须告诉容器如何去管理事务，例如，何时开启一个事务？哪些方法需要事务？当前不存在事务的情况下，容器是否需要为其添加事务控制？事实上，Spring提供了一个bean ——TransactionAttributSource，通过配置其事务（传播）属性（transactionattribute）来达到精确控制事务行为的目的。事务的(传播)属性总共[有七种](https://blog.csdn.net/caomiao2006/article/details/38829039)：
 
--   Required
--   Mandatory
--   RequiresNew
--   Supports
--   NotSupported
--   Never
--   PROPAGATION_NESTED
+- Required
+- Mandatory
+- RequiresNew
+- Supports
+- NotSupported
+- Never
+- PROPAGATION_NESTED
 
 **Required**
 
@@ -255,8 +223,8 @@ class EventListenerApplicationTests implements ApplicationContextAware {
 
 下面我们举个更具体的例子来说明Supports的作用。假设某位交易者一天的最大交易额是一百万，如果采用Supports作为事务属性，一次超额交易的具体处理流程如下：
 
-| 事务回滚                                                     | 事务提交                                                     |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 事务回滚                                                                                                                    | 事务提交                                                                                                                           |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | 目前为止，当天总共的交易量是900，000  事务启动  交易者又进行了一笔200，000的交易  事务为**Supports**的查询方法，同一个事务得到结果为1,100,000  业务逻辑判断，已经超过最大交易限额，抛出异常，事务回滚 | 目前为止，当天总共的交易量是900，000  事务启动  交易者又进行了一笔200，000的交易  事务为**NotSupported**的查询方法，非同一事务得到结果为1,100,000  业务逻辑判断没有超过最大交易限额，事务提交（实超过当天限额） |
 
 **NotSupported**
@@ -271,8 +239,6 @@ Never属性告诉容器，该方法必须在无事务的上下文中运行。注
 
 Spring又添加了一种**新**的事务**属性**，**PROPAGATION_NESTED**，用于实现真正的**嵌套事务**，前提条件是外部环境必须提供相应的实现支持。尽管可以通过配置的方式在bean（类）级别指定事务属性，一般来说，还是应该将事务属性应用于方法级别。为整个bean配置某个事务属性意味着其内部所有的方法都采用它，而方法级别的事务属性可以将其覆盖。PROPAGATION_NESTED是已经存在事务的一个真正的子事务。嵌套事务开始执行时, 它将取得一个 savepoint。如果这个嵌套事务失败, 我们将回滚到此savepoint。嵌套事务是外部事务的一部分, 只有外部事务结束后它才会被提交。
 
-
-
 **补充：事务的传播特性是什么呢？**
 
 在我们用SSH开发项目的时候，我们一般都是将事务设置在Service层 那么当我们调用Service层的一个方法的时候它能够保证我们的这个方法中执行的所有的对数据库的更新操作保持在一个事务中，在事务层里面调用的这些方法要么全部成功，要么全部失败。那么事务的传播特性也是从这里说起的。
@@ -280,8 +246,6 @@ Spring又添加了一种**新**的事务**属性**，**PROPAGATION_NESTED**，�
 如果你在你的Service层的这个方法中，除了调用了Dao层的方法之外，还调用了本类的其他的Service方法，那么在调用其他的Service方法的时候，这个事务是怎么规定的呢，我必须保证我在我方法里掉用的这个方法与我本身的方法处在同一个事务中，否则如果保证事物的一致性。事务的传播特性就是解决这个问题的，“事务是会传播的”在Spring中有针对传播特性的多种配置我们大多数情况下只用其中的一种:**PROPGATION_REQUIRED**：这个配置项的意思是说当我调用service层的方法的时候开启一个事务(具体调用那一层的方法开始创建事务，要看你的aop的配置),那么在调用这个service层里面的其他的方法的时候,如果当前方法产生了事务就用当前方法产生的事务，否则就创建一个新的事务。这个工作使由Spring来帮助我们完成的。 
 
 当我们项目中仅仅使用hibernate，而没有集成进spring的时候，我们在一个service层中调用其他的业务逻辑方法，为了保证事物必须也要把当前的hibernate session传递到下一个方法中，或者采用ThreadLocal的方法，将session传递给下一个方法，其实都是一个目的。现在这个工作由spring来帮助我们完成，就可以让我们更加的专注于我们的业务逻辑。而不用去关心事务的问题。
-
- 
 
 ## Bean的生命周期
 
@@ -294,10 +258,6 @@ Spring又添加了一种**新**的事务**属性**，**PROPAGATION_NESTED**，�
 **Struts2管理的Action多实例**
 
 而struts 2的Action是多实例的并非单例，也就是每次请求产生一个Action的对象。原因是：struts 2的Action中包含数据，例如你在页面填写的数据就会包含在Action的成员变量里面。如果Action是单实例的话，这些数据在多线程的环境下就会相互影响，例如造成别人填写的数据被你看到了。所以Struts2的Action是多例模式的。
-
- 
-
- 
 
 ## **BeanFactory和ApplicationContext的区别**
 
@@ -329,10 +289,6 @@ ApplicationContext：在**启动**的**时**候就把所有的**Bean全部实例
 
 缺点：把费时的操作放到系统启动中完成，所有的对象都可以预加载，缺点就是消耗服务器的内存
 
- 
-
- 
-
 ## **Spring的IOC**
 
 IOC （Inverse of Control） 控制反转，也可以称为依赖倒置。IOC理论提出的观点大体是这样的：借助于“第三方”**实现具有依赖关系的对象之间的解耦**。“第三方”，也就是IOC容器，通俗讲IOC容器负责加载各种依赖，并提供给各个模块所依赖的实例。
@@ -358,10 +314,6 @@ spring的[控制反转](http://www.cnblogs.com/ITtangtang/p/3978349.html#a1)即�
 3. 支持应用事件。(实现ApplicationEventPublisher接口)
 
 Spring IoC容器对Bean定义资源的载入是从refresh()函数开始的，refresh()是一个模板方法，refresh()方法的作用是：在创建IoC容器前，如果已经有容器存在，则需要把已有的容器销毁和关闭，以保证在refresh之后使用的是新建立起来的IoC容器。refresh的作用类似于对IoC容器的重启，在新建立好的容器中对容器进行初始化，对Bean定义资源进行载入。refresh()方法主要为IoC容器Bean的生命周期管理提供条件
-
- 
-
- 
 
 ## **Spring的AOP**
 
@@ -395,8 +347,6 @@ AOP代理（AOP Proxy）
 - Spring     AOP中的动态代理主要有两种方式，JDK动态代理和CGLIB动态代理。JDK动态代理通过反射来接收被代理的类，并且要求被代理的类必须实现一个接口。JDK动态代理的核心是InvocationHandler接口和Proxy类。
 - 如果目标类没有实现接口，那么Spring AOP会选择使用CGLIB来动态代理目标类。CGLIB（Code Generation     Library），是一个代码生成的类库，可以在运行时动态的生成某个类的子类，注意，CGLIB是**通过继承**的方式**做**的**动态代理**，因此如果某个**类**被标记**为final**，那么它是**无法使用CGLIB**做动态代理的。
 
- 
-
 **拦截器**
 
 一般拦截器都是实现HandlerInterceptor，其中有三个方法preHandle、postHandle、afterCompletion
@@ -406,10 +356,6 @@ AOP代理（AOP Proxy）
 **postHandle**：执行完controller，return modelAndView之前执行，主要操作modelAndView的值
 
 **afterCompletion**：controller返回后执行
-
- 
-
- 
 
 ## **Spring定时**[**任务**](https://www.jianshu.com/p/1defb0f22ed1)
 
@@ -435,10 +381,6 @@ AOP代理（AOP Proxy）
 
 / 用于递增触发。如在秒上面设置”5/15” 表示从5秒开始，每增15秒触发(5,20,35,50)。 在日字段上设置’1/3’所示每月1号开始，每隔三天触发一次。
 
-
-
-
-
 ## 循环依赖
 
 Spring 通过三级缓存提前暴露对象解决循环依赖
@@ -455,10 +397,6 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 - 其实整体处理过程类似，唯独是 B 在填充属性 A 时，先查询成品缓存、再查半成品缓存，最后在看看有没有单例工程类在三级缓存中。最终获取到以后调用 getObject 方法返回代理引用或者原始引用。
 - 至此也就解决了 Spring AOP 所带来的三级缓存问题。*本章节涉及到的 AOP 依赖有源码例子，可以进行调试*
 
-
-
-
-
 ## @Autowired 与@Resource的区别
 
 ### 相同点
@@ -470,14 +408,10 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 - **提供方**不一样： `@Autowired` 是由Spring提供； `@Resource` 是由java提供，是Java标准，绝大部分框架都支持。需要JDK1.6及以上。
 
 - **注入方式**不一样： `@Autowired` 只按照**类型**（byType）注入； `@Resource` 默认按**名称**（byName）自动注入，也提供按照byType 注入；
-
+  
   > @Qualifier一般跟Autowired配合使用，需要指定一个bean的名称，通过bean名称就能找到需要装配的bean。
 
 - **属性参数**有区别：Autowired只包含一个参数：required，表示是否开启自动准入，默认是true，也就是默认情况下它要求依赖对象必须存在。而@Resource包含七个参数，其中最重要的两个参数是：name 和 type。
-
-
-
-
 
 ## @Component, @Repository, @Service的区别
 
@@ -491,12 +425,9 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 
 用这些注解对应用进行分层之后，就能将请求处理，义务逻辑处理，数据库操作处理分离出来，为代码解耦，也方便了以后项目的维护和开发。
 
-| 注解        | 含义                                         |
-| ----------- | -------------------------------------------- |
+| 注解          | 含义                        |
+| ----------- | ------------------------- |
 | @Component  | 最普通的组件，可以被注入到spring容器进行管理 |
-| @Repository | 作用于持久层                                 |
-| @Service    | 作用于业务逻辑层                             |
-| @Controller | 作用于表现层（spring-mvc的注解）             |
-
-
-
+| @Repository | 作用于持久层                    |
+| @Service    | 作用于业务逻辑层                  |
+| @Controller | 作用于表现层（spring-mvc的注解）     |
