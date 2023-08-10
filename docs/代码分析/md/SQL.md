@@ -1,38 +1,36 @@
 # 易错代码分析
 
-
-
 ## 简单统计
 
 ### join使用
 
 student
 
-| sid  | sname | sex  |
-| ---- | ----- | ---- |
-| 1    | aa    | m    |
-| 2    | bb    | f    |
-| 3    | cc    | m    |
+| sid | sname | sex |
+| --- | ----- | --- |
+| 1   | aa    | m   |
+| 2   | bb    | f   |
+| 3   | cc    | m   |
 
 course
 
-| cid  | cname  |
-| ---- | ------ |
-| 1    | java   |
-| 2    | python |
-| 3    | php    |
+| cid | cname  |
+| --- | ------ |
+| 1   | java   |
+| 2   | python |
+| 3   | php    |
 
 score
 
-| id   | student_id | course_id | grade |
-| ---- | ---------- | --------- | ----- |
-| 1    | 1          | 1         | 80    |
-| 2    | 1          | 2         | 88    |
-| 3    | 1          | 3         | 90    |
-| 4    | 2          | 1         | 80    |
-| 1    | 2          | 2         | 88    |
-| 6    | 2          | 3         | 70    |
-| 7    | 3          | 1         | 75    |
+| id  | student_id | course_id | grade |
+| --- | ---------- | --------- | ----- |
+| 1   | 1          | 1         | 80    |
+| 2   | 1          | 2         | 88    |
+| 3   | 1          | 3         | 90    |
+| 4   | 2          | 1         | 80    |
+| 1   | 2          | 2         | 88    |
+| 6   | 2          | 3         | 70    |
+| 7   | 3          | 1         | 75    |
 
 student为主表查询相关信息：最大值，总和
 
@@ -53,8 +51,6 @@ left join score on score.course_id = cid
 group by cid;
 ```
 
-
-
 ## SQL语法
 
 ### left join on 后and 和 where 的使用
@@ -63,19 +59,19 @@ group by cid;
 
 表1：table2
 
-| id   | No   |
-| ---- | ---- |
-| 1    | n1   |
-| 2    | n2   |
-| 3    | n3   |
+| id  | No  |
+| --- | --- |
+| 1   | n1  |
+| 2   | n2  |
+| 3   | n3  |
 
 表2：table2
 
-| No   | name |
-| :--- | :--- |
-| n1   | aaa  |
-| n2   | bbb  |
-| n3   | ccc  |
+| No  | name |
+|:--- |:---- |
+| n1  | aaa  |
+| n2  | bbb  |
+| n3  | ccc  |
 
 ```sql
 select a.id,a.No,b.name from table1 a left join table2 b on (a.No = b.No and b.name='aaa');
@@ -113,4 +109,35 @@ select a.id,a.No,b.name from table1 a left join table2 b on (a.No = b.No) where 
 如果我们把连接条件放在了WHERE后面，那么所有的LEFT,RIGHT,等这些操作将不起任何作用，对于这种情况，它的效果就完全等同于INNER连接。对于那些不影响选择行的条件，放在ON或者WHERE后面就可以。
 
 **注意：所有的连接条件都必需要放在ON后面，不然前面的所有LEFT,和RIGHT关联将作为摆设，而不起任何作用。**
+
+## NULL字段的处理
+
+null值需要用is null或者 is not，在有子查询的情况下，如果子查询可能会返回null类型的数据，会导致整个子查询的结果集无效，比如：
+
+```sql
+select * from course where teacher_id in (select teacher_id from student)
+```
+
+如果 `student` 表中存在一条`teacher_id`为空的数据，将导致整个结果集都查询不到数据。
+
+所以下面情况使用时要注意下：
+
+**1. x in**
+
+(null,1,3)的情况，相当于(x = null or x = 1 or x or 3),必须要查出x为null的情况要写成 => x is null or x in (1,3)
+
+**2. x not in**
+
+(null,1,3)的情况，相当于(x <> null and x <> 1 and x <>3)，会导致一条数据都查不出来
+
+原因是：null不能直接跟任何值(包括null)直接比较，x= null 都是false，x <> null 都是true
+
+**3. not like 'abc%'**
+
+```sql
+select * from course where name not like 'abc%';
+```
+
+假设 course 表中存在一条 name 为 null 的数据，上述sql也无法查出结果。因为null无法参与比较。
+
 
