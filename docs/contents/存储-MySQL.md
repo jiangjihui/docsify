@@ -7,16 +7,12 @@ sudo service mysqld start
 sudo /etc/inint.d/mysqld start
 ```
 
- 
-
 **关闭**
 
 ```sh
 sudo service mysqld start
 sudo /etc/inint.d/mysqld start
 ```
-
- 
 
 **debian系统**
 
@@ -28,8 +24,6 @@ service mysql stop
 # 重启
 service mysql restart
 ```
-
-
 
 ## **维护**
 
@@ -60,8 +54,6 @@ SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
 mysqladmin -uroot -p processlist|awk -F "|" '{print $2}'|xargs -n 1 mysqladmin -uroot -p kill
 ```
 
-
-
 ## **管理用户**
 
 **创建**
@@ -74,15 +66,11 @@ CREATE USER 'dog'@'localhost' IDENTIFIED BY '123456';
 
 > **说明** username - 你将创建的用户名, host - 指定该用户在哪个主机上可以登陆,如果是本地用户可用localhost, 如果想让该用户可以从任意远程主机登陆,可以使用通配符%. password - 该用户的登陆密码,密码可以为空,如果为空则该用户可以不需要密码登陆服务器. 
 
- 
-
 **查看所有用户**
 
 ```sql
 select user,host from mysql.user;
 ```
-
- 
 
 **设置与更改密码**
 
@@ -94,8 +82,6 @@ SET PASSWORD FOR 'pig'@'%' = PASSWORD("123456");
 
 > **说明** 如果是当前登陆用户用SET PASSWORD = PASSWORD("newpassword");
 
- 
-
 **查看权限**
 
 ```sql
@@ -103,8 +89,6 @@ show grants for 你的用户
 show grants for root@'localhost';
 show grants for root;
 ```
-
- 
 
 **授权**
 
@@ -117,8 +101,6 @@ FLUSH PRIVILEGES;
 
 > **说明** privileges - 用户的操作权限,如SELECT , INSERT , UPDATE 等(详细列表见该文最后面).如果要授予所的权限则使用ALL.;databasename - 数据库名,tablename-表名,如果要授予该用户对所有数据库和表的相应操作权限则可用*表示, 如*.*. 最后记得使用FLUSH PRIVILEGES更新权限表。
 
- 
-
 **撤销用户权限**
 
 **REVOKE privilege ON** databasename**.**tablename **FROM '**username**'@'**host**';**
@@ -126,15 +108,12 @@ FLUSH PRIVILEGES;
 ```sql
 REVOKE SELECT ON *.* FROM 'pig'@'%';
 ```
- 
 
 **删除用户**
 
 ```sql
  DROP USER 'root'@'%';
 ```
-
- 
 
 **授权远程连接**
 
@@ -144,8 +123,6 @@ REVOKE SELECT ON *.* FROM 'pig'@'%';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'root' WITH GRANT OPTION;
 ```
 
- 
-
 **远程登陆**
 
 **mysql -h**[目标IP] **-p**[目标端口] **-u**[数据库用户名] **-p**
@@ -153,10 +130,6 @@ GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'root' WITH GRANT OPTION
 ```shell
 mysql -h192.168.69.8 -p3306 -uroot -p;
 ```
-
- 
-
- 
 
 ## **管理数据库**
 
@@ -170,8 +143,6 @@ create database test character set utf8;
 
 > **说明** character set utf8 用以设置该数据库创建表时候的编码格式
 
- 
-
 **导出数据库**
 
 **mysqldump -u** username **-p** **-R** **--add-drop-table** database **>** path**/**database**.sql**
@@ -181,9 +152,9 @@ mysqldump -u root -p -R fulva > D:/fulva.sql
 ```
 
 > **注意：**默认情况下不会导出数据库的存储过程和函数，如果需要备份存储过程，那就需要用参数 -R 来指定，如果只导出存储过程和函数可用:
->
+> 
 > mysqldump -uroot -p -hlocalhost -P3306 -n -d -t -R DBName > procedure_name.sql
->
+> 
 > 其中，-d 表示--no-create-db, -n表示--no-data, -t表示--no-create-info, -R表示导出function和procedure。所以上述代码表示仅仅导出函数和存储过程，不导出表结构和数据。
 
 **导出时忽略指定的表：**
@@ -191,8 +162,6 @@ mysqldump -u root -p -R fulva > D:/fulva.sql
 ```shell
 mysqldump -uroot -p -R **dbname** --ignore-table=**dbname****.tb1** --ignore-table=**dbname****.tb2** >C:\Users\xqlsr\Desktop\back_20190604.sql
 ```
-
- 
 
 **导入数据库**
 
@@ -208,8 +177,6 @@ source path/database.sql
 
 > **说明：**如果遇到 @@GLOBAL.GTID_PURGED can only be set when @@GLOBAL.GTID_EXECUTED is empty [错误](http://blog.itpub.net/20893244/viewspace-2138125/)可添加 -f 参数强制导入
 
- 
-
 **复制数据库**
 
 ```sql
@@ -220,15 +187,11 @@ CREATE DATABASE `newdb`;
 mysqldump db1 -u root -p123456 --add-drop-table | mysql newdb -u root -p123456
 ```
 
- 
-
 **跨主机备份**
 
 ```shell
 mysqldump -uroot -proot --host=192.168.1.217 --opt msharp| mysql --host=192.168.1.218 -uroot -proot -C msharp;
 ```
-
- 
 
 **添加或删除表字段**
 
@@ -239,8 +202,6 @@ alter table `code_library` add column Data_Insert_Date varchar(20);
 alter table `user_movement_log` drop column Gatewayid
 ```
 
- 
-
 **显示所有表**
 
 ```sql
@@ -249,25 +210,17 @@ show tables;
 select table_name from information_schema.TABLES where TABLE_SCHEMA='数据库名';
 ```
 
- 
-
 **显示表的所有字段名**
 
 ```sql
 select * from information_schema.`COLUMNS` where TABLE_SCHEMA='数据库名' and table_name='表名';
 ```
 
- 
-
 **不锁表数据导出**
 
 ```shell
 mysqldump -u mysql_user --lock-tables=false --default-character-set=utf8 -p mysql_db mysql_table --where="ID > 20"  > backup.sql
 ```
-
- 
-
- 
 
 ## 配置
 
@@ -278,8 +231,6 @@ show variables like "max_connections";
 set GLOBAL max_connections=100;
 ```
 
- 
-
 **大小写区分**
 
 在windows环境的mysql数据表名一般不区分大小写，而在linux下则会区分大小写，如果要在linux下不区分大小写可在/etc/mysql/conf.d/my.cnf（文件不存在则新增）的[mysqld]节点下，加入一行：  
@@ -289,8 +240,6 @@ lower_case_table_names=1
 ```
 
 重启MySQL即可
-
- 
 
 [**字符集**](https://www.cnblogs.com/shootercheng/p/5836657.html)
 
@@ -309,8 +258,6 @@ alter database <数据库名> character set utf8;
 alter table <表名> character set utf8;
 ```
 
-
-
 **查看数据库表占用空间**
 
 ```sql
@@ -321,29 +268,19 @@ from information_schema.tables where TABLE_SCHEMA = 'cfs'
 group by TABLE_NAME order by data_length desc;
 ```
 
- 
-
 **查看所有数据库大小**
 
 ```sql
 select concat(round(sum(data_length/1024/1024),2),'MB') as data from information_schema.tables;
 ```
 
- 
-
 **查看数据库存储文件路径**
 
 **show global variables like "**%datadir%**";**
 
- 
-
 **查看数据库的存储引擎**
 
 **show variables like '**%storage_engine%**';**
-
- 
-
-
 
 ## 处理逗号分隔的字符串
 
@@ -352,10 +289,6 @@ select * from b_program_publish where find_in_set ('0c52dab',terminals);
 ```
 
 在翻这些函数的过程中，你应该已经深深地体会到mysql的设计者对[以逗号分割存储字段](https://blog.csdn.net/rovast/article/details/50519144)方法的肯定，因为有很多方法就是设计用来处理这种问题的。 
-
- 
-
- 
 
 ## **配置文件**
 
@@ -374,8 +307,6 @@ max_allowed_packet = 100M
 
 保存之后重启MySQL即可生效。
 
- 
-
 **查看linux服务器上mysql配置文件路径**
 
 在类NUIX的系统中，配置文件的位置一般在/etc/my.cnf 或者 /etc/MySQL/my.cnf
@@ -391,19 +322,15 @@ Default options are read from the following files in the given order:
 /etc/my.cnf /etc/mysql/my.cnf ~/.my.cnf 
 ```
 
- 
-
- 
-
 ## **MySQL锁**
 
 相对于其他的数据库而言，MySQL的[锁机制](https://blog.csdn.net/mysteryhaohao/article/details/51669741)比较简单，最显著的特点就是不同的存储引擎支持不同的锁机制。根据不同的存储引擎，MySQL中锁的特性可以大致归纳如下：
 
 | **存储引擎** | **行锁** | **表锁** | **页锁** |
-| ------------ | -------- | -------- | -------- |
-| MyISAM       |          | √        |          |
-| BDB          |          | √        | √        |
-| InnoDB       | √        | √        |          |
+| -------- | ------ | ------ | ------ |
+| MyISAM   |        | √      |        |
+| BDB      |        | √      | √      |
+| InnoDB   | √      | √      |        |
 
 **表锁：**
 
@@ -416,10 +343,6 @@ Default options are read from the following files in the given order:
 **页锁：**
 
 开销和加锁速度介于表锁和行锁之间；会出现死锁；锁定粒度介于表锁和行锁之间，并发度一般
-
- 
-
-
 
 ## 索引优化-MRR
 
@@ -444,10 +367,6 @@ SHOW VARIABLES LIKE '%optimizer_switch%'
 
 > mrr=on,mrr_cost_based=on
 
- 
-
-
-
 ## **MySQL事务实现原理**
 
 [**MVCC**](https://blog.csdn.net/SnailMann/article/details/94724197)
@@ -459,36 +378,28 @@ Mysql的大多数事务型存储引擎实现的都不是简单的行级锁。基
 在Mysql中MVCC是在Innodb存储引擎中得到支持的，Innodb为每行记录都实现了三个隐藏字段：
 
 - **6字节的事务ID（DB_TRX_ID ）**
-
+  
   最近修改(`修改/插入`)事务ID：记录创建这条记录/最后一次修改该记录的事务ID
 
 - **7字节的回滚指针（DB_ROLL_PTR）**
-
+  
   回滚指针，指向这条记录的上一个版本（存储于rollback segment里）
 
 - **隐藏的ID（DB_ROW_ID）**
-
+  
   隐含的自增ID（隐藏主键），如果数据表没有主键，InnoDB会自动以`DB_ROW_ID`产生一个聚簇索引
 
 - deleted_bit
-
+  
   实际还有一个删除flag隐藏字段, 既记录被更新或删除并不代表真的删除，而是删除flag变了
-
-
-
 
 每开始一个新的事务，系统版本号都会自动递增。事务开始时刻的系统版本号会作为事务的版本号，用来和查询到的每行记录的版本号进行比较。
 
 这就使得别的事务可以修改这条记录，反正每次修改都会在版本链中记录。SELECT可以去版本链中拿记录，这就实现了读-写，写-读的并发执行，提升了系统的性能。
 
- 
-
 从前面的分析可以看出，为了实现InnoDB的MVCC机制，更新或者删除操作都只是设置一下老记录的deleted_bit，并不真正将过时的记录删除。
 
 为了节省磁盘空间，InnoDB有专门的purge线程来清理deleted_bit为true的记录。为了不影响MVCC的正常工作，purge线程自己也维护了一个read view（这个read view相当于系统中最老活跃事务的read view）;如果某个记录的deleted_bit为true，并且DB_TRX_ID相对于purge线程的read view可见，那么这条记录一定是可以被安全清除的。
-
-
-
 
 ## **MySQL数据库**[**优化**](https://mp.weixin.qq.com/s?__biz=MzA4Nzg5Nzc5OA==&mid=2651669647&idx=1&sn=2a72d20d7485e2879a6b772d9e2248ea&chksm=8bcb8726bcbc0e30b62fb971b25c28ea962c27e17ee20ca8bd82ffc73b1e83e95d0dff1c7454&scene=21#wechat_redirect)
 
@@ -510,8 +421,6 @@ innodb_buffer_pool_size=2048M
 
 这对Innodb表来说非常重要。Innodb相比MyISAM表对缓冲更为敏感。MyISAM可以在默认的 key_buffer_size 设置下运行的可以，然而Innodb在默认的 innodb_buffer_pool_size 设置下却跟蜗牛似的。由于Innodb把数据和索引都缓存起来，无需留给操作系统太多的内存，因此如果只需要用Innodb的话则可以设置它高达 70-80% 的可用内存。一些应用于 key_buffer 的规则有 — 如果你的数据量不大，并且不会暴增，那么无需把 innodb_buffer_pool_size 设置的太大了
 
- 
-
 **innodb_log_file_size**
 
 这是指单个 InnoDB 日志文件的大小。默认情况下，InnoDB 使用两个值，这样您就可以通过将其增加一倍，来让 InnoDB 获得循环的重做日志空间，以确保交易的持久性。这同时也优化了对数据库的写入性能。
@@ -520,45 +429,33 @@ innodb_buffer_pool_size=2048M
 
 但是如果您的系统遭受到断电或其他问题导致崩溃的时候，那么其恢复时间则会越长。您可以通过查看未实际使用的重做日志空间大小来判定。
 
- 
-
 **max_connections**
 
 大型应用程序通常需要比默认数量多得多的连接。不同于其他的变量，如果您没能将该值设置正确，您就会碰到性能方面的问题。也就是说，如果连接的数量不足以满足您的应用需求，那么应用程序将根本无法连接到数据库，在用户看来就像宕机了一样。由此可见，将它设置正确是非常重要的。
 
 幸运的是，MySQL 能够在峰值操作时轻易地获悉所用到的连接数量。通常，您需要确保在应用程序所使用到的最大连接数和可用的最大连接数之间至少有 30％ 的差额。
 
- 
-
 ## MySQL存储引擎[区别](http://www.cnblogs.com/y-rong/p/8110596.html)
 
 **MyISAM**：ISAM是Indexed Sequential Access Method (有索引的顺序访问方法) 的缩写，设计简单，数据以紧密格式存储。对于只读数据，或者表比较小、可以容忍修复操作，则依然可以使用它。。
 
 - 不支持事务，不支持外键。
--  MyISAM是非聚集索引，也是使用B+Tree作为索引结构，索引和数据文件是分离的，索引保存的是数据文件的指针。主键索引和辅助索引是独立的。
-
-
+- MyISAM是非聚集索引，也是使用B+Tree作为索引结构，索引和数据文件是分离的，索引保存的是数据文件的指针。主键索引和辅助索引是独立的。
 
 [**InnoDB**](https://rsy.me/posts/mysql-innodb-preliminary/?hmsr=toutiao.io&utm_medium=toutiao.io&utm_source=toutiao.io)：是 MySQL 默认的事务型存储引擎，**只有在需要它不支持的特性时，才考虑使用其它存储引擎**。
 
 - 支持事务、外键、行锁。
 - InnoDB是聚集索引，使用B+Tree作为索引结构，数据文件是和（主键）索引绑在一起的（表数据文件本身就是按B+Tree组织的一个索引结构），必须要有主键，通过主键索引效率很高。但是辅助索引需要两次查询，先查询到主键，然后再通过主键查询到数据。因此，主键不应该过大，因为主键太大，其他索引也都会很大。
 
-
-
-| [**差异**](https://juejin.im/post/5c6b9c09f265da2d8a55a855)  | **MyISAM**                                      | **Innodb**                               |
-| ------------------------------------------------------------ | ----------------------------------------------- | ---------------------------------------- |
-| **文件格式**                                                 | 数据和索引是分别存储的，数据.MYD，索引.MYI      | 数据和索引是集中存储的，.ibd             |
-| **文件能否移动**                                             | 能，一张表就对应.frm、MYD、MYI3个文件           | 否，因为关联的还有data下的其它文件       |
-| **记录存储顺序**                                             | 按记录插入顺序保存                              | 按主键大小有序插入                       |
-| **空间碎片（删除记录并flush table 表名之后，表文件大小不变）** | 产生。定时整理：使用命令optimize table 表名实现 | 不产生                                   |
-| **事务**                                                     | 不支持                                          | 支持                                     |
-| **外键**                                                     | 不支持                                          | 支持                                     |
-| **锁支持（锁是避免资源争用的一个机制，MySQL锁对用户几乎是透明的）** | 表级锁定                                        | 行级锁定、表级锁定，锁定力度小并发能力高 |
-
-  
-
- 
+| [**差异**](https://juejin.im/post/5c6b9c09f265da2d8a55a855) | **MyISAM**                      | **Innodb**           |
+| --------------------------------------------------------- | ------------------------------- | -------------------- |
+| **文件格式**                                                  | 数据和索引是分别存储的，数据.MYD，索引.MYI       | 数据和索引是集中存储的，.ibd     |
+| **文件能否移动**                                                | 能，一张表就对应.frm、MYD、MYI3个文件        | 否，因为关联的还有data下的其它文件  |
+| **记录存储顺序**                                                | 按记录插入顺序保存                       | 按主键大小有序插入            |
+| **空间碎片（删除记录并flush table 表名之后，表文件大小不变）**                   | 产生。定时整理：使用命令optimize table 表名实现 | 不产生                  |
+| **事务**                                                    | 不支持                             | 支持                   |
+| **外键**                                                    | 不支持                             | 支持                   |
+| **锁支持（锁是避免资源争用的一个机制，MySQL锁对用户几乎是透明的）**                    | 表级锁定                            | 行级锁定、表级锁定，锁定力度小并发能力高 |
 
 ## MySQL不同引擎的[优化](https://www.zhihu.com/question/19719997/answer/81930332)
 
@@ -576,8 +473,6 @@ innodb_buffer_pool_size=2048M
 
 InnoDB 的辅助索引 data 域存储相应记录主键的值而不是地址。换句话说，InnoDB 的所有辅助索引都引用主键作为 data 域。聚集索引这种实现方式使得按主键的搜索十分高效，但是辅助索引搜索需要检索两遍索引：首先检索辅助索引获得主键，然后用主键到主索引中检索获得记录。
 
- 
-
 ## InnoDB
 
 ### InnoDB存储引擎的[锁算法](https://mp.weixin.qq.com/s/JUdSHpa1n6qt4w-lgL6rKQ)
@@ -592,26 +487,18 @@ Mysql默认的事务隔离级别是**可重复读(Repeatable Read)**，即保证
 - InnoDB使用Next-Key Lock机制来避免Phantom     Problem（幻读问题）。
 
 > Record Lock: 单个记录上的锁
->
+> 
 > Gap Lock: 间隙锁，锁定一个范围，但不包括记录本上
->
+> 
 > Next-Key Lock: Gap Lock+Record Lock，锁定一个范围，并且锁定记录本身
 
-
-
- ### 写缓冲
+### 写缓冲
 
 在MySQL5.5之前，叫插入缓冲(insert buffer)，只针对insert做了优化；现在对delete和update也有效，叫做写缓冲(change buffer)。
 
 它是一种应用在**非唯一普通索引页**(即二级索引且属性不是unique)，不在缓冲池中，对页进行了写操作，并不会立刻将磁盘页加载到缓冲池，而仅仅记录缓冲变更(buffer changes)，等未来数据被读取时，再将数据合并(merge)恢复到缓冲池中的技术。写缓冲的目的是**降低写操作的磁盘IO**，提升数据库性能。
 
 如果索引设置了唯一(unique)属性，在进行修改操作时，InnoDB必须进行唯一性检查。也就是说，索引页即使不在缓冲池，磁盘上的页读取无法避免(否则怎么校验是否唯一？)
-
-
-
-
-
- 
 
 ## **redo log**
 
@@ -635,10 +522,6 @@ MySQL 的每一次更新并没有每次都写入磁盘，InnoDB 引擎会先将�
 
 有了 redo log，InnoDB 就可以保证即使数据库发生异常重启，之前提交的记录都不会丢失，这个能力称为 crash-safe。
 
- 
-
- 
-
 ## **bin log**
 
 MySQL 整体可以分为 Server 层和引擎层。其实，**redo log** 是属于引擎层的 **InnoDB** **所特有**的日志，而 Server 层也有自己的日志，即 binlog（归档日志）。
@@ -657,20 +540,16 @@ MySQL 整体可以分为 Server 层和引擎层。其实，**redo log** 是属�
 
 > **注意：**记录 Binlog 是在 InnoDB 引擎 Prepare（即 Redo Log 写入磁盘）之后，这点至关重要。另外需要注意的一点就是，SQL 语句产生的 Redo 日志会一直刷新到磁盘（master thread 每秒 fsync redo log），而 Binlog 是事务 commit 时才刷新到磁盘，如果 binlog 太大则 commit 时会慢。
 
- 
-
 **与redo log比较**
 
 redo log记录的东西是偏向于物理性质的，如：“对什么数据，做了什么修改”。bin log是偏向于逻辑性质的，类似于：“对 students 表中的 id 为 1 的记录做了更新操作” 两者的主要特点总结如下:
 
-| 性质     | redo Log                                                     | bin Log                                                      |
-| -------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 文件大小 | redo log 的大小是固定的（配置中也可以设置，一般默认的就足够了） | bin log 可通过配置参数max_bin log_size设置每个bin log文件的大小（但是一般不建议修改）。 |
-| 实现方式 | redo log是InnoDB引擎层实现的（也就是说是 Innodb  存储引起过独有的） | bin log是  MySQL  层实现的，所有引擎都可以使用 bin log日志   |
-| 记录方式 | redo log 采用循环写的方式记录，当写到结尾时，会回到开头循环写日志。 | bin log 通过追加的方式记录，当文件大小大于给定值后，后续的日志会记录到新的文件上 |
-| 使用场景 | redo log适用于崩溃恢复(crash-safe)（这一点其实非常类似与 Redis 的持久化特征） | bin log 适用于主从复制和数据恢复                             |
-
- 
+| 性质   | redo Log                                             | bin Log                                                     |
+| ---- | ---------------------------------------------------- | ----------------------------------------------------------- |
+| 文件大小 | redo log 的大小是固定的（配置中也可以设置，一般默认的就足够了）                 | bin log 可通过配置参数max_bin log_size设置每个bin log文件的大小（但是一般不建议修改）。 |
+| 实现方式 | redo log是InnoDB引擎层实现的（也就是说是 Innodb  存储引起过独有的）        | bin log是  MySQL  层实现的，所有引擎都可以使用 bin log日志                   |
+| 记录方式 | redo log 采用循环写的方式记录，当写到结尾时，会回到开头循环写日志。               | bin log 通过追加的方式记录，当文件大小大于给定值后，后续的日志会记录到新的文件上                |
+| 使用场景 | redo log适用于崩溃恢复(crash-safe)（这一点其实非常类似与 Redis 的持久化特征） | bin log 适用于主从复制和数据恢复                                        |
 
 刷入 bin log 有以下几种模式
 
@@ -697,10 +576,6 @@ redo log记录的东西是偏向于物理性质的，如：“对什么数据，
 那既然bin log也是日志文件，那它是在什么记录数据的呢？
 
 其实 MySQL 在提交事务的时候，不仅仅会将 redo log buffer  中的数据写入到redo log 文件中，同时也会将本次修改的数据记录到 bin log文件中，同时会将本次修改的bin log文件名和修改的内容在bin log中的位置记录到redo log中，最后还会在redo log最后写入 commit 标记，这样就表示本次事务被成功的提交了。
-
-
-
-
 
 ## MySQL页
 
@@ -732,8 +607,6 @@ User Record在Page内以单链表的形式存在，最初数据是按照插入�
 
 ![clipboard.png](../_images/bVJ1hP.jpg)
 
-
-
 ### 如何定位一个Record
 
 1. 通过根节点开始遍历一个索引的B+树，通过各层非叶子节点达到底层的叶子节点的数据页（Page），这个Page内部存放的都是叶子节点
@@ -741,11 +614,7 @@ User Record在Page内以单链表的形式存在，最初数据是按照插入�
 
 ![clipboard.png](../_images/bVJ1hS.jpg)
 
-
-
 Page和B+树之间并没有一一对应的关系，Page只是作为一个Record的保存容器，它存在的目的是便于对磁盘空间进行批量管理。
-
-
 
 ### 索引长度
 
@@ -754,12 +623,6 @@ Page和B+树之间并没有一一对应的关系，Page只是作为一个Record�
 在同等数据量下，索引长度过长会导致单个数据页存放的索引条目数减少，索引高度增加，磁盘 IO 增加，并且索引占用空间增大。所以应该在满足要求的前提下，尽量减少索引长度。
 
 **索引长度 = 字段长度 + 是否为空(+1) + 是否变长(+2)**
-
-
-
-
-
-
 
 ## **压测工具mysqlslap**
 
@@ -783,10 +646,6 @@ mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=innodb -
 
 mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=myisam -uroot -proot
 
- 
-
- 
-
 ## ID自增问题
 
 一张表，里面有ID自增主键，当insert了17条记录之后，删除了第15,16,17条记录，再把Mysql重启，再insert一条记录，这条记录的ID是18还是15？
@@ -799,17 +658,9 @@ mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=myisam -
 
 InnoDB表只是把自增主键的最大ID记录到内存中，所以重启数据库或者是对表进行OPTIMIZE操作，都会导致最大ID丢失。
 
- 
-
- 
-
 ## **字符数还是字节数**
 
 对于MySql中的varchar长度究竟是字节还是字符是这样的：在version4之前，按字节；version5（MySQL 5.0+）之后，按字符。
-
- 
-
- 
 
 ## **sql_mode=only_full_group_by异常**
 
@@ -818,10 +669,6 @@ InnoDB表只是把自增主键的最大ID记录到内存中，所以重启数据
 ```sql
 SET @@global.sql_mode ='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
 ```
-
- 
-
- 
 
 ## **数据库最大连接数设置**
 
@@ -832,10 +679,6 @@ show variables like "max_connections";
 -- 设置最大连接数为400
 set GLOBAL max_connections=400;
 ```
-
- 
-
-  
 
 ## limit 20000加载很慢怎么[解决](https://mp.weixin.qq.com/s/9TxItfrkh5d1mNFKMvH6LA)
 
@@ -855,17 +698,11 @@ ON a.id = b.id;
 
 其中需要对where条件增加索引，id因为是主键自带索引。select返回减少回表可以提升查询性能,所以采用查询主键字段后进行关联大幅度提升了查询效率。
 
- 
-
- 
-
 ## MySQL压缩版的安装[详细步骤](https://baijiahao.baidu.com/s?id=1630347658327095638&wfr=spider&for=pc)
 
 1 下载压缩包，解压压缩包到指定目录：
 
 https://downloads.mysql.com/archives/community/
-
- 
 
 2 以管理员打开命令行并进入到解压根目录/bin目录下
 
@@ -888,8 +725,6 @@ character-set-server=utf8
 default-storage-engine=INNODB
 ```
 
- 
-
 3 初始化MySQL数据目录
 
 ```
@@ -898,11 +733,7 @@ mysqld --initialize
 
 > 注：如果出现找不到MSVCP140.dll错误，说明没有安装VC++2015运行库，MySQL运行需要这个运行库，可以去微软官网下载，大概实十几M大小。
 
- 
-
 4 获取初始化数据库随机密码。执行完上一步之后，在data目录下生的文件有一个.err文件，这里面有初始化的密码。我们编辑打开此文件，找到密码。（root@localhost：后面跟的就是随机密码）
-
- 
 
 5 安装MySQL服务
 
@@ -910,15 +741,11 @@ mysqld --initialize
 mysqld --install mysql5.7
 ```
 
- 
-
 6 启动mysql服务
 
 ```
 net start mysql8.0
 ```
-
- 
 
 7 用root账号、随机密码登录连接MySQL，输入上面的随机密码（.err文件）成功登录
 
@@ -926,17 +753,11 @@ net start mysql8.0
 mysql -u root -p
 ```
 
- 
-
 8 修改随机密码
 
 ```sql
 ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
 ```
-
- 
-
- 
 
 ## MySQL备份脚本（Window）
 
@@ -959,10 +780,6 @@ echo delete files before 30 days
 forfiles /p "D:\app\backup\database" /m *.sql /d -30 /c "cmd /c del @file /f"
 ```
 
- 
-
- 
-
 ## **Docker备份和导入文件**
 
 ```shell
@@ -972,10 +789,6 @@ docker exec some-mysql sh -c 'exec mysqldump -R -uroot -p"$MYSQL_ROOT_PASSWORD" 
 # 导入文件
 docker exec -i mysql8_db_1 sh -c 'exec mysql -uroot -pmima merck' < /mnt/hdd/docker/mysql8/merck.sql
 ```
-
-
-
-
 
 ## **MySQL双机热备的实现**
 
@@ -1055,10 +868,6 @@ Slave_SQL_Running: Yes
 
 > 参考：https://www.cnblogs.com/fnlingnzb-learner/p/7000898.html
 
-
-
-
-
 ## **Linux安装Mysql-5.7版本**
 
 ```shell
@@ -1088,12 +897,10 @@ select host,user from user;
 ```
 
 > 参考：
->
+> 
 > http://www.cnblogs.com/zfxJava/p/6004188.html
->
+> 
 > http://blog.csdn.net/xyang81/article/details/51792144
-
-
 
 ## CentOS7安装MySQL
 
@@ -1106,8 +913,6 @@ yum -y install mysql57-community-release-el7-10.noarch.rpm
 # 安装MySQL服务器
 yum -y install mysql-community-server
 ```
-
-
 
 ## Red Hat安装MYSQL
 
@@ -1178,3 +983,397 @@ mysql -u root -p
 alter user 'root'@'localhost'identified by '123456';
 ```
 
+## MYSQL中JSON类型介绍
+
+### json对象的介绍
+
+在mysql未支持json数据类型时，我们通常使用varchar、blob或text的数据类型存储json字符串，对mysql来说，用户插入的数据只是序列化后的一个普通的字符串，不会对JSON文档本身的语法合法性做检查，文档的合法性需要用户自己保证。在使用时需要先将整个json对象从数据库读取出来，在内存中完成解析及相应的计算处理，这种方式增加了数据库的网络开销并降低处理效率。
+
+从 MySQL 5.7.8 开始，MySQL 支持RFC 7159定义的全部json 数据类型，具体的包含四种基本类型（strings, numbers, booleans,and null）和两种结构化类型（objects and arrays）。可以有效地访问 JSON文档中的数据。与将 JSON 格式的字符串存储在字符串列中相比，该数据类型具有以下优势：
+
+- 自动验证存储在 JSON列中的 JSON 文档。无效的文档会产生错误。
+- 优化的存储格式。存储在列中的 JSON 文档被转换为允许快速读取文档元素的内部格式。当读取 JSON 值时，不需要从文本表示中解析该值，使服务器能够直接通过键或数组索引查找子对象或嵌套值，而无需读取文档中它们之前或之后的所有值。
+
+### json类型的存储结构
+
+mysql为了提供对json对象的支持，提供了一套将json字符串转为结构化二进制对象的存储方式。json会被转为二进制的doc对象存储于磁盘中（在处理JSON时MySQL使用的utf8mb4字符集，utf8mb4是utf8和ascii的超集）。
+
+doc对象包含两个部分，type和value部分。其中type占1字节，可以表示16种类型：大的和小的json object类型、大的和小的 json array类型、literal类型（true、false、null三个值）、number类型（int6、uint16、int32、uint32、int64、uint64、double类型、utf8mb4 string类型和custom data（mysql自定义类型），具体可以参考源码json_binary.cc和json_binary.h进行学习。
+
+下面进行简单介绍：  
+
+```
+type ::=  
+0x00 | // small JSON object  
+0x01 | // large JSON object  
+0x02 | // small JSON array  
+0x03 | // large JSON array  
+0x04 | // literal (true/false/null)  
+0x05 | // int16  
+0x06 | // uint16  
+0x07 | // int32  
+0x08 | // uint32  
+0x09 | // int64  
+0x0a | // uint64  
+0x0b | // double  
+0x0c | // utf8mb4 string  
+0x0f // custom data (any MySQL data type)
+```
+
+1. value包含 object、array、literal、number、string和custom-data六种类型，与type的16种类型对应。
+2. object表示json对象类型，由6部分组成：
+3. object ::= element-count size key-entry ***value-entry*** key ***value***  
+   其中:  
+   element-count表示对象中包含的成员（key）个数，在array类型中表示数组元素个数。  
+   size表示整个json对象的二进制占用空间大小。小对象用2Bytes空间表示（最大64K），大对象用4Bytes表示（最大4G）  
+   key-entry可以理解为一个用于指向真实key值的数组。本身用于二分查找，加速json字段的定位。  
+   key-entry由两个部分组成：  
+   key-entry ::= key-offset key-length  
+   其中:  
+   key-offset：表示key值存储的偏移量，便于快速定位key的真实值。  
+   key-length：表示key值的长度，用于分割不同key值的边界。长度为2Bytes，这说明，key值的长度最长不能超过64kb.
+4. value-entry与key-enter功能类似，不同之处在于，value-entry可能存储真实的value值。  
+   value-entry由两部分组成：  
+   value-entry ::= type offset-or-inlined-value  
+   其中：  
+   type表示value类型，如上文所示，支持16种基本类型，从而可以表示各种类型的嵌套。
+5. offset-or-inlined-value：有两层含义，如果value值足够小，可以存储于此，那么就存储数据本身，如果数据本身较大，则存储真实值的偏移用于快速定位。  
+   key 表示key值的真实值，类型为：key ::= utf8mb4-data,这里无需指定key值长度，因为key-entry中已经声明了key的存储长度。同时，在同一个json对象中，key值的长度总是一样的。
+
+![](assets/2023-08-10-15-49-08-image.png)
+
+举例说明：
+
+![](assets/2023-08-10-15-51-31-image.png)
+
+![](assets/2023-08-10-15-52-03-image.png)
+
+![](assets/2023-08-10-15-52-42-image.png)
+
+需要注意的是：
+
+- JSON对象的Key索引（图中橙色部分）都是排序好的，先按长度排序，长度相同的按照code point排序；Value索引（图中黄色部分）根据对应的Key的位置依次排列，最后面真实的数据存储（图中白色部分）也是如此
+- Key和Value的索引对存储了对象内的偏移和大小，单个索引的大小固定，可以通过简单的算术跳转到距离为N的索引
+- 通过MySQL5.7.16源代码可以看到，在序列化JSON文档时，MySQL会动态检测单个对象的大小，如果小于64KB使用两个字节的偏移量，否则使用四个字节的偏移量，以节省空间。同时，动态检查单个对象是否是大对象，会造成对大对象进行两次解析，源代码中也指出这是以后需要优化的点
+- 现在受索引中偏移量和存储大小四个字节大小的限制，单个JSON文档的大小不能超过4G；单个KEY的大小不能超过两个字节，即64K
+- 索引存储对象内的偏移是为了方便移动，如果某个键值被改动，只用修改受影响对象整体的偏移量
+- 索引的大小现在是冗余信息，因为通过相邻偏移可以简单的得到存储大小，主要是为了应对变长JSON对象值更新，如果长度变小，JSON文档整体都不用移动，只需要当前对象修改大小
+- 现在MySQL对于变长大小的值没有预留额外的空间，也就是说如果该值的长度变大，后面的存储都要受到影响
+- 结合JSON的路径表达式可以知道，JSON的搜索操作只用反序列化路径上涉及到的元素，速度非常快，实现了读操作的高性能
+- MySQL对于大型文档的变长键值的更新操作可能会变慢，可能并不适合写密集的需求
+
+### json类型基本操作
+
+#### json数据插入
+
+son类型数据插入时有两种方式，一种是基于字符串格式插入，另一种是基于json_object()函数，在使用json_object()函数只需按k-v顺序，以,符号隔开顺序插入即可，MYSQL会自动验证 JSON 文档，无效的文档会产生错误。
+
+```sql
+mysql> CREATE TABLE t1 (jdoc JSON);
+Query OK, 0 rows affected (0.20 sec)
+
+mysql> INSERT INTO t1 VALUES('{"key1": "value1", "key2": "value2"}');
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO t1 VALUES('[1, 2,');
+ERROR 3140 (22032) at line 2: Invalid JSON text:
+"Invalid value." at position 6 in value (or column)  '[1, 2,'.
+```
+
+当一个字符串被解析并发现是一个有效的 JSON 文档时，它也会被规范化：具有与文档中先前找到的键重复的键的成员被丢弃（即使值不同）。以下第一个sql中通过 JSON_OBJECT()调用生成的对象值不包括第二个key1元素，因为该键名出现在值的前面；第二个sql中只保留了x第一次出现的值：
+
+```sql
+mysql> SELECT JSON_OBJECT('key1', 1, 'key2', 'abc', 'key1', 'def');
++------------------------------------------------------+
+| JSON_OBJECT('key1', 1, 'key2', 'abc', 'key1', 'def') |
++------------------------------------------------------+
+| {"key1": 1, "key2": "abc"}                           |
++------------------------------------------------------+
+
+mysql> INSERT INTO t1 VALUES
+     >     ('{"x": 17, "x": "red"}'),
+     >     ('{"x": 17, "x": "red", "x": [3, 5, 7]}');
+
+mysql> SELECT c1 FROM t1;
++-----------+
+| c1        |
++-----------+
+| {"x": 17} |
+| {"x": 17} |
++-----------+
+```
+
+#### json合并
+
+MySQL 5.7支持JSON_MERGE（）的合并算法，多个对象合并时产生一个对象。  可将多个数组合并为一个数组：
+
+```sql
+mysql> SELECT JSON_MERGE('[1, 2]', '["a", "b"]', '[true, false]');
++-----------------------------------------------------+
+| JSON_MERGE('[1, 2]', '["a", "b"]', '[true, false]') |
++-----------------------------------------------------+
+| [1, 2, "a", "b", true, false]                       |
++-----------------------------------------------------+
+```
+
+当合并数组与对象时，会将对象转换为新数组进行合并：
+
+```sql
+mysql> SELECT JSON_MERGE('[10, 20]', '{"a": "x", "b": "y"}');
++------------------------------------------------+
+| JSON_MERGE('[10, 20]', '{"a": "x", "b": "y"}') |
++------------------------------------------------+
+| [10, 20, {"a": "x", "b": "y"}]                 |
++------------------------------------------------+
+```
+
+如果多个对象具有相同的键，则生成的合并对象中该键的值是包含键值的数组：
+
+```sql
+mysql> SELECT JSON_MERGE('{"a": 1, "b": 2}', '{"c": 3, "a": 4}');
++----------------------------------------------------+
+| JSON_MERGE('{"a": 1, "b": 2}', '{"c": 3, "a": 4}') |
++----------------------------------------------------+
+| {"a": [1, 4], "b": 2, "c": 3}                      |
++----------------------------------------------------+
+```
+
+MySQL 8.0.3（及更高版本）支持两种合并算法，由函数 JSON_MERGE_PRESERVE()和 JSON_MERGE_PATCH(). 它们在处理重复键的方式上有所不同：JSON_MERGE_PRESERVE()保留重复键的值（与5.7版本的JSON_MERGE（）相同），而 JSON_MERGE_PATCH()丢弃除最后一个值之外的所有值。具体的
+
+- JSON_MERGE_PRESERVE() 函数接受两个或多个 JSON 文档并返回组合结果。如果参数为两个object,相同的key将会把value合并为array(即使value也相同，也会合并为array),不同的key则直接合并。如果其中一个参数为json array，则另一个json object整体作为一个元素，加入array结果。
+- JSON_MERGE_PATCH()函数接受两个或多个 JSON 文档并返回组合结果。如果参数为两个object,相同的key的value将会被后面参数的value覆盖,不同的key则直接合并。如果合并的是数组，将按照“最后一个重复键获胜”逻辑仅保留最后一个参数。
+
+```sql
+mysql> SELECT JSON_MERGE_PRESERVE('{"a":1,"b":2}', '{"a":3,"c":3}');
++-------------------------------------------------------+
+| JSON_MERGE_PRESERVE('{"a":1,"b":2}', '{"a":3,"c":3}') |
++-------------------------------------------------------+
+| {"a": [1, 3], "b": 2, "c": 3}                         |
++-------------------------------------------------------+
+1 row in set (0.01 sec)
+mysql> SELECT JSON_MERGE_PATCH('{"a":1,"b":2}', '{"a":3,"c":3}');
++----------------------------------------------------+
+| JSON_MERGE_PATCH('{"a":1,"b":2}', '{"a":3,"c":3}') |
++----------------------------------------------------+
+| {"a": 3, "b": 2, "c": 3}                           |
++----------------------------------------------------+
+1 row in set (0.02 sec)
+
+mysql> SELECT JSON_MERGE_PRESERVE('["a", 1]', '"a"','{"key": "value"}');
++-----------------------------------------------------------+
+| JSON_MERGE_PRESERVE('["a", 1]', '"a"','{"key": "value"}') |
++-----------------------------------------------------------+
+| ["a", 1, "a", {"key": "value"}]                           |
++-----------------------------------------------------------+
+1 row in set (0.00 sec)
+mysql> SELECT JSON_MERGE_PATCH('["a", 1]', '"a"','{"key": "value"}') ;
++--------------------------------------------------------+
+| JSON_MERGE_PATCH('["a", 1]', '"a"','{"key": "value"}') |
++--------------------------------------------------------+
+| {"key": "value"}                                       |
++--------------------------------------------------------+
+1 row in set (0.01 sec)
+```
+
+#### json数据查询
+
+MySQL 5.7.7+本身提供了很多原生的函数以及路径表达式来方便用户访问JSON数据。  
+JSON_EXTRACT()函数用于解析json对象，->符号是就一种JSON_EXTRACT()函数的等价模式。例如查询上面t1表中 jdoc字段中key值为x的值
+
+```sql
+SELECT jdoc->'$.x' FROM t1;
+SELECT JSON_EXTRACT(jdoc,'$.x') FROM t1;
+```
+
+JSON_EXTRACT返回值会带有” “,如果想获取原本的值可以使用JSON_UNQUOTE
+
+```sql
+mysql> SELECT JSON_EXTRACT('{"id": 14, "name": "Aztalan"}', '$.name');
++---------------------------------------------------------+
+| JSON_EXTRACT('{"id": 14, "name": "Aztalan"}', '$.name') |
++---------------------------------------------------------+
+| "Aztalan"                                               |
++---------------------------------------------------------+
+
+mysql> SELECT JSON_UNQUOTE(json_extract('{"id": 14, "name": "Aztalan"}', '$.name'));;
++-----------------------------------------------------------------------+
+| JSON_UNQUOTE(json_extract('{"id": 14, "name": "Aztalan"}', '$.name')) |
++-----------------------------------------------------------------------+
+| Aztalan                                                               |
++-----------------------------------------------------------------------+
+```
+
+json路径的语法：
+
+```
+pathExpression:
+    scope[(pathLeg)*]
+
+pathLeg:
+    member | arrayLocation | doubleAsterisk
+
+member:
+    period ( keyName | asterisk )
+
+arrayLocation:
+    leftBracket ( nonNegativeInteger | asterisk ) rightBracket
+
+keyName:
+    ESIdentifier | doubleQuotedString
+
+doubleAsterisk:
+    '**'
+
+period:
+    '.'
+
+asterisk:
+    '*'
+
+leftBracket:
+    '['
+
+rightBracket:
+    ']'
+```
+
+以 `json { “a”: [ [ 3, 2 ], [ { “c” : “d” }, 1 ] ], “b”: { “c” : 6 }, “one potato”: 7, “b.c” : 8 }` 为例：  
+
+```
+$.a[1] 获取的值为 [ { “c” : “d” }, 1 ] $.b.c 获取的值为 6  
+$.”b.c” 获取的值为 8（因为键名包含不合法的表达式所以需要使用引号）
+
+
+mysql>  select json_extract('{ "a": [ [ 3, 2 ], [ { "c" : "d" }, 1 ] ], "b": { "c" : 6 }, "one potato": 7, "b.c" : 8 }','$**.c');
++-------------------------------------------------------------------------------------------------------------------+
+| JSON_EXTRACT('{ "a": [ [ 3, 2 ], [ { "c" : "d" }, 1 ] ], "b": { "c" : 6 }, "one potato": 7, "b.c" : 8 }','$**.c') |
++-------------------------------------------------------------------------------------------------------------------+
+| ["d", 6]                                                                                                          |
++-------------------------------------------------------------------------------------------------------------------+
+
+$**.c 匹配到了两个路径 :
+$.a[1].c 获取的值是”d”
+$.b.c 获取的值为 6
+```
+
+#### json数据更新
+
+一些函数采用现有的 JSON 文档，以某种方式对其进行修改，然后返回结果修改后的文档。路径表达式指示在文档中进行更改的位置。例如，JSON_SET()、 JSON_INSERT()和 JSON_REPLACE()函数各自采用现有的 JSON 文档，加上一个或多个路径和值对，来描述修改文档和要更新的值。这些函数在处理文档中现有值和不存在值的方式上有所不同。
+具体如下
+
+```sql
+mysql> SET @j = '["a", {"b": [true, false]}, [10, 20]]';
+```
+
+JSON_SET()替换存在的路径的值并添加不存在的路径的值：
+
+```sql
+mysql> SELECT JSON_SET(@j, '$[1].b[0]', 1, '$[2][2]', 2);
++--------------------------------------------+
+| JSON_SET(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
++--------------------------------------------+
+| ["a", {"b": [1, false]}, [10, 20, 2]]      |
++--------------------------------------------+
+```
+
+在这种情况下，路径$[1].b[0]选择一个现有值 ( true)，该值将替换为路径参数 ( 1) 后面的值。该路径$[2][2]不存在，因此将相应的值 ( 2) 添加到 选择的值中$[2]。  
+JSON_INSERT()添加新值但不替换现有值：
+
+```sql
+mysql> SELECT JSON_INSERT(@j, '$[1].b[0]', 1, '$[2][2]', 2);
++-----------------------------------------------+
+| JSON_INSERT(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
++-----------------------------------------------+
+| ["a", {"b": [true, false]}, [10, 20, 2]]      |
++-----------------------------------------------+
+```
+
+JSON_REPLACE()替换现有值并忽略新值：
+
+```sql
+mysql> SELECT JSON_REPLACE(@j, '$[1].b[0]', 1, '$[2][2]', 2);
++------------------------------------------------+
+| JSON_REPLACE(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
++------------------------------------------------+
+| ["a", {"b": [1, false]}, [10, 20]]             |
++------------------------------------------------+
+```
+
+JSON_REMOVE()接受一个 JSON 文档和一个或多个路径，这些路径指定要从文档中删除的值。返回值是原始文档减去文档中存在的路径选择的值：
+
+```sql
+mysql> SELECT JSON_REMOVE(@j, '$[2]', '$[1].b[1]', '$[1].b[1]');
++---------------------------------------------------+
+| JSON_REMOVE(@j, '$[2]', '$[1].b[1]', '$[1].b[1]') |
++---------------------------------------------------+
+| ["a", {"b": [true]}]                              |
++---------------------------------------------------+
+
+$[2]匹配[10, 20] 并删除它。
+$[1].b[1]匹配 元素false中 的第一个实例b并将其删除。
+不匹配的第二个实例$[1].b[1]：该元素已被删除，路径不再存在，并且没有效果。
+```
+
+#### json比较与排序
+
+JSON值可以使用=, <, <=, >, >=, <>, !=, <=>等操作符，BETWEEN, IN,GREATEST, LEAST等操作符现在还不支持。JSON值使用的两级排序规则，第一级基于JSON的类型，类型不同的使用每个类型特有的排序规则。
+JSON类型按照优先级从高到低为：
+
+```
+BLOB
+BIT
+OPAQUE
+DATETIME
+TIME
+DATE
+BOOLEAN
+ARRAY
+OBJECT
+STRING
+INTEGER, DOUBLE
+NULL
+```
+
+优先级高的类型大，不用再进行其他的比较操作；如果类型相同，每个类型按自己的规则排序。具体的规则如下：
+
+- BLOB/BIT/OPAQUE: 比较两个值前N个字节，如果前N个字节相同，短的值小
+- DATETIME/TIME/DATE: 按照所表示的时间点排序
+- BOOLEAN: false小于true
+- ARRAY: 两个数组如果长度和在每个位置的值相同时相等，如果不想等，取第一个不相同元素的排序结果，空元素最小。例：[] < [“a”] < [“ab”] < [“ab”, “cd”, “ef”] < [“ab”, “ef”]
+- OBJECT: 如果两个对象有相同的KEY，并且KEY对应的VALUE也都相同，两者相等。否则，两者大小不等，但相对大小未规定。例：{“a”: 1, “b”: 2} = {“b”: 2, “a”: 1}
+- STRING: 取两个STRING较短的那个长度为N，比较两个值utf8mb4编码的前N个字节，较短的小，空值最小。例：”a” < “ab” < “b” < “bc”；此排序等同于使用 collat​​ion 对 SQL 字符串进行排序utf8mb4_bin。因为 utf8mb4_bin是二进制排序规则，所以 JSON 值的比较区分大小写：”A” < “a”
+- INTEGER/DOUBLE: 包括精确值和近似值的比较
+
+
+
+### JSON的索引
+
+现在MySQL不支持对JSON列进行索引，官网文档的说明是：
+
+JSON columns cannot be indexed. You can work around this restriction by creating an index on a generated column that extracts a scalar value from the JSON column.
+
+虽然不支持直接在JSON列上建索引，但MySQL规定，可以首先使用路径表达式对JSON文档中的标量值建立虚拟列，然后在虚拟列上建立索引。这样用户可以使用表达式对自己感兴趣的键值建立索引。举个具体的例子来说明：
+
+```sql
+ALTER TABLE features ADD feature_street VARCHAR(30) AS (JSON_UNQUOTE(feature->"$.properties.STREET"));
+ALTER TABLE features ADD INDEX (feature_street);
+```
+
+两个步骤，可以对feature列中properties键值下的STREET键(feature->”$.properties.STREET”)创建索引。
+
+其中，feature_street列就是新添加的虚拟列。之所以取名虚拟列，是因为与它对应的还有一个存储列(stored column)。它们最大的区别为虚拟列只修改数据库的metadata，并不会存储真实的数据在硬盘上，读取过程也是实时计算的方式；而存储列会把表达式的列存储在硬盘上。两者使用的场景不一样，默认情况下通过表达式生成的列为虚拟列。
+
+这样虚拟列的添加和删除都会非常快，而在虚拟列上建立索引跟传统的建立索引的方式并没有区别，会提高虚拟列读取的性能，减慢整体插入的性能。虚拟列的特性结合JSON的路径表达式，可以方便的为用户提供高效的键值索引功能。
+
+
+
+### 总结
+
+1. JSON类型无须预定义字段，适合拓展信息的存储
+2. 单个JSON文档的大小不能超过4G；单个KEY的大小不能超过两个字节，即64K
+3. JSON类型适合应用于不常更新的静态数据
+4. 对搜索较频繁的数据建议增加虚拟列并建立索引
+
+
+
+> [MYSQL中JSON类型介绍 | 京东物流技术团队 - 京东云开发者的独家号 - 开发者头条](https://toutiao.io/posts/mqg9ogj)
