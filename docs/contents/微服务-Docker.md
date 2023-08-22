@@ -26,6 +26,44 @@
 
 镜像是容器的根本性发明，是封装和运行的标准，其它什么namespace，cgroups，早就有了。这是技术方面。
 
+
+
+## Docker和K8S的关系
+
+Docker和K8S本质上都是创建容器的工具，Docker作用与单机，K8S作用与集群。
+
+在单机的容器解决方案，首选Docker。随着时代的发展，对系统的性能有了更高的要求，高可用、高并发都是基本要求。随着要求变高的的同时，单机显然性能就跟不上了，服务器集群管理就是发展趋势，所以 Kubernetes 为代表的云原生技术强势发展。
+
+### Dockershim的小故事
+
+#### dockershim的由来
+
+自 K8S - v1.24 起，Dockershim 已被删除，这对K8S项目来说是一个积极的举措。
+
+在 K8S 的早期，只支持一个容器运行时，那个容器运行时就是 Docker Engine。 那时并没有其他的选择。
+
+随着时间推移，我们开始添加更多的容器运行时，比如 rkt 和 hypernetes，很明显 K8S 用户希望选择最适合他们的运行时。因此，K8S 需要一种方法来允许K8S集群灵活地使用任何容器运行时。
+
+于是有了容器运行时接口 (CRI) 的发布，CRI 的引入对K8S项目和K8S用户来说都很棒，但它引入了一个问题：Docker Engine 作为容器运行时的使用早于 CRI，所以Docker Engine 不兼容 CRI。
+
+为了解决这个问题，在 kubelet 组件中引入了一个小型软件 shim (dockershim)，专门用于填补 Docker Engine 和 CRI 之间的空白， 允许集群继续使用 Docker Engine 作为容器运行时。
+
+#### dockershim的宿命
+
+然而，这个小软件 shim 从来没有打算成为一个永久的解决方案。 多年来，它的存在给 kubelet 本身带来了许多不必要的复杂性。由于这个 shim，Docker 的一些集成实现不一致，导致维护人员的负担增加。
+
+总之，这样的方式不但带来了更高的复杂度，而且由于部件的增加也增加了不稳定的因素，同时还增加了维护负担，所以弃用dockershim是迟早的事。
+
+**总结**：**dockershim** 一直都是 K8S 社区为了能让 Docker 成为其支持的容器运行时，所维护的一个兼容程序。 现在**所谓的废弃，**也仅仅是 K8S 要放弃对现在代码仓库中的 dockershim 的维护支持。以便K8S可以像刚开始时计划的那样，仅负责维护其 CRI ，任何兼容 CRI 的容器运行时，都可以作为 K8S 的 runtime。
+
+流转图：
+
+![](assets/2023-08-22-10-40-39-image.png)
+
+> 来源： https://mp.weixin.qq.com/s?__biz=MzI3OTA2MDQyOQ==&mid=2247484252&idx=1&sn=537245a28ef2422ce9635e21c8dd5155&chksm=eb4cc9fedc3b40e833663241ec5dd522c0f31b4da28cd81bda511406fc51e64d401899ee95f9#rd
+
+
+
 ## **DevOps**
 
 DevOps的出现有其必然性。在软件开发生命周期中，遇到了两次瓶颈。第一次瓶颈是在需求阶段和开发阶段之间，针对不断变化的需求，对软件开发者提出了高要求，后来出现了敏捷方法论，强调适应需求、快速迭代、持续交付。第二个瓶颈是在开发阶段和构建部署阶段之间，大量完成的开发任务可能阻塞在部署阶段，影响交付，于是有了DevOps。
@@ -857,8 +895,6 @@ services:
 > 
 > 解决：需要给映射的文件赋权：chmod 777 ./catalina.sh
 
-
-
 ### Docker-RocketMQ
 
 > 来源：[使用docker-compose部署RocketMQ5.x 单机部署+配置参数详解_docker rocketmq单机_kerwin_code的博客-CSDN博客](https://blog.csdn.net/weixin_44606481/article/details/129780540)
@@ -889,8 +925,6 @@ mkdir /docker/rocketmq/broker/bin -p
 chmod 777 -R /docker/rocketmq/broker/*
 
 vi /docker/rocketmq/broker/conf/broker.conf
-
-
 ```
 
 添加以下配置信息到broker.conf
@@ -902,7 +936,7 @@ brokerClusterName = DefaultCluster
 brokerName = broker-a
 # broker id节点ID， 0 表示 master, 其他的正整数表示 slave，不能小于0 
 brokerId = 0
-# Broker服务地址	String	内部使用填内网ip，如果是需要给外部使用填公网ip
+# Broker服务地址    String    内部使用填内网ip，如果是需要给外部使用填公网ip
 brokerIP1 = 192.168.1.7
 # Broker角色
 brokerRole = ASYNC_MASTER
@@ -916,13 +950,9 @@ fileReservedTime = 72
 autoCreateTopicEnable=true
 # 是否允许Broker自动创建订阅组，建议线下开启，线上关闭
 autoCreateSubscriptionGroup=true
-
-
 ```
 
 说明：建立broker.conf文件，通过这个文件把RocketMQ的broker管理起来
-
-
 
 **编写docker-compose.yml文件**
 
@@ -973,8 +1003,6 @@ services:
       - 'rmqnamesrv'
     environment:
       - JAVA_OPTS= -Xmx256M -Xms256M -Xmn128M -Drocketmq.namesrv.addr=rmqnamesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
-
-
 ```
 
 **启动**
@@ -989,8 +1017,6 @@ docker-compose up -d #  -d 指后台运行
 **访问控制台**
 
 > http://192.168.1.7:8080
-
-
 
 ## **Maven结合Docker**
 
