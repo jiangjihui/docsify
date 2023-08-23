@@ -4,6 +4,18 @@
 
 > 来源： https://www.pdai.tech/md/spring/spring-x-framework-helloworld.html
 
+
+
+### 各版本支持的JDK
+
+- Spring Framework 4.x：支持 Java 6、7 和 8
+
+- Spring Framework 5.x：支持 Java 8 到 Java 17
+
+
+
+
+
 ## bean的注入过程
 
 Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh()` 方法，该方法是个模板方法，定义了加载到容器的[全部过程](https://blog.csdn.net/ajianyingxiaoqinghan/article/details/107218224)。
