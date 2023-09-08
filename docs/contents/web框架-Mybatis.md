@@ -4,18 +4,12 @@ MyBatis和Hibernate一样，是一个优秀的持久层框架。原生的jdbc操
 
 MyBatis通过XML或者注解的方式将要执行的sql语句配置起来，并通过java对象和sql语句映射成最终执行的sql语句。最终由MyBatis框架执行sql，并将结果映射成java对象并返回。
 
-
-
 ## 数据处理
 
 1. 参数映射：ParameterHandler
 2. SQL解析：SqlSource
 3. SQL执行：Executor
 4. 结果处理和映射：ResultSetHandler
-
-
-
- 
 
 ## MyBatis的[执行流程](https://blog.csdn.net/qq_32166627/article/details/70741729)
 
@@ -31,26 +25,22 @@ MyBatis通过XML或者注解的方式将要执行的sql语句配置起来，并�
 2. 为查询创建缓存，以提高性能；
 3. 创建JDBC的Statement连接对象，传递给StatementHandler对象，返回List查询结果；
 
- 
-
- 
-
 ## **MyBatis初始化机制**
 
 任何框架的初始化，无非是加载自己运行时所需要的配置信息。MyBatis的配置信息，大概包含以下信息，其高层级结构如下：
 
 configuration 配置
-	properties 属性
-	settings 设置
-	typeAliases 类型命名
-	typeHandlers 类型处理器
-	objectFactory 对象工厂
-	plugins 插件
-	environments 环境
-		environment 环境变量
-		transactionManager 事物管理器
-		dataSource 数据源
-	映射器
+    properties 属性
+    settings 设置
+    typeAliases 类型命名
+    typeHandlers 类型处理器
+    objectFactory 对象工厂
+    plugins 插件
+    environments 环境
+        environment 环境变量
+        transactionManager 事物管理器
+        dataSource 数据源
+    映射器
 
 使用 org.apache.ibatis.session.**Configuration**对象作为一个**所有配置**信息的容器，Configuration对象的组织结构和XML配置文件的组织结构几乎完全一样（当然，Configuration对象的功能并不限于此，它还负责创建一些MyBatis内部使用的对象，如Executor等。可以这么说，MyBatis初始化的过程，就是创建 Configuration对象的过程。
 
@@ -59,10 +49,6 @@ configuration 配置
 基于**XML配置**文件：基于XML配置文件的方式是将MyBatis的所有配置信息放在XML文件中，MyBatis通过加载并XML配置文件，将配置文信息组装成内部的Configuration对象。
 
 基于**Java API：**这种方式不使用XML配置文件，需要MyBatis使用者在Java代码中，手动创建Configuration对象，然后将配置参数set 进入Configuration对象中。
-
- 
-
- 
 
 ## [**主要构件**](https://www.jianshu.com/p/ec40a82cae28)及其相互关系
 
@@ -90,12 +76,7 @@ configuration 配置
 
 **SqlSessionFactory：**SqlSession工厂类，以工厂形式创建SqlSession对象，采用了Factory工厂设计模式
 
-
  ![image](../_images/eca72be9-0035-416a-873a-75a5e1afa036.png)
-
-
-
-
 
 ## Executor在sqlSession中的[应用](https://blog.csdn.net/ykzhen2015/article/details/50315027)
 
@@ -106,6 +87,7 @@ SqlSession是一个接口，mybatis内部是通过DefaultSqlSession这个实现�
 **三种执行器**
 
 - **Simple**Executor：SIMPLE 就是普通的执行器。
+
 - **Reuse**Executor：执行器会重用预处理语句（prepared statements）
 
 - **Batch**Executor：它是批量执行器
@@ -116,17 +98,13 @@ SqlSession是一个接口，mybatis内部是通过DefaultSqlSession这个实现�
 
 ```xml
 <bean id="sqlSessionTemplateBatch" class="org.mybatis.spring.SqlSessionTemplate">       
-	<constructor-arg index="0" ref="sqlSessionFactory" />    
-	<!--更新采用批量的executor -->    
-	<constructor-arg index="1" value="BATCH"/>    
+    <constructor-arg index="0" ref="sqlSessionFactory" />    
+    <!--更新采用批量的executor -->    
+    <constructor-arg index="1" value="BATCH"/>    
 </bean> 
 ```
 
 这样，它便是一个批量的执行器。mybatis的三个executor都有一个共同的父类——**Base**Executor。
-
-
-
- 
 
 ## [MyBatis缓存](https://tech.meituan.com/mybatis_cache.html)
 
@@ -140,8 +118,6 @@ MyBatis一级缓存内部设计简单，只是一个没有容量限定的HashMap
 
 MyBatis的一级缓存最大范围是SqlSession内部，有多个SqlSession或者分布式的环境下，数据库写操作会引起脏数据，建议设定缓存级别为Statement。
 
-
-
 **二级缓存**
 
 在上文中提到的一级缓存中，其最大的共享范围就是一个SqlSession内部，如果多个SqlSession之间需要共享缓存，则需要使用到二级缓存。开启二级缓存后，会使用CachingExecutor装饰Executor，进入一级缓存的查询流程前，先在CachingExecutor进行二级缓存的查询。
@@ -153,16 +129,12 @@ MyBatis的一级缓存最大范围是SqlSession内部，有多个SqlSession或�
 但是，通常我们会为每个单表创建单独的映射文件，由于MyBatis的二级缓存是基于namespace的，多表查询语句所在的namspace无法感应到其他namespace中的语句对多表查询中涉及的表进行的修改，引发脏数据问题。
 
 > **总结**
->
+> 
 > MyBatis的二级缓存相对于一级缓存来说，实现了SqlSession之间缓存数据的共享，同时粒度更加的细，能够到namespace级别，通过Cache接口实现类不同的组合，对Cache的可控性也更强。
->
+> 
 > MyBatis在多表查询时，极大可能会出现脏数据，有设计上的缺陷，安全使用二级缓存的条件比较苛刻。
->
+> 
 > 在分布式环境下，由于默认的MyBatis Cache实现都是基于本地的，分布式环境下必然会出现读取到脏数据，需要使用集中式缓存将MyBatis的Cache接口实现，有一定的开发成本，直接使用Redis,Memcached等分布式缓存可能成本更低，安全性也更高。
-
-
-
-
 
 ## SpringBoot中的SqlSession
 
@@ -178,6 +150,10 @@ SqlSessionTemplate的内部类SqlSessionInterceptor动态代理创建sqlSession�
 
 
 
+Spring 与 Mybatis的结合中，通过 `SqlSessionInterceptor` 对SqlSession进行管理，在mapper方法的执行前后进行sqlSession的开启和提交（关闭）。在事务提交的时候会清理一级缓存。
+
+
+
 
 
 ## [MyBatis结合Redis](http://blog.csdn.net/xiaolyuh123/article/details/73912617)
@@ -185,10 +161,6 @@ SqlSessionTemplate的内部类SqlSessionInterceptor动态代理创建sqlSession�
 1、开启Mybatis二级缓存
 
 2、自定义缓存需要实现Mybatis的Cache接口，我这里将使用Redis来作为缓存的容器。
-
-
-
-
 
 ## Mybatis与JPA比较
 
@@ -214,21 +186,13 @@ SqlSessionTemplate的内部类SqlSessionInterceptor动态代理创建sqlSession�
 
 > **总结：**都需要添加Dao类，Mybatis的Dao类需要实现具体sql（注解或者xml），JPA不需要。对于pojo类的侵入性而言，Mybatis无需更改pojo类的任何地方，而JPA需要添加注解实现映射。
 
-
-
-
-
 ## **mybatis和hibernate的区别**
 
 - hibernate入门门槛高，是一个标准的ORM矿建（对象关系映射），不需要程序写sql，sql语句自动生成，对sql语句进行优化、修改比较困难。
 
 - mybatis专注于sql本身，需要程序员自己编写sql语句，sql修改、优化比较方便。是一个不完全的ORM框架，而且比较重要的一点是mybatis对于**输入参数和返回参数的自动映射**使得开发更加方便。
-
+  
   > hibernate适用于**需求变化不多**的中小型项目，比如：后台管理系统；mybatis适用于**需求变化较多**的项目，比如：互联网项目。
-
-
-
-
 
 ## SQL注入
 
@@ -255,27 +219,17 @@ select * from user where id in
 <foreach collection="ids" item="item" open="("separator="," close=")">#{item}</foreach>
 ```
 
-
-
-
-
 ## Mapper方法不可重载
 
 mybatis在动态代理调用方法时，Mybatis使用package+Mapper+method全限名作为key，去xml内寻找唯一sql来执行的。类似：key=x.y.UserMapper.getUserById，那么，重载方法时将导致矛盾。对于Mapper接口，[Mybatis禁止方法重载（overLoad）](https://blog.csdn.net/yuandengta/article/details/108645364)。
 
-
-
-
-
 ## FAQ
 
->**Mybatis 无法注入mapper**
+> **Mybatis 无法注入mapper**
 
 解决：未配置包扫描路径。
 
 Mybatis的xml方式或者注解方式都需要配置@MapperScan
-
-
 
 > **访问mapper方法出现异常：binding.BindingException: Invalid bound statement (not found)**
 
@@ -286,6 +240,3 @@ mybatis.mapper-locations路径配置有误：例如：mybatis.mapper-locations=c
 可能原因2：
 1 当所有接口的mapper对应的xml文件都放在同一个目录下的时候，mybatis.mapper-locations指定到该目录并用\*匹配即可；
 2 当所有接口的mapper对应的xml文件放在各自的包路径下面时，不仅仅需要mybatis.mapper-locations用\*匹配目录，还需要在pom.xml下的<build>中加入对xml的打包，否则生成的运行文件中不包含对应的xml文件，导致出现异常：BindingException: Invalid bound statement (not found)
-
-
-
