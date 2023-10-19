@@ -148,13 +148,7 @@ SqlSessionTemplate的内部类SqlSessionInterceptor动态代理创建sqlSession�
 
 > Tips：SqlSessionHolder用于在TransactionSynchronizationManager中保持当前的SqlSession
 
-
-
 Spring 与 Mybatis的结合中，通过 `SqlSessionInterceptor` 对SqlSession进行管理，在mapper方法的执行前后进行sqlSession的开启和提交（关闭）。在事务提交的时候会清理一级缓存。
-
-
-
-
 
 ## [MyBatis结合Redis](http://blog.csdn.net/xiaolyuh123/article/details/73912617)
 
@@ -222,6 +216,26 @@ select * from user where id in
 ## Mapper方法不可重载
 
 mybatis在动态代理调用方法时，Mybatis使用package+Mapper+method全限名作为key，去xml内寻找唯一sql来执行的。类似：key=x.y.UserMapper.getUserById，那么，重载方法时将导致矛盾。对于Mapper接口，[Mybatis禁止方法重载（overLoad）](https://blog.csdn.net/yuandengta/article/details/108645364)。
+
+
+
+## Tips
+
+### 设置单次查询超时时间
+
+在 MyBatis 中，可以通过在 select 标签中设置 timeout 属性来设置某次数据库查询的超时时间，单位为秒。例如：
+
+```xml
+<select id="selectUser" parameterType="int" resultType="User" timeout="10">
+  select * from user where id = #{id}
+</select>
+```
+
+上述代码中，timeout 属性被设置为 10 秒，表示如果查询时间超过 10 秒，将会抛出 TimeoutException 异常。需要注意的是，timeout 属性只对查询操作有效，对于更新、删除等操作无效。此外，如果数据库本身设置了超时时间，那么 MyBatis 中设置的超时时间将会被忽略。
+
+
+
+
 
 ## FAQ
 
