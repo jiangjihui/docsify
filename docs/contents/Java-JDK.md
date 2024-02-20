@@ -7,13 +7,11 @@
 - **default方法** − default方法（默认方法）就是一个在接口里面有了一个实现的方法。
 
 - **Stream API** −新添加的Stream API（java.util.stream） 把真正的函数式编程风格引入到Java中。有两种模式: 顺序执行和并行执行。
-
+  
   ```java
   // 获取部门列表中所有部门的ID列表
   List<String> deptIdList = deptList.stream().map(SysDept::getId).collect(Collectors.toList());
   ```
-
-  
 
 - **Date Time API** − 加强对日期与时间的处理。
 
@@ -26,10 +24,6 @@
 - **Nashorn, JavaScript 引擎** − Java 8提供了一个新的Nashorn javascript引擎，它允许我们在JVM上运行特定的javascript应用。
 
 - **Java FX**：JavaFX主要致力于富客户端开发，以弥补swing的缺陷，主要提供图形库与media库，支持audio,video,graphics,animation,3D等，同时采用现代化的css方式支持界面设计。同时又采用XUI方式以XML方式设计UI界面，达到显示与逻辑的分离。
-
-
-
-
 
 ## JAVA 9（2017年9月）
 
@@ -50,8 +44,6 @@ public interface TestInterface {
 }
 ```
 
-
-
 ### 匿名内部类也支持钻石（diamond）运算符
 
 JAVA 5 就引入了泛型（generic），到了 JAVA 7 开始支持钻石（diamond）运算符：`<>`，可以自动推断泛型的类型：
@@ -67,8 +59,6 @@ List<Integer> numbers = new ArrayList<>() {
     ...
 }
 ```
-
-
 
 ### 增强的 `try-with-resources`
 
@@ -99,10 +89,6 @@ try (bufferReader0; bufferReader1) {
 }
 ```
 
-
-
-
-
 ## JAVA 10（2018年3月）
 
 ### 局部变量的自动类型推断（var）
@@ -114,10 +100,6 @@ var message = "Hello, Java 10";
 ```
 
 不过这个只是语法糖，编译后变量还是有类型的，使用时还是考虑下可维护性的问题，不然写多了可就成 JavaScript 风格了
-
-
-
-
 
 ## JAVA 11（2018年9月）
 
@@ -134,8 +116,6 @@ String language = sampleList.stream()
 assertThat(language).isEqualTo("Java, Groovy");
 ```
 
-
-
 ### javac + java 命令一把梭
 
 以前编译一个 java 文件时，需要先 javac 编译为 class，然后再用 java 执行，现在可以一把梭了：
@@ -145,15 +125,9 @@ $ java HelloWorld.java
 Hello Java 11!
 ```
 
-
-
 ### Java Flight Recorder 登陆 OpenJDK
 
 **Java Flight Recorder** 是个灰常好用的调试诊断工具，不过之前是在 Oracle JDK 中，也跟着 JDK 11 开源了，OpenJDK 这下也可以用这个功能，真香！
-
-
-
-
 
 ## JAVA 12（2019年3月）
 
@@ -187,8 +161,6 @@ typeOfDay = switch (dayOfWeek) {
 };
 ```
 
-
-
 ### instanceof + 类型强转一步到位
 
 之前处理动态类型碰上要强转时，需要先 `instanceof` 判断一下，然后再强转为该类型处理：
@@ -210,10 +182,6 @@ if (obj instanceof String str) {
 }
 ```
 
-
-
-
-
 ## JAVA 13（2019年9月）
 
 ### switch 语法再增强
@@ -224,13 +192,11 @@ JAVA 12 中虽然增强了 `swtich` 语法，但并不能在 `->` 之后写复�
 typeOfDay = switch (dayOfWeek) {
     case MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY -> {
         // do sth...
-    	yield "Working Day";
+        yield "Working Day";
     }
     case SATURDAY, SUNDAY -> "Day Off";
 };
 ```
-
-
 
 ### 文本块（Text Block）的支持
 
@@ -244,17 +210,13 @@ JAVA 13 中帮你解决了这个恶心的问题，增加了文本块的支持，
 
 ```java
 String json = """
-				{
-				    "id":"1697301681936888",
-				    "nickname":"空无",
-				    "homepage":"https://juejin.cn/user/1697301681936888"
-				}
-				""";
+                {
+                    "id":"1697301681936888",
+                    "nickname":"空无",
+                    "homepage":"https://juejin.cn/user/1697301681936888"
+                }
+                """;
 ```
-
-
-
-
 
 ## JAVA 14（2020年3月）
 
@@ -266,7 +228,7 @@ String json = """
 public record UserDTO(String id,String nickname,String homepage) { };
 
 public static void main( String[] args ){
-	UserDTO user = new UserDTO("1697301681936888","空无","https://juejin.cn/user/1697301681936888");
+    UserDTO user = new UserDTO("1697301681936888","空无","https://juejin.cn/user/1697301681936888");
     System.out.println(user.id);
     System.out.println(user.nickname);
     System.out.println(user.id);
@@ -274,8 +236,6 @@ public static void main( String[] args ){
 ```
 
 IDEA 也早已支持了这个功能，创建类的时候直接就可以选： ![image (2) (1).png](../_images/38ee56982efd4cf888057470c2aa33dd~tplv-k3u1fbpfcp-zoom-1.png) **不过这个只是一个语法糖，编译后还是一个 Class，和普通的 Class 区别不大**
-
-
 
 ### 更直观的 NullPointerException 提示
 
@@ -291,19 +251,17 @@ boolean effected = wrapMap.get("innerMap").get("effected");
 
 // StackTrace:
 Exception in thread "main" java.lang.NullPointerException
-	at org.example.App.main(App.java:50)
+    at org.example.App.main(App.java:50)
 ```
 
 JAVA 14 也 get 到了 JAVAER 们的痛点，优化了 NullPointerException 的提示，让你不在困惑，一眼就能定位到底“空”在哪！
 
 ```java
 Exception in thread "main" java.lang.NullPointerException: Cannot invoke "java.lang.Boolean.booleanValue()" because the return value of "java.util.Map.get(Object)" is null
-	at org.example.App.main(App.java:50)
+    at org.example.App.main(App.java:50)
 ```
 
 现在的 StackTrace 就很直观了，直接告诉你 `effected` 变量为空，再也不用困惑！
-
-
 
 ### 安全的堆外内存读写接口，别再玩 Unsafe 的骚操作了
 
@@ -336,26 +294,17 @@ memorySegment.close();
 
 不了解 Unsafe 操作堆外内存方式的同学，可以参考我的另一篇文章《[JDK中为了性能大量使用的Unsafe类，你会用吗？](https://juejin.cn/post/6943391357935288351)》
 
-
-
 ### 新增的 jpackage 打包工具，直接打包二进制程序，再也不用装 JRE 了
 
 之前如果想构建一个可执行的程序，还需要借助三方工具，将 JRE 一起打包，或者让客户电脑也装一个 JRE 才可以运行我们的 JAVA 程序。 
 
 现在 JAVA 直接内置了 `jpackage` 打包工具，帮助你一键打包二进制程序包，终于不用乱折腾了
 
-
-
-
-
-
 ## JAVA 15（2020年9月）
 
 ### ZGC 和 Shenandoah 两款垃圾回收器正式登陆
 
 在 JAVA 15中，ZGC 和 Shenandoah 再也不是实验功能，正式登陆了（不过 G1 仍然是默认的）。如果你升级到 JAVA 15 以后的版本，就赶快试试吧，性能更强，延迟更低
-
-
 
 ### 封闭（Sealed ）类
 
@@ -373,10 +322,6 @@ public sealed interface Service permits Car, Truck {
 }
 ```
 
-
-
-
-
 ## JAVA 16（2021年3月）
 
 JAVA 16 在**用户可见的地方**变化并不多，基本都是 14/15 的实验性内容，到了 16 正式发布，这里就不重复介绍了。 
@@ -384,6 +329,68 @@ JAVA 16 在**用户可见的地方**变化并不多，基本都是 14/15 的实�
 
 
 > 作者：空无  
-> 链接：https://juejin.cn/post/6964543834747322405  
+> 链接：[300 秒快速了解 Java 9 - 16 新特性 - 掘金](https://juejin.cn/post/6964543834747322405)  
 > 来源：掘金  
-> 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。  
+> 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+
+
+## JAVA 21 (2023年9月)
+
+**虚拟线程**（Virtual Threads）是 Java 21 所有新特性中最为吸引人的内容，它可以大大来简化和增强Java应用的并发性。但是，随着这些变化而来的是如何最好地管理此吞吐量的问题。本文，就让我们看一下开发人员在使用虚拟线程时，应该如何管理吞吐量。
+
+在大多数情况下，开发人员不需要自己创建虚拟线程。例如，对于 Web 应用程序，Tomcat 或 Jetty 等底层框架将为每个传入请求自动生成一个虚拟线程。
+
+如果在应用程序内部需要自行调用来提供业务并发能力时，我们可以使用[Java 21新特性：虚拟线程（Virtual Threads）](http://mp.weixin.qq.com/s?__biz=MzAxODcyNjEzNQ==&mid=2247579656&idx=1&sn=48fcc1d0d53a78f0ec4aec4103aa1163&chksm=9bd21590aca59c8664fff12bb8265cb3c740bb8b24b1d60d13215180d348699bdd13add5c783&scene=21#wechat_redirect)中介绍的方法去创建和使用，比如较为常用的就是`Executors.newVirtualThreadPerTaskExecutor()`。
+
+```java
+Runnable runnable = () -> {
+    System.out.println("Hello, www.didispace.com");
+};
+
+try (ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()) {
+    for (int i = 0; i < 100; i++) {
+        executorService.submit(runnable);
+    }
+}
+```
+
+我们可以像上面开启100个虚拟线程来执行任务。那么问题来了：我们要如何对虚拟线程限流控制吞吐量呢？
+
+**虚拟线程的限流**
+
+对于虚拟线程并发控制的答案是：信号量！
+
+**划重点：不要池化虚拟线程，因为它们不是稀缺资源。**
+
+所以，对于虚拟线程并发控制的最佳方案是使用`java.util.concurrent.Semaphore`。
+
+下面的代码示例演示了如何实现`java.util.concurrent.Semaphore`来控制虚拟线程的并发数量：
+
+```java
+public class SemaphoreExample {
+
+    // 定义限流并发的信号量，这里设置为：10
+ private static final Semaphore POOL = new Semaphore(10); 
+
+ public void callOldService(...) {
+  try{
+   POOL.acquire(); // 尝试通过信号量获取执行许可
+  } catch(InterruptedException e){
+            // 执行许可获取失败的异常处理  
+  }
+ 
+  try {
+   // 获取到执行许可，这里是使用虚拟线程执行任务的逻辑
+  } finally {
+            // 释放信号量
+   POOL.release(); 
+  }
+ }
+}
+```
+
+
+
+> 作者：程序猿DD 
+> 链接： https://mp.weixin.qq.com/s/teZiU3wq8D2bBEURiLMewA
