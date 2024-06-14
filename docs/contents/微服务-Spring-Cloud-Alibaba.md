@@ -215,7 +215,7 @@ public interface ProductService{
 
 ```
 配置文件优先级(由高到低):
-bootstrap.properties -> bootstr ap.yml -> application.pr operties -> application.yml
+bootstrap.properties -> bootstrap.yml -> application.properties -> application.yml
 spring:
   application:
     name: server-product
@@ -231,7 +231,7 @@ spring:
     active: dev
 ```
 
-> 注意:不能使用原来的application.yml 作为配置文件，而是新建一个bootstr ap.yml作为配置文件
+> 注意:不能使用原来的application.yml 作为配置文件，而是新建一个bootstrap.yml作为配置文件
 
 **4 在nacos 中添加配置**
 
