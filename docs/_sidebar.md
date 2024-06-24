@@ -1,4 +1,5 @@
 - 计算机基础
+  - [公共知识](contents/计算机基础-公共知识.md)
   - [数据类型](contents/计算机基础-数据类型.md)
   - [Shell](contents/计算机基础-Shell.md)
   - [Dos](contents/计算机基础-Dos.md)
