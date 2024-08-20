@@ -115,7 +115,7 @@ select a.id,a.No,b.name from table1 a left join table2 b on (a.No = b.No) where 
 null值需要用is null或者 is not，在有子查询的情况下，如果子查询可能会返回null类型的数据，会导致整个子查询的结果集无效，比如：
 
 ```sql
-select * from course where teacher_id in (select teacher_id from student)
+select * from course where teacher_id not in (select teacher_id from student)
 ```
 
 如果 `student` 表中存在一条`teacher_id`为空的数据，将导致整个结果集都查询不到数据。
@@ -125,6 +125,8 @@ select * from course where teacher_id in (select teacher_id from student)
 **1. x in**
 
 (null,1,3)的情况，相当于(x = null or x = 1 or x or 3),必须要查出x为null的情况要写成 => x is null or x in (1,3)
+
+> 即：单次查询结果中存在null和非null的数据，能正常查询到非null条件的结果集，但是null结果集的数据会被忽略掉，导致会缺失null结果集的数据。
 
 **2. x not in**
 
