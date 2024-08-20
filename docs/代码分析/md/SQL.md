@@ -126,7 +126,7 @@ select * from course where teacher_id not in (select teacher_id from student)
 
 (null,1,3)的情况，相当于(x = null or x = 1 or x or 3),必须要查出x为null的情况要写成 => x is null or x in (1,3)
 
-> 即：单次查询结果中存在null和非null的数据，能正常查询到非null条件的结果集，但是null结果集的数据会被忽略掉，导致会缺失null结果集的数据。
+> 即：单次查询结果中存在null和非null的数据，能正常查询到非null条件的结果集，但是null结果集的数据会被忽略掉，会缺失null结果集的数据。导致最终的查询结果不完整。
 
 **2. x not in**
 
