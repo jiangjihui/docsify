@@ -140,6 +140,6 @@ select * from course where teacher_id not in (select teacher_id from student)
 select * from course where name not like 'abc%';
 ```
 
-假设 course 表中存在一条 name 为 null 的数据，上述sql也无法查出结果。因为null无法参与比较。
+假设想查出 course 表中一条 name 为 null 的数据，上述sql也无法查出到该条数据。因为null无法参与比较。
 
 
