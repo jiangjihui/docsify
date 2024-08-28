@@ -42,7 +42,7 @@ Spring Cloud是一系列框架的有序集合。它利用Spring Boot的开发便
 
  
 
-## **Spring Cloud**[**体系介绍**](https://segmentfault.com/a/1190000014567118?utm_source=feed-content)
+## **Spring Cloud **[**体系介绍**](https://segmentfault.com/a/1190000014567118?utm_source=feed-content)
 
 上图只是Spring Cloud体系的一部分，Spring Cloud共集成了19个子项目，里面都包含一个或者多个第三方的组件或者框架！
 
