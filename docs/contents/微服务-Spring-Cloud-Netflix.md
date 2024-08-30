@@ -10,7 +10,7 @@ Spring Cloud是一系列框架的有序集合。它利用Spring Boot的开发便
 
  
 
-## **Spring Cloud的核心功能**
+## Spring Cloud的核心功能
 
 - 分布式/版本化配置
 - 服务注册和发现
@@ -24,7 +24,7 @@ Spring Cloud是一系列框架的有序集合。它利用Spring Boot的开发便
 
  
 
-## **运行流程**
+## 运行流程
 
 1、请求统一通过API网关（Zuul）来访问内部服务.
 
@@ -42,7 +42,7 @@ Spring Cloud是一系列框架的有序集合。它利用Spring Boot的开发便
 
  
 
-## **Spring Cloud **[**体系介绍**](https://segmentfault.com/a/1190000014567118?utm_source=feed-content)
+## Spring Cloud [体系介绍](https://segmentfault.com/a/1190000014567118?utm_source=feed-content)
 
 上图只是Spring Cloud体系的一部分，Spring Cloud共集成了19个子项目，里面都包含一个或者多个第三方的组件或者框架！
 
