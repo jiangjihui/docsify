@@ -4,17 +4,11 @@
 
 > 来源： https://www.pdai.tech/md/spring/spring-x-framework-helloworld.html
 
-
-
 ### 各版本支持的JDK
 
 - Spring Framework 4.x：支持 Java 6、7 和 8
 
 - Spring Framework 5.x：支持 Java 8 到 Java 17
-
-
-
-
 
 ## bean的注入过程
 
@@ -205,15 +199,41 @@ class EventListenerApplicationTests implements ApplicationContextAware {
 
 ## 事务管理
 
+> Spring 事务的传播属性定义了事务方法在被另一个事务方法调用时，事务应该如何传播
+
 当使用声明式事务模型时，您必须告诉容器如何去管理事务，例如，何时开启一个事务？哪些方法需要事务？当前不存在事务的情况下，容器是否需要为其添加事务控制？事实上，Spring提供了一个bean ——TransactionAttributSource，通过配置其事务（传播）属性（transactionattribute）来达到精确控制事务行为的目的。事务的(传播)属性总共[有七种](https://blog.csdn.net/caomiao2006/article/details/38829039)：
 
-- Required
-- Mandatory
-- RequiresNew
-- Supports
-- NotSupported
-- Never
-- PROPAGATION_NESTED
+1. **REQUIRED（默认）**
+   
+   如果当前没有事务，就新建一个事务；如果已经存在一个事务，则加入到这个事务中。
+
+2. **SUPPORTS**
+   
+   如果当前存在事务，则加入该事务；如果当前没有事务，则以非事务的方式执行。
+
+3. **MANDATORY**
+   
+   要求当前必须存在事务，如果没有事务则抛出异常。
+
+4. **REQUIRES_NEW**
+   
+   新建事务，如果当前存在事务，则把当前事务挂起。
+
+5. **NOT_SUPPORTED**
+   
+   以非事务方式执行，如果当前存在事务，则把当前事务挂起。
+
+6. **NEVER**
+   
+   以非事务方式执行，如果当前存在事务，则抛出异常。
+
+7. **NESTED**
+   
+   如果当前存在事务，则在嵌套事务内执行；如果当前没有事务，则新建一个事务。嵌套事务是外部事务的子事务，外部事务回滚时，嵌套事务也会回滚，而嵌套事务回滚不会影响外部事务的提交。
+
+
+
+#### 七种事务属性
 
 **Required**
 

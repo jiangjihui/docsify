@@ -2,20 +2,16 @@
 
 容器主要包括 Collection 和 Map 两种，Collection 存储着对象的集合，而 Map 存储着键值对(两个对象)的映射表。
 
-
-
 程序开发中数据结构可以分为这八类；`数组`、`链表`、`栈`、`队列`、`散列表`、`树`、`堆`、`图`。其中，数组、链表、散列表、树是程序开发直接或者间接用到的最多的。相关的对应实现类可以包括如下；
 
-| 类型   | 实现          | 文章                                                         |
-| :----- | :------------ | :----------------------------------------------------------- |
-| 数组   | ArrayList     | [ArrayList也这么多知识？一个指定位置插入就把谢飞机面晕了！](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/27/面经手册-第7篇-ArrayList也这么多知识-一个指定位置插入就把谢飞机面晕了.html](https://bugstack.cn/interview/2020/08/27/面经手册-第7篇-ArrayList也这么多知识-一个指定位置插入就把谢飞机面晕了.html)) |
-| 链表   | LinkedList    | [LinkedList插入速度比ArrayList快？你确定吗？](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/30/面经手册-第8篇-LinkedList插入速度比ArrayList快-你确定吗.html](https://bugstack.cn/interview/2020/08/30/面经手册-第8篇-LinkedList插入速度比ArrayList快-你确定吗.html)) |
-| 树     | 2-3树、红黑树 | [看图说话，讲解2-3平衡树「红黑树的前身」](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/16/面经手册-第5篇-看图说话-讲解2-3平衡树-红黑树的前身.html](https://bugstack.cn/interview/2020/08/16/面经手册-第5篇-看图说话-讲解2-3平衡树-红黑树的前身.html)) [红黑树操作原理，解析什么时候染色、怎么进行旋转、与2-3树有什么关联](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/20/面经手册-第6篇-带着面试题学习红黑树操作原理-解析什么时候染色-怎么进行旋转-与2-3树有什么关联.html](https://bugstack.cn/interview/2020/08/20/面经手册-第6篇-带着面试题学习红黑树操作原理-解析什么时候染色-怎么进行旋转-与2-3树有什么关联.html)) |
-| 散列表 | HashMap       | [HashMap核心知识，扰动函数、负载因子、扩容链表拆分，深度学习](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/07/面经手册-第3篇-HashMap核心知识-扰动函数-负载因子-扩容链表拆分-深度学习.html](https://bugstack.cn/interview/2020/08/07/面经手册-第3篇-HashMap核心知识-扰动函数-负载因子-扩容链表拆分-深度学习.html)) [HashMap数据插入、查找、删除、遍历，源码分析](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/13/面经手册-第4篇-HashMap数据插入-查找-删除-遍历-源码分析.html](https://bugstack.cn/interview/2020/08/13/面经手册-第4篇-HashMap数据插入-查找-删除-遍历-源码分析.html)) |
-| 栈     | Stack         |                                                              |
-| 队列   | Queue、Deque  |                                                              |
-
-
+| 类型  | 实现          | 文章                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+|:--- |:----------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 数组  | ArrayList   | [ArrayList也这么多知识？一个指定位置插入就把谢飞机面晕了！](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/27/面经手册-第7篇-ArrayList也这么多知识-一个指定位置插入就把谢飞机面晕了.html](https://bugstack.cn/interview/2020/08/27/面经手册-第7篇-ArrayList也这么多知识-一个指定位置插入就把谢飞机面晕了.html))                                                                                                                                                                                                                                                 |
+| 链表  | LinkedList  | [LinkedList插入速度比ArrayList快？你确定吗？](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/30/面经手册-第8篇-LinkedList插入速度比ArrayList快-你确定吗.html](https://bugstack.cn/interview/2020/08/30/面经手册-第8篇-LinkedList插入速度比ArrayList快-你确定吗.html))                                                                                                                                                                                                                                                       |
+| 树   | 2-3树、红黑树    | [看图说话，讲解2-3平衡树「红黑树的前身」](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/16/面经手册-第5篇-看图说话-讲解2-3平衡树-红黑树的前身.html](https://bugstack.cn/interview/2020/08/16/面经手册-第5篇-看图说话-讲解2-3平衡树-红黑树的前身.html)) [红黑树操作原理，解析什么时候染色、怎么进行旋转、与2-3树有什么关联](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/20/面经手册-第6篇-带着面试题学习红黑树操作原理-解析什么时候染色-怎么进行旋转-与2-3树有什么关联.html](https://bugstack.cn/interview/2020/08/20/面经手册-第6篇-带着面试题学习红黑树操作原理-解析什么时候染色-怎么进行旋转-与2-3树有什么关联.html)) |
+| 散列表 | HashMap     | [HashMap核心知识，扰动函数、负载因子、扩容链表拆分，深度学习](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/07/面经手册-第3篇-HashMap核心知识-扰动函数-负载因子-扩容链表拆分-深度学习.html](https://bugstack.cn/interview/2020/08/07/面经手册-第3篇-HashMap核心知识-扰动函数-负载因子-扩容链表拆分-深度学习.html)) [HashMap数据插入、查找、删除、遍历，源码分析](https://bugstack.cn/interview/2020/09/03/[https://bugstack.cn/interview/2020/08/13/面经手册-第4篇-HashMap数据插入-查找-删除-遍历-源码分析.html](https://bugstack.cn/interview/2020/08/13/面经手册-第4篇-HashMap数据插入-查找-删除-遍历-源码分析.html))    |
+| 栈   | Stack       |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 队列  | Queue、Deque |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 ## ArrayList
 
@@ -24,8 +20,6 @@
 *ArrayList*实现了*List*接口，是顺序容器，即元素存放的数据与放进去的顺序相同，允许放入`null`元素，底层通过**数组实现**。除该类未实现同步外，其余跟*Vector*大致相同。每个*ArrayList*都有一个**容量**(capacity)，表示底层数组的实际大小，容器内存储元素的个数不能多于当前容量。当向容器中添加元素时，如果容量不足，容器会自动增大底层数组的大小。前面已经提过，Java泛型只是编译器提供的语法糖，所以这里的数组是一个Object数组，以便能够容纳任何类型的对象。
 
 ![ArrayList_base](../_images/pdai_ArrayList_base.png)
-
-
 
 ### 底层数据结构
 
@@ -41,8 +35,6 @@ transient Object[] elementData; // non-private to simplify nested class access
 private int size;
 ```
 
-
-
 ### 自动扩容
 
 每当向数组中添加元素时，都要去检查添加后元素的个数是否会超出当前数组的长度，如果超出，数组将会进行扩容，以满足添加数据的需求。数组扩容通过一个公开的方法ensureCapacity(int minCapacity)来实现。在实际添加大量元素前，我也可以使用ensureCapacity来手动增加ArrayList实例的容量，以减少递增式再分配的数量。
@@ -50,8 +42,6 @@ private int size;
 数组进行**扩容**时，会将老数组中的元素重新拷贝一份到新的数组中，每次数组容量的**增长**大约是其原容量的**1.5**倍。这种操作的代价是很高的，因此在实际使用时，我们应该尽量避免数组容量的扩张。当我们可预知要保存的元素的多少时，要在构造ArrayList实例时，就指定其容量，以避免数组扩容的发生。或者根据实际需求，通过调用ensureCapacity方法来手动增加ArrayList实例的容量。
 
 ![ArrayList_grow](../_images/pdai_ArrayList_grow.png)
-
-
 
 ### 多线程替代
 
@@ -61,10 +51,6 @@ private int size;
 - 将LinkedList替换成CopyOnWriteArrayList
 
 > CopyOnWriteArrayList 写数组的拷贝，支持高效率并发且是线程安全的,读操作无锁的ArrayList。所有可变操作都是通过对底层数组进行一次新的复制来实现。合适读多写少的场景。缺点是内存占用大；只能保证数据的最终一致性，不能保证数据的实时一致性。
-
-
-
-
 
 ## LinkedList
 
@@ -76,15 +62,11 @@ private int size;
 
 ![LinkedList_base](../_images/pdai_LinkedList_base.png)
 
-
-
 ### 底层数据结构
 
 *LinkedList*底层**通过双向链表实现**，本节将着重讲解插入和删除元素时双向链表的维护过程，也即是之间解跟*List*接口相关的函数，而将*Queue*和*Stack*以及*Deque*相关的知识放在下一节讲。双向链表的每个节点用内部类*Node*表示。*LinkedList*通过`first`和`last`引用分别指向链表的第一个和最后一个元素。注意这里没有所谓的哑元，当链表为空的时候`first`和`last`都指向`null`。
 
 size 存储当前链表实际存储元素的长度
-
-
 
 ```java
 transient int size = 0;
@@ -116,8 +98,6 @@ private static class Node<E> {
 }
 ```
 
-
-
 ### 方法解析
 
 `add(int index, E element)`, 当index==size时，等同于add(E e); 如果不是，则分两步: 
@@ -127,11 +107,7 @@ private static class Node<E> {
 
 因为链表双向的，可以从开始往后找，也可以从结尾往前找，具体朝那个方向找取决于条件`index < (size >> 1)`，也即是index是靠近前端还是后端。从这里也可以看出，linkedList通过index检索元素的效率没有arrayList高。（**双向查找**）
 
-
-
 `remove()`方法也有两个版本，一个是`remove(int index)`删除指定位置的元素，另一个是`remove(Object o)`删除第一个满足`o.equals(elementData[index])`的元素。删除操作是`add()`操作的逆过程，需要**将删除点之后的元素向前移动一个位置**。需要注意的是为了让GC起作用，必须显式的为最后一个位置赋`null`值。
-
-
 
 ### 多线程替代
 
@@ -141,10 +117,6 @@ private static class Node<E> {
 - 将LinkedList替换成ConcurrentLinkedQueue
 
 > ConcurrentLinkedQueue 的非阻塞算法使用了CAS 原子指令处理并发访问，相比使用工具类的粒度更细，性能更好。
-
-
-
-
 
 ## ArrayDeque
 
@@ -176,8 +148,6 @@ Java里有一个叫做*Stack*的类，却没有叫做*Queue*的类(它是个接�
 
 上图中我们看到， **`head`指向首端第一个有效元素，`tail`指向尾端第一个可以插入元素的空位** 。因为是循环数组，所以`head`不一定总等于0，`tail`也不一定总是比`head`大。
 
-
-
 ### 自动扩容
 
 扩容函数`doubleCapacity()`，其逻辑是申请一个更大的数组(原数组的两倍)，然后将原数组复制过去。过程如下图所示
@@ -186,19 +156,11 @@ Java里有一个叫做*Stack*的类，却没有叫做*Queue*的类(它是个接�
 
 图中我们看到，复制分两次进行，第一次复制`head`右边的元素，第二次复制`head`左边的元素。
 
-
-
-
-
-
-
 ## HashMap
 
 HashMap 最早出现在 JDK 1.2中，底层基于散列算法实现。HashMap 允许 null 键和 null 值，在计算哈键的哈希值时，null 键哈希值为 0。HashMap 并不保证键值对的顺序，这意味着在进行某些操作后，键值对的顺序可能会发生变化。另外，需要注意的是，HashMap 是非线程安全类，在多线程环境下可能会存在问题。
 
 Java7 中使用 **Entry** 来代表每个 HashMap 中的数据节点，Java8 中使用 **Node**，基本没有区别，都是 key，value，hash 和 next 这四个属性，不过，Node 只能用于链表的情况，红黑树的情况需要使用 TreeNode。
-
-
 
 ### 扰动函数
 
@@ -209,8 +171,6 @@ Java7 中使用 **Entry** 来代表每个 HashMap 中的数据节点，Java8 中
 那么，hashMap源码这里不只是直接获取哈希值，还进行了一次扰动计算，`(h = key.hashCode()) ^ (h >>> 16)`。把哈希值右移16位，也就正好是自己长度的一半，之后与原哈希值做异或运算，这样就混合了原哈希值中的高位和低位，增大了**随机性**。
 
 说白了，使用扰动函数就是为了增加随机性，让数据元素更加均衡的散列，减少碰撞。
-
-
 
 ### 负载因子
 
@@ -228,8 +188,6 @@ static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
 同时0.75是一个默认构造值，在创建HashMap也可以调整，比如你希望用更多的空间换取时间，可以把负载因子调的更小一些，减少碰撞。
 
-
-
 ### 数组扩容
 
 #### 链表数据插入
@@ -242,8 +200,6 @@ Java7在多线程操作HashMap时可能引起死循环，原因是扩容转移�
 
 Java8在同样的前提下并不会引起死循环，原因是扩容转移后前后链表顺序不变，保持之前节点的引用关系。
 
-
-
 #### 扩容
 
 - capacity 即容量，默认16。
@@ -251,9 +207,6 @@ Java8在同样的前提下并不会引起死循环，原因是扩容转移后前
 - threshold 阈值。阈值=容量*加载因子。默认12。当元素数量超过阈值时便会触发扩容。
 
 resize() 方法用于初始化数组或数组扩容，每次**扩容**后，**容量为原来的 2 倍**，并进行数据迁移。
-
-
-
 
 ### 链表树化
 
@@ -267,13 +220,9 @@ treeifyBin,是一个链表转树的方法，但不是所有的链表长度为8�
 2. 链表树化的过程中是先由链表转换为树节点，此时的树可能不是一颗平衡树。同时在树转换过程中会记录链表的顺序，`tl.next = p`，这主要方便后续树转链表和拆分更方便。
 3. 链表转换成树完成后，在进行红黑树的转换。先简单介绍下，红黑树的转换需要染色和旋转，以及比对大小。在比较元素的大小中，有一个比较有意思的方法，`tieBreakOrder`加时赛，这主要是因为HashMap没有像TreeMap那样本身就有Comparator的实现。
 
-
-
 ### 红黑树转链
 
 在链表转红黑树中我们重点介绍了一句，在转换树的过程中，记录了原有链表的顺序。那么，这就简单了，红黑树转链表时候，直接把TreeNode转换为Node即可
-
-
 
 ### put 过程分析
 
@@ -347,8 +296,6 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 }
 ```
 
-
-
 ### HashSet
 
 *HashSet*是对*HashMap*的简单包装，对*HashSet*的函数调用都会转换成合适的*HashMap*方法，因此*HashSet*的实现非常简单，只有不到300行代码。这里不再赘述。
@@ -357,8 +304,8 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 //HashSet是对HashMap的简单包装
 public class HashSet<E>
 {
-	......
-	private transient HashMap<E,Object> map;//HashSet里面有一个HashMap
+    ......
+    private transient HashMap<E,Object> map;//HashSet里面有一个HashMap
     // Dummy value to associate with an Object in the backing Map
     private static final Object PRESENT = new Object();
     public HashSet() {
@@ -372,21 +319,10 @@ public class HashSet<E>
 }
 ```
 
-
-
-
-
-
 > 参考链接：
 > [《HashMap核心知识，扰动函数、负载因子、扩容链表拆分，深度学习》](https://bugstack.cn/interview/2020/08/07/%E9%9D%A2%E7%BB%8F%E6%89%8B%E5%86%8C-%E7%AC%AC3%E7%AF%87-HashMap%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86-%E6%89%B0%E5%8A%A8%E5%87%BD%E6%95%B0-%E8%B4%9F%E8%BD%BD%E5%9B%A0%E5%AD%90-%E6%89%A9%E5%AE%B9%E9%93%BE%E8%A1%A8%E6%8B%86%E5%88%86-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0.html)
 > 
 > [《我们一起进大厂》系列-HashMap](https://juejin.cn/post/6844904017269637128)
-
-
-
-
-
-
 
 ## LinkedHashMap
 
@@ -404,15 +340,11 @@ public class HashSet<E>
 
 将对象放入到*LinkedHashMap*或*LinkedHashSet*中时，有两个方法需要特别关心: `hashCode()`和`equals()`。**`hashCode()`方法决定了对象会被放到哪个`bucket`里，当多个对象的哈希值冲突时，`equals()`方法决定了这些对象是否是“同一个对象”**。所以，如果要将自定义的对象放入到`LinkedHashMap`或`LinkedHashSet`中，需要@Override `hashCode()`和`equals()`方法。
 
-
-
 出于性能原因，*LinkedHashMap*是非同步的(not synchronized)，如果需要在多线程环境使用，需要程序员手动同步；或者通过如下方式将*LinkedHashMap*包装成(wrapped)同步的:
 
 ```
 Map m = Collections.synchronizedMap(new LinkedHashMap(...));
 ```
-
-
 
 ### LinkedHashMap经典用法
 
@@ -434,15 +366,9 @@ class FIFOCache<K, V> extends LinkedHashMap<K, V>{
 }
 ```
 
-
-
 ### LinkedHashSet
 
 *LinkedHashSet*和*LinkedHashMap*在Java里也有着相同的实现，前者仅仅是对后者做了一层包装，也就是说**LinkedHashSet里面有一个LinkedHashMap(适配器模式)**。
-
-
-
-
 
 ## TreeMap
 
@@ -453,8 +379,6 @@ Java *TreeMap*实现了*SortedMap*接口，也就是说会按照`key`的大小�
 ***TreeMap\*底层通过红黑树(Red-Black tree)实现**，也就意味着`containsKey()`, `get()`, `put()`, `remove()`都有着`log(n)`的时间复杂度。其具体算法实现参照了《算法导论》。
 
 ![TreeMap_base.png](../_images/pdai_TreeMap_base.png)
-
-
 
 出于性能原因，*TreeMap*是非同步的(not synchronized)，如果需要在多线程环境使用，需要程序员手动同步；或者通过如下方式将*TreeMap*包装成(wrapped)同步的:
 
@@ -474,8 +398,6 @@ SortedMap m = Collections.synchronizedSortedMap(new TreeMap(...));
 - 左旋(Rotate Left)
 - 右旋(RotateRight)
 
-
-
 ### TreeSet
 
 `TreeSet`是对`TreeMap`的简单包装，对`TreeSet`的函数调用都会转换成合适的`TreeMap`方法，因此`TreeSet`的实现非常简单。这里不再赘述。
@@ -485,7 +407,7 @@ SortedMap m = Collections.synchronizedSortedMap(new TreeMap(...));
 public class TreeSet<E> extends AbstractSet<E>
     implements NavigableSet<E>, Cloneable, java.io.Serializable
 {
-	......
+    ......
     private transient NavigableMap<E,Object> m;
     // Dummy value to associate with an Object in the backing Map
     private static final Object PRESENT = new Object();
@@ -500,10 +422,6 @@ public class TreeSet<E> extends AbstractSet<E>
 }
 ```
 
-
-
-
-
 ## ConcurrentHashMap
 
 JDK1.7之前的ConcurrentHashMap使用**分段锁**机制实现，JDK1.8则使用数组+链表+红黑树数据结构和**CAS**原子操作实现ConcurrentHashMap；本文将分别介绍这两种方式的实现方案及其区别。@pdai
@@ -512,23 +430,17 @@ JDK1.7之前的ConcurrentHashMap使用**分段锁**机制实现，JDK1.8则使�
 
 Hashtable之所以效率低下主要是因为其实现使用了synchronized关键字对put等操作进行加锁，而synchronized关键字加锁是对整个对象进行加锁，也就是说在进行put等修改Hash表的操作时，锁住了整个Hash表，从而使得其表现的效率低下。
 
-
-
 ### JDK1.7之前的实现
 
 在JDK1.5~1.7版本，Java使用了**分段锁**机制实现ConcurrentHashMap，所以其最大并发度受Segment的个数（默认16个Segments）限制。
 
 简而言之，ConcurrentHashMap在对象中保存了一个Segment数组，即将整个Hash表划分为多个分段；而每个Segment元素，即每个分段则类似于一个Hashtable；这样，在执行put操作时首先根据hash算法定位到元素属于哪个Segment，然后对该Segment加锁即可。因此，ConcurrentHashMap在多线程并发编程中可是实现多线程put操作。接下来分析JDK1.7版本中ConcurrentHashMap的实现原理。
 
-
-
 ### JDK1.8的实现
 
 选择了与HashMap类似的数组+链表+红黑树的方式实现，而加锁则采用CAS和synchronized实现。
 
 结构上和 Java8 的 HashMap 基本上一样，不过它要保证线程安全性，所以在源码上确实要复杂一些。
-
-
 
 大概有多少种情况会导致get在并发的情况下可能[取不到值](https://www.cnblogs.com/huaizuo/archive/2016/04/20/5413069.html)。
 
@@ -544,10 +456,6 @@ static final <K,V> Node<K,V> tabAt(Node<K,V>[] tab, int i) {
 ```
 
 它是对tab[i]进行原子性的读取，因为我们知道putVal等对table的桶操作是有加锁的，那么一般情况下我们对桶的读也是要加锁的，但是我们这边为什么不需要加锁呢？因为我们用了Unsafe的getObjectVolatile，因为table是volatile类型，所以对tab[i]的原子请求也是可见的。因为如果同步正确的情况下，根据happens-before原则，**对volatile域的写入操作happens-before于每一个后续对同一域的读操作**。所以不管其他线程对table链表或树的修改，都对get读取可见。
-
-
-
-
 
 ## 布隆过滤器
 
@@ -591,11 +499,16 @@ Ok，我们现在再存一个值 “tencent”，如果哈希函数返回 3、4�
 
 另外，哈希函数的个数也需要权衡，个数越多则布隆过滤器 bit 位置位 1 的速度越快，且布隆过滤器的效率越低；但是如果太少的话，那我们的误报率会变高。
 
-
-
 ### 最佳实践
 
 常见的适用常见有，利用布隆过滤器减少磁盘 IO 或者网络请求，因为一旦一个值必定不存在的话，我们可以不用进行后续昂贵的查询请求。
 
+
+
+## 集合特性总结
+
+`HashSet`和`HashMap`通常允许存储一个`null`键和任意数量的`null`值。
+
+`ConcurrentHashMap`不允许存储`null`键和`null`值。
 
 
