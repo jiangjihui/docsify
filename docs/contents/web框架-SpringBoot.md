@@ -47,7 +47,7 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 
 ## 重要注解
 
-**@ComponentScan**注解的作用是扫描@SpringBootApplication所在的Application类（即spring-boot项目的入口类）所在的包（basepackage）下所有的@component注解（或拓展了@component的注解）标记的bean，并注册到spring容器中。
+**@ComponentScan** 注解的作用是扫描@SpringBootApplication所在的Application类（即spring-boot项目的入口类）所在的包（basepackage）下所有的@component注解（或拓展了@component的注解：`@Service`、`@Repository`、`@Controller`）标记的bean，并注册到spring容器中。在没有`@ComponentScan`之前，需要在 XML 配置文件中通过`<context:component - scan>`元素来指定包扫描路径。`@ComponentScan`注解提供了一种基于 Java 的配置方式，使得配置更加简洁、直观，并且与 Java 代码的结合更加紧密。
 
   **@EnableAutoConfiguration** 自动配置：从classpath中搜寻所有的META-INF/spring.factories配置文件，并将其中EnableAutoConfiguration对应的配置项通过反射（Java Refletion）实例化为对应的标注了@Configuration的JavaConfig形式的IoC容器配置类，然后汇总为一个并加载到IoC容器。
 
@@ -237,8 +237,6 @@ publicclassSecurityConfigextendsWebSecurityConfigurerAdapter{
 > https://www.jianshu.com/p/d29663c1bddd
 > 
 > http://codecentric.github.io/spring-boot-admin/1.5.0/#securing-spring-boot-admin
-
- 
 
 ## README文件
 

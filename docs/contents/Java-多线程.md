@@ -52,8 +52,6 @@
 
 5. 如果synchronized无法满足，考虑lock包下的类
 
-
-
 ### Semaphore
 
 **概念**
@@ -139,8 +137,6 @@ public class LimitedParallelRunner {
 - **Semaphore**
   - 更侧重于对资源访问的控制，确保在任何时刻只有特定数量的线程能够访问共享资源，如限制数据库连接的并发使用数量、控制对文件系统的并发读写等。
 
-
-
 ## 死锁
 
 当前线程拥有其它线程需要的资源，当前线程等待其他线程已拥有的资源，都不放弃自己拥有的资源。
@@ -151,7 +147,85 @@ public class LimitedParallelRunner {
 - 缩小加锁范围：等操作共享变量的时候才加锁。
 - 用可释放的定时锁：一段时间申请不到锁权限就释放掉。
 
-## 为什么要有线程池
+
+
+### 线程的实现方式
+
+1. **继承Thread类 重写run方法**
+   
+   ```java
+   class MyJob extends Thread{
+       @Override
+       public void run() {
+           System.out.println("do something.");
+       }
+   }
+   ```
+
+2. **实现 Runnable 接口 重写run方法**
+   
+   ```java
+   class MyJob implements Runnable{
+       @Override
+       public void run() {
+           System.out.println("do something.");
+       }
+   }
+   ```
+
+3. **实现Callable 重写call方法，配合FutureTask**
+   
+   ```java
+   import java.util.concurrent.Callable;
+   import java.util.concurrent.ExecutionException;
+   import java.util.concurrent.FutureTask;
+   
+   public class CallableExample {
+       public static void main(String[] args) {
+           // 创建 Callable 对象
+           Callable<String> callable = new MyCallable();
+   
+           // 使用 FutureTask 来包装 Callable 对象
+           FutureTask<String> futureTask = new FutureTask<>(callable);
+   
+           // 创建线程并启动
+           Thread thread = new Thread(futureTask);
+           thread.start();
+   
+           try {
+               // 获取 Callable 任务的返回结果
+               String result = futureTask.get();
+               System.out.println("返回结果: " + result);
+           } catch (InterruptedException | ExecutionException e) {
+               e.printStackTrace();
+           }
+       }
+   }
+   
+   // 实现 Callable 接口
+   class MyCallable implements Callable<String> {
+       @Override
+       public String call() {
+           // 模拟耗时操作
+           try {
+               Thread.sleep(2000);
+           } catch (InterruptedException e) {
+               e.printStackTrace();
+           }
+           return "任务执行完成";
+       }
+   }
+   ```
+
+4. **基于线程池，构建线程**
+   
+   
+
+总结，底层其实只有一种，实现Runnable；比如Thread类实际实现了Runnable接口；FutureTask类实际也是实现了Runnable接口。
+
+
+
+## 线程池
 
 线程池能够对线程进行统一分配，调优和监控:
 
@@ -159,7 +233,7 @@ public class LimitedParallelRunner {
 - 提高响应速度(无须创建线程)
 - 提高线程的可管理性
 
-## 线程池实现
+### 线程池实现
 
 Java是如何实现和管理线程池的?
 
@@ -225,7 +299,7 @@ Java是如何实现和管理线程池的?
 
 Executors 类提供了使用了 ThreadPoolExecutor 的简单的 ExecutorService 实现，但是 ThreadPoolExecutor 提供的功能远不止于此。我们可以在创建 ThreadPoolExecutor 实例时指定活动线程的数量，我们也可以限制线程池的大小并且创建我们自己的 RejectedExecutionHandler 实现来处理不能适应工作队列的工作。
 
-## ThreadPoolExecutor详解
+### ThreadPoolExecutor详解
 
 其实java线程池的实现原理很简单，说白了就是一个线程集合 workerSet 和一个阻塞队列 workQueue。当用户向线程池提交一个任务(也就是线程)时，线程池会先将任务放入 workQueue 中。workerSet 中的线程会不断的从 workQueue 中获取线程然后执行。当 workQueue 中没有任务的时候，worker 就会阻塞，直到队列中有任务了就取出来继续执行。
 
@@ -261,7 +335,7 @@ Executors 类提供了使用了 ThreadPoolExecutor 的简单的 ExecutorService 
    
       当队列里面放满了任务、最大线程数的线程都在工作时，这时继续提交的任务线程池就处理不了，应该执行怎么样的拒绝策略。
 
-## 线程池的使用
+### 线程池的使用
 
 阿里 Java 开发手册 对线程池的使用进行了限制，可作参考：
 

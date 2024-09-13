@@ -112,11 +112,15 @@ SqlSession是一个接口，mybatis内部是通过DefaultSqlSession这个实现�
 
 在应用运行过程中，我们有可能在一次数据库会话中，执行多次查询条件完全相同的SQL，MyBatis提供了一级缓存的方案优化这部分场景，如果是相同的SQL语句，会优先命中一级缓存，避免直接对数据库进行查询，提高性能。
 
-MyBatis一级缓存的生命周期和SqlSession一致。
+- MyBatis一级缓存的生命周期和SqlSession一致。
 
-MyBatis一级缓存内部设计简单，只是一个没有容量限定的HashMap，在缓存的功能性上有所欠缺。
+- MyBatis一级缓存内部设计简单，只是一个没有容量限定的HashMap，在缓存的功能性上有所欠缺。
 
-MyBatis的一级缓存最大范围是SqlSession内部，有多个SqlSession或者分布式的环境下，数据库写操作会引起脏数据，建议设定缓存级别为Statement。
+- MyBatis的一级缓存最大范围是SqlSession内部，有多个SqlSession或者分布式的环境下，数据库写操作会引起脏数据，建议设定缓存级别为Statement。
+  
+  - 当有多个`SqlSession`并发操作数据时，每个`SqlSession`都有自己独立的一级缓存。假设一个`SqlSession`（`SqlSession1`）执行了查询操作并缓存了数据，同时另一个`SqlSession`（`SqlSession2`）对相同的数据进行了更新操作并提交了事务，由于`SqlSession1`的缓存没有及时更新，此时`SqlSession1`再从缓存中读取数据就可能产生脏读。
+
+> 一级缓存是默认开启的，无需额外配置。
 
 **二级缓存**
 
@@ -217,8 +221,6 @@ select * from user where id in
 
 mybatis在动态代理调用方法时，Mybatis使用package+Mapper+method全限名作为key，去xml内寻找唯一sql来执行的。类似：key=x.y.UserMapper.getUserById，那么，重载方法时将导致矛盾。对于Mapper接口，[Mybatis禁止方法重载（overLoad）](https://blog.csdn.net/yuandengta/article/details/108645364)。
 
-
-
 ## Tips
 
 ### 设置单次查询超时时间
@@ -232,10 +234,6 @@ mybatis在动态代理调用方法时，Mybatis使用package+Mapper+method全限
 ```
 
 上述代码中，timeout 属性被设置为 10 秒，表示如果查询时间超过 10 秒，将会抛出 TimeoutException 异常。需要注意的是，timeout 属性只对查询操作有效，对于更新、删除等操作无效。此外，如果数据库本身设置了超时时间，那么 MyBatis 中设置的超时时间将会被忽略。
-
-
-
-
 
 ## FAQ
 
