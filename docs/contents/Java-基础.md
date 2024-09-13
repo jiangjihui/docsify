@@ -227,8 +227,6 @@ Java 具有四种强度不同的引用类型。
   ```
   
   在这个例子中，虽然线程还在运行，但是当我们不再需要 `ThreadLocal` 变量时，通过调用 `remove()` 方法（或者直接将 `ThreadLocal` 设置为 `null`，但推荐使用 `remove()` 以确保 `ThreadLocalMap` 中的 `Entry` 也能被清理）来释放它。由于 `ThreadLocalMap` 使用弱引用来引用 `ThreadLocal`，因此当 `ThreadLocal` 没有其他强引用时，它就可以被垃圾回收器回收，从而避免了内存泄漏。
-  
-  
 
 - **虚引用**
   

@@ -147,8 +147,6 @@ public class LimitedParallelRunner {
 - 缩小加锁范围：等操作共享变量的时候才加锁。
 - 用可释放的定时锁：一段时间申请不到锁权限就释放掉。
 
-
-
 ### 线程的实现方式
 
 1. **继承Thread类 重写run方法**
@@ -218,12 +216,8 @@ public class LimitedParallelRunner {
    ```
 
 4. **基于线程池，构建线程**
-   
-   
 
 总结，底层其实只有一种，实现Runnable；比如Thread类实际实现了Runnable接口；FutureTask类实际也是实现了Runnable接口。
-
-
 
 ## 线程池
 

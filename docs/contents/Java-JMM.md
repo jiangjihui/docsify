@@ -161,33 +161,41 @@ ReentrantReadWriteLock 可以看成是组合式，因为ReentrantReadWriteLock�
 
 ### synchronized与ReentrantLock比较
 
-**1. 锁的实现**
+**一、基本特性**
 
-synchronized 是 JVM 实现的，而 ReentrantLock 是 JDK 实现的。
+1. **实现机制**
+   
+   - **synchronized**：是 Java 中的**关键字**，由 JVM 实现。在编译时会在同步代码块的前后分别生成`monitorenter`和`monitorexit`指令，用于获取和释放锁。
+   - **ReentrantLock**：是 Java 中的一个**类**，实现了`Lock`接口。它通过 AQS（AbstractQueuedSynchronizer）框架来实现锁的获取和释放。
 
-**2. 性能**
+2. **锁的类型**
+   
+   - **synchronized**：只支持独占锁，即同一时刻只有一个线程可以获取锁。
+   - **ReentrantLock**：既支持独占锁，也可以通过实现`ReentrantReadWriteLock`类来支持读写锁，允许多个线程同时获取读锁，但写锁是独占的。
 
-新版本 Java 对 synchronized 进行了很多优化，例如自旋锁等，synchronized 与 ReentrantLock 大致相同。
+**二、使用方式**
 
-**3. 等待可中断**
+1. **语法**
+   
+   - **synchronized**：使用比较简洁，直接修饰方法或者在代码块中使用。
+     - 修饰方法：`public synchronized void method() { }`
+     - 修饰代码块：`synchronized (obj) { }`
+   - **ReentrantLock**：需要**显式**地在代码中进行锁的获取和**释放**操作。
 
-当持有锁的线程长期不释放锁的时候，正在等待的线程可以选择放弃等待，改为处理其他事情。
+2. **等待和唤醒机制**
+   
+   - **synchronized**：与`Object`类的`wait()`、`notify()`和`notifyAll()`方法配合使用来实现线程的等待和唤醒。
+   - **ReentrantLock**：通过`Condition`接口的`await()`、`signal()`和`signalAll()`方法来实现类似的功能，一个`ReentrantLock`可以关联多个`Condition`对象，实现更灵活的线程间通信。
 
-ReentrantLock 可中断，而 synchronized 不行。
+**三、性能差异**
 
-**4. 公平锁**
+1. **低竞争情况下**
+   
+   - 在锁竞争不激烈的情况下，`synchronized`和`ReentrantLock`的性能差不多，因为`JVM`对`synchronized`进行了很多优化，如偏向锁、轻量级锁等。
 
-公平锁是指多个线程在等待同一个锁时，必须按照申请锁的时间顺序来依次获得锁。
-
-synchronized 中的锁是非公平的，ReentrantLock 默认情况下也是非公平的，但是也可以是公平的。
-
-**5. 锁绑定多个条件**
-
-一个 ReentrantLock 可以同时绑定多个 Condition 对象。
-
-**6. 锁升级不可逆**
-
-当业务qps不是一直都比较高而是有高有低的来回波动的时候，就要考虑使用 ReentrantLock 了，因为 synchronized 锁升级不可逆，如果在低谷的时候也一直使用重量级锁也会有性能问题。
+2. **高竞争情况下**
+   
+   - 在锁竞争激烈的情况下，`ReentrantLock`可能具有更好的性能表现，因为它可以实现更灵活的锁策略，例如尝试获取锁的`tryLock()`方法，以及支持中断等待锁的线程等。
 
 #### 使用选择
 
