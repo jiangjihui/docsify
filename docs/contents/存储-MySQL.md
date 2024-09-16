@@ -1429,3 +1429,57 @@ MySQL 中的查询缓存虽然能够提升数据库的查询性能，但是查�
 ---
 
 > 内容来源： [MySQL查询缓存详解 | JavaGuide(Java面试 + 学习指南)](https://javaguide.cn/database/mysql/mysql-query-cache.html)
+
+
+
+## Buffer Pool
+
+在 MySQL 中，Buffer Pool 主要指的是 InnoDB 存储引擎使用的缓存机制。Buffer Pool 的作用是在内存中缓存 InnoDB 表的数据页和索引页，以提高数据访问的速度。Buffer Pool 是 InnoDB 缓存策略的关键组成部分，它可以显著提升查询性能，尤其是在频繁访问相同数据的情况下。
+
+### 作用
+
+1. **提高读写性能**：
+   
+   - **读操作**：当数据页首次被读入时，InnoDB 会将其放入 Buffer Pool。随后的读取操作可以直接从 Buffer Pool 中读取，而不需要再次访问磁盘。
+   - **写操作**：当数据页被修改时，更改首先保存在 Buffer Pool 中，随后在合适的时机（如定期检查点）写入磁盘。
+
+2. **减少磁盘 I/O**：
+   
+   - 通过缓存数据页和索引页，Buffer Pool 减少了磁盘 I/O 的次数，从而提高了整体性能。
+
+3. **支持事务**：
+   
+   - Buffer Pool 还支持 InnoDB 的事务特性，如回滚段（rollback segment）和重做日志（redo log），确保数据的一致性和持久性。
+
+### 流程
+
+1. 首先执行器根据 MySQL 的执行计划来查询数据，先是从**缓存池中查询**数据，如果没有就会去数据库中查询，如果查询到了就将其放到缓存池中
+
+2. 在数据被缓存到缓存池的同时，会**写入 undo log** 日志文件
+
+3. **更新**的动作是在 **BufferPool** 中完成的，同时会将更新后的数据添加到 redo log buffer 中
+
+4. 完成以后就可以提交事务，在提交的同时会做以下三件事
+   
+   - 将redo log buffer中的数据刷入到 redo log 文件中
+   
+   - 将本次操作记录写入到 bin log文件中
+   
+   - 将 bin log 文件名字和更新内容在 bin log 中的位置记录到redo log中，同时在 redo log 最后添加 commit 标记
+
+
+
+### Buffer Pool 的管理
+
+1. **LRU 列表**：
+   
+   - Buffer Pool 使用最近最少使用（Least Recently Used，LRU）算法来管理数据页。当 Buffer Pool 的空间不足时，LRU 列表尾部的数据页可能会被替换掉。
+
+2. **老化机制**：
+   
+   - 数据页在 Buffer Pool 中的老化（aging）过程通过改变数据页的访问频率来控制，以确保经常访问的数据页不会被轻易替换掉。
+
+3. **脏页管理**：
+   
+   - 当数据页被修改时，会标记为脏页（dirty page）。InnoDB 会在适当的时候将脏页写回到磁盘上，以确保数据的一致性。
+   - 脏页的写入操作可以通过调整参数 `innodb_flush_log_at_trx_commit` 来控制。
