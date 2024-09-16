@@ -23,8 +23,6 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 - 自带应用监控
 - 非常简洁的安全策略集成
 
-
-
 ### 优点
 
 1. **独立运行**
@@ -42,8 +40,6 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 4. **应用监控**
    
    Spring Boot Actuator 提供了健康检查的功能，可以监控应用程序的状态。还提供了监控指标的功能，可以收集和展示应用程序的运行数据。
-
-
 
 ### 自动装配的流程
 
@@ -119,9 +115,9 @@ Spring Boot 的 `run` 方法是启动 Spring Boot 应用程序的入口点。�
 
 2. **加载 Spring 应用上下文**：接下来，`SpringApplication` 会创建一个 `ApplicationContext`（应用上下文），这是 Spring 框架的核心接口，用于提供配置信息给应用程序中的对象。根据应用程序的类型，可能会创建不同类型的 `ApplicationContext`（如 `AnnotationConfigApplicationContext`、`AnnotationConfigReactiveWebApplicationContext` 等）。
 
-3. **加载 Spring Boot 自动配置**：Spring Boot 的自动配置是 Spring Boot 的核心特性之一。在这一步，Spring Boot 会尝试自动配置你的应用程序。它通过检查类路径上的项目依赖、属性设置和其他因素来推断你可能需要的配置，并自动应用这些配置。自动配置是通过 `@EnableAutoConfiguration` 注解触发的，该注解通常包含在 `@SpringBootApplication` 注解中。
+3. **自动配置**：Spring Boot 的自动配置是 Spring Boot 的核心特性之一。在这一步，Spring Boot 会尝试自动配置你的应用程序。它通过检查类路径上的项目依赖、属性设置和其他因素来推断你可能需要的配置，并自动应用这些配置。自动配置是通过 `@EnableAutoConfiguration` 注解触发的，该注解通常包含在 `@SpringBootApplication` 注解中。
 
-4. **加载应用程序的 Bean**：在创建并配置好 `ApplicationContext` 之后，Spring Boot 会加载应用程序中定义的 Bean。这包括通过 `@Component`、`@Service`、`@Repository`、`@Controller` 等注解标记的类，以及通过 Java 配置类（使用 `@Configuration` 和 `@Bean` 注解）定义的 Bean。
+4. **加载应用程序的 Bean**：在创建并配置好 `ApplicationContext` 之后，Spring Boot 会加载应用程序中定义的 Bean。这包括通过 `@Component`、`@Service`、`@Repository`、`@Controller` 等注解标记的类，以及通过 Java 配置类（使用 `@Configuration` 和 `@Bean` 注解）定义的 Bean。即Spring IOC过程，扫描注解类，依赖注入、事件发布等一系列操作。
 
 5. **启动嵌入式服务器（如果适用）**：如果你的 Spring Boot 应用程序是一个 web 应用程序，并且你选择了使用 Spring Boot 的嵌入式服务器（如 Tomcat、Jetty 或 Undertow），那么在这一步，Spring Boot 会启动这个服务器。这允许你的应用程序作为一个独立的 web 服务器运行，而无需部署到外部容器中。
 
@@ -358,6 +354,65 @@ Spring Boot 打包的 jar 和普通 jar 的区别简要如下：
 2 在运行定时任务的类上加上@Component注解，表示该类可以作为定时任务类运行来交给spring运行。
 
 3 在需要运行的方法上加上@Scheduled(fixedRate=1000)来定义执行的方式，这里表示每1秒运行一次。
+
+
+
+## 配置文件顺序
+
+Spring Boot 支持多种配置文件格式，包括 `application.properties`、`application.yml` 以及环境特定的配置文件（如 `application-dev.properties` 或 `application-prod.yml`）。此外，还可以通过多种方式来提供配置信息，如命令行参数、系统环境变量等。
+
+按照优先级从高到低排列如下：
+
+1. **命令行参数**：
+   
+   - 最高的优先级，直接覆盖其他所有来源的配置。
+   - 示例：`java -jar myapp.jar --server.port=8082 --spring.datasource.url=jdbc:mysql://localhost:3306/testdb`
+
+2. **操作系统环境变量**：
+   
+   - 优先级较高，可以用来覆盖默认配置和其他配置文件中的配置。
+   - 示例：`export SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/dbname`
+
+3. **随机位置的 `application.properties` 或 `application.yml` 文件**：
+   
+   - 通过 `spring.config.location` 指定的配置文件位置。
+   - 示例：`spring.config.location=file:/path/to/your/config/directory`
+
+4. **命令行参数指定的远程配置中心**：
+   
+   - 如 Spring Cloud Config Server 的 URL。
+   - 优先级较高，因为它们通常包含特定环境的配置。
+   - 示例：`spring.cloud.config.uri=http://config-server:8888`
+
+5. **JAR 包外部的 `application.properties` 或 `application.yml` 文件**：
+   
+   - 位于当前目录下的 `application.properties` 或 `application.yml` 文件。
+   - 优先级高于 JAR 包内部的同名文件。
+   - 示例：`application.properties` 或 `application.yml` 文件放在当前目录下。
+
+6. **`config` 子目录中的配置文件**：
+   
+   - 位于 `src/main/resources/config` 目录下的配置文件。
+   - 通常用于存放特定环境的配置。
+   - 示例：`config/application.properties` 或 `config/application.yml`
+
+7. **JAR 包内部的 `application.properties` 或 `application.yml` 文件**：
+   
+   - 位于 JAR 包内部的 `application.properties` 或 `application.yml` 文件。
+   - 通常位于 `src/main/resources` 目录下。
+
+8. **环境特定的配置文件**：
+   
+   - 如 `application-dev.properties`、`application-prod.yml` 等。
+   - 通过 `spring.profiles.active` 激活特定的配置文件。
+   - 示例：`spring.profiles.active=dev`
+
+9. **Spring 应用上下文配置文件**：
+   
+   - 如 `application.properties` 或 `application.yml`。
+   - 通常位于项目的 `src/main/resources` 目录下。
+
+
 
 ## Spring Boot 2 [新特性](https://blog.csdn.net/yalishadaa/article/details/79400916)
 
