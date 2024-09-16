@@ -1372,8 +1372,6 @@ ALTER TABLE features ADD INDEX (feature_street);
 
 > [MYSQL中JSON类型介绍 | 京东物流技术团队 - 京东云开发者的独家号 - 开发者头条](https://toutiao.io/posts/mqg9ogj)
 
-
-
 ## MySQL 查询缓存
 
 ### MySQL 查询缓存介绍
