@@ -10,8 +10,6 @@
 
 - Spring Framework 5.x：支持 Java 8 到 Java 17
 
-
-
 ## Bean的加载过程
 
 1. **资源定位**：定位到我们需要的进行ioc的bean；对于注解配置，会扫描指定包路径下带有特定注解（如 @Component 等）的类。
@@ -23,8 +21,6 @@
 4. **依赖注入**；反射调用 setter 方法或其他方式，将属性值（包括对其他 Bean 的引用、基本类型、集合等）注入到 Bean 实例。
 
 5. **初始化bean**：Bean 实现了 InitializingBean 接口，则调用 afterPropertiesSet () 方法。
-
-
 
 ## bean的注入过程
 
@@ -129,89 +125,28 @@ bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的
 
 > 如果想要详细了解原理，推荐阅读：[《Spring 手撸专栏》第 2 章：小试牛刀(让新手能懂)，实现一个简单的Bean容器](https://segmentfault.com/a/1190000040031724)
 
-## BeanDefinition
+### 
 
-BeanDefinition的实例用来描述对象的信息，比如说，Spring用BeanDefinition来存储着我们日常给SpringBean定义的元数据(@Scope、@Lazy、@DependsOn等等）
-可以理解为：Class只描述了类的信息，而BeanDefinition描述了对象的信息
+### 关键的类
 
-## ApplicationContextAware
+- **BeanDefinition**
+  
+  BeanDefinition的实例用来描述对象的信息，比如说，Spring用BeanDefinition来存储着我们日常给SpringBean定义的元数据(@Scope、@Lazy、@DependsOn等等）
+  可以理解为：Class只描述了类的信息，而BeanDefinition描述了对象的信息
 
-从已有的spring上下文取得已实例化的bean。通过[ApplicationContextAware](https://www.jianshu.com/p/4c0723615a52)接口进行实现。
+- **ApplicationContextAware**
+  
+  从已有的spring上下文取得已实例化的bean。通过[ApplicationContextAware](https://www.jianshu.com/p/4c0723615a52)接口进行实现。
+  
+  当一个类实现了这个接口（ApplicationContextAware）之后，这个类就可以方便获得ApplicationContext中的所有bean。换句话说，就是这个类可以直接获取 spring 配置文件中，所有有引用到的bean对象。
 
-当一个类实现了这个接口（ApplicationContextAware）之后，这个类就可以方便获得ApplicationContext中的所有bean。换句话说，就是这个类可以直接获取 spring 配置文件中，所有有引用到的bean对象。
+- **ApplicationEvent**
+  
+  `ApplicationEvent`以及`Listener`是Spring为我们提供的一个事件监听、订阅的实现，内部实现原理是观察者设计模式，设计初衷也是为了系统业务逻辑之间的解耦，提高可扩展性以及可维护性。事件发布者并不需要考虑谁去监听，监听具体的实现内容是什么，发布者的工作只是为了[发布事件](https://segmentfault.com/a/1190000011433514)而已。
 
-## ApplicationEvent
 
-`ApplicationEvent`以及`Listener`是Spring为我们提供的一个事件监听、订阅的实现，内部实现原理是观察者设计模式，设计初衷也是为了系统业务逻辑之间的解耦，提高可扩展性以及可维护性。事件发布者并不需要考虑谁去监听，监听具体的实现内容是什么，发布者的工作只是为了[发布事件](https://segmentfault.com/a/1190000011433514)而已。
 
-结合springboot，实现简单的事件发布和订阅（异步消费）：
-
-**EchoEvent.java**：自定义事件
-
-```
-/**
- * 自定义事件
- **/
-@Getter
-@Setter
-@Builder
-public class EchoEvent implements Serializable {
-    private String msg;
-}
-```
-
-**MsgListener.java**：事件监听处理
-
-```
-/**
- * 事件监听处理
- **/
-@Slf4j
-@Component
-public class MsgListener {
-
-    @Async
-    @EventListener
-    public void onEcho(EchoEvent event) {
-        log.info("listener is call");
-        log.info("the EchoEvent msg is " + event.getMsg());
-    }
-}
-```
-
-测试推送
-
-```
-@Slf4j
-@SpringBootTest
-class EventListenerApplicationTests implements ApplicationContextAware {
-
-    private ApplicationContext applicationContext;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
-
-    @Test
-    void doEvent() {
-        applicationContext.publishEvent(EchoEvent.builder().msg("hei, boy").build());
-        log.info("push finish");
-    }
-
-}
-```
-
-## Spring注解
-
-注解对分层中的类进行注释：
-
-| 注解          | 作用                              |
-| ----------- | ------------------------------- |
-| @Service    | 用于标注业务层组件                       |
-| @Controller | 用于标注控制层组件（如struts中的action）      |
-| @Repository | 用于标注数据访问组件，即DAO组件               |
-| @Component  | 泛指组件，当组件不好归类的时候，我们可以使用这个注解进行标注。 |
+ 
 
 ## 事务管理
 
@@ -293,73 +228,58 @@ Spring又添加了一种**新**的事务**属性**，**PROPAGATION_NESTED**，�
 
 当我们项目中仅仅使用hibernate，而没有集成进spring的时候，我们在一个service层中调用其他的业务逻辑方法，为了保证事物必须也要把当前的hibernate session传递到下一个方法中，或者采用ThreadLocal的方法，将session传递给下一个方法，其实都是一个目的。现在这个工作由spring来帮助我们完成，就可以让我们更加的专注于我们的业务逻辑。而不用去关心事务的问题。
 
-## Bean的生命周期
-
- ![image](../_images/4314fa36-0732-4427-bbcd-3646f02dc80a.jpg)
-
-**Spring管理的Bean单例**
-
-在spring中，从BeanFactory或ApplicationContext取得的实例为Singleton，也就是预设为每一个Bean的别名只能维持一个实例，而不是每次都产生一个新的对象使用Singleton模式产生单一实例。所以service层，dao层注入的是同一个对象，每次调用的也是同一个对象。
-
-**Struts2管理的Action多实例**
-
-而struts 2的Action是多实例的并非单例，也就是每次请求产生一个Action的对象。原因是：struts 2的Action中包含数据，例如你在页面填写的数据就会包含在Action的成员变量里面。如果Action是单实例的话，这些数据在多线程的环境下就会相互影响，例如造成别人填写的数据被你看到了。所以Struts2的Action是多例模式的。
-
-## **BeanFactory和ApplicationContext的区别**
-
-BeanFactory是Spring里面最低层的接口，提供了最简单的容器的功能，只提供了实例化对象和拿对象的功能。
-
-BeanFactory是一个接口，ApplicationContext是一个类。
-
-**两者装载bean的区别**
-
-BeanFactory：在**启动**的**时**候**不**会去**实例化Bean**，中有从容器中拿Bean的时候才会去实例化；
-
-ApplicationContext：在**启动**的**时**候就把所有的**Bean全部实例化**了。它还可以为Bean配置lazy-init=true来让Bean延迟实例化；
-
-**我们该用BeanFactory还是ApplicationContent**
-
-**BeanFactory 延迟实例化的优点：**
-
-应用启动的时候占用资源很少，对资源要求较高的应用，比较有优势；
-
-缺点：速度会相对来说慢一些。而且有可能会出现空指针异常的错误，而且通过bean工厂创建的bean生命周期会简单一些
-
-**ApplicationContext 不延迟实例化的优点：**
-
-所有的Bean在启动的时候都加载，系统运行的速度快；
-
-在启动的时候所有的Bean都加载了，我们就能在系统启动的时候，尽早的发现系统中的配置问题
-
-建议web应用，在启动的时候就把所有的Bean都加载了。
-
-缺点：把费时的操作放到系统启动中完成，所有的对象都可以预加载，缺点就是消耗服务器的内存
-
 ## **Spring的IOC**
 
 IOC （Inverse of Control） 控制反转，也可以称为依赖倒置。IOC理论提出的观点大体是这样的：借助于“第三方”**实现具有依赖关系的对象之间的解耦**。“第三方”，也就是IOC容器，通俗讲IOC容器负责加载各种依赖，并提供给各个模块所依赖的实例。
 
 spring的[控制反转](http://www.cnblogs.com/ITtangtang/p/3978349.html#a1)即对象的创建和生命周期交给spring管理，依赖对象交给spring注入。Spring IoC容器会在我们使用的时候自动为我们创建，并且为我们注入好相关的依赖，这就是Spring核心功能的控制反转和依赖注入的相关功能。
 
-**BeanFactory**
+### BeanFactory 和 ApplicationContext
 
-作为最顶层的一个接口类，它定义了IOC容器的基本功能规范。BeanFactory 有三个子类：
+BeanFactory 和 ApplicationContext 都是 Spring 框架中用于管理 bean 的核心容器，但它们在以下方面存在区别：
 
-**Listable**BeanFactory、**Hierarchical**BeanFactory 、**AutowireCapable**BeanFactory
+#### 主要区别
 
-但是从上图中我们可以发现最终的默认实现类是 **DefaultListableBeanFactory**，他实现了所有的接口。那为何要定义这么多层次的接口呢？查阅这些接口的源码和说明发现，每个接口都有他使用的场合，它主要是为了区分在 Spring 内部在操作过程中对象的传递和转化过程中，对对象的数据访问所做的限制。例如 ListableBeanFactory 接口表示这些 Bean 是可列表的，而 HierarchicalBeanFactory 表示的是这些 Bean 是有继承关系的，也就是每个Bean 有可能有父 Bean。AutowireCapableBeanFactory 接口定义 Bean 的自动装配规则。这四个接口共同定义了 **Bean 的集合、Bean 之间的关系、以及 Bean 行为**。
+**1. 基本功能与起源**
 
-**ApplicationContext**
+- **BeanFactory**
+  - 是 Spring 框架中最底层的容器，它提供了基本的依赖注入（DI）和控制反转（IOC）功能。
+  - 它的主要职责是管理 bean 的创建、配置和获取。例如，通过`getBean()`方法可以从容器中获取一个已经定义好的 bean 实例。
+- **ApplicationContext**
+  - 是 BeanFactory 的子接口，在 BeanFactory 的基础上进行了扩展。
+  - 除了具备 BeanFactory 的所有功能外，它还提供了更多面向应用的功能，如国际化支持、事件传播机制、资源加载（例如加载文件资源）等。
 
-是Spring提供的一个高级的IoC容器，它除了能够提供IoC容器的基本功能外，还为用户提供了以下的附加服务。
+**2. 加载时机与懒加载**
 
-1. 支持信息源，可以实现国际化。（实现MessageSource接口）
+- **BeanFactory**
+  - 采用延迟加载（lazy - loading）策略，即只有当客户端代码调用`getBean()`方法来请求一个 bean 时，该 bean 才会被实例化和初始化。
+  - 这种方式在启动时比较节省资源，但可能会导致第一次调用`getBean()`时的响应时间较长。
+- **ApplicationContext**
+  - 在容器启动时就会实例化和初始化所有的单例 bean（singleton beans），无论这些 bean 是否在后续的程序运行中被立即使用。
+  - 这样可以在应用启动时就发现配置和依赖注入方面的问题，但会增加启动时间和资源消耗。
 
-2. 访问资源。(实现ResourcePatternResolver接口，这个后面要讲)
+**3. 容器特性与扩展功能**
 
-3. 支持应用事件。(实现ApplicationEventPublisher接口)
+- **BeanFactory**
+  - 功能相对简单，它主要聚焦于 bean 的管理，是一个轻量级的容器。
+  - 例如，在一些资源受限的环境或者只需要基本的 DI 功能的情况下，可以使用 BeanFactory。
+- **ApplicationContext**
+  - 提供了丰富的扩展功能。
+  - 例如，支持国际化资源文件（通过`MessageSource`接口），可以方便地实现多语言支持；它的事件机制（通过`ApplicationEventPublisher`接口）允许在应用中发布和监听各种事件，实现松耦合的组件间通信；另外，它还可以方便地加载多种外部资源（如文件、类路径资源等）。
 
-Spring IoC容器对Bean定义资源的载入是从refresh()函数开始的，refresh()是一个模板方法，refresh()方法的作用是：在创建IoC容器前，如果已经有容器存在，则需要把已有的容器销毁和关闭，以保证在refresh之后使用的是新建立起来的IoC容器。refresh的作用类似于对IoC容器的重启，在新建立好的容器中对容器进行初始化，对Bean定义资源进行载入。refresh()方法主要为IoC容器Bean的生命周期管理提供条件
+#### 使用场景
+
+- 适用于需要更多高级特性的应用场景，如企业级应用、Web 应用等。
+- 如果你需要一个完整的 IoC 容器来管理 Bean 并提供额外的功能支持，可以选择使用 `ApplicationContext`。
+
+#### 总结
+
+- **选择 `BeanFactory` 的理由**：如果你的应用程序只需要最基本的 IoC 功能，并且不需要 `ApplicationContext` 提供的额外功能，那么 `BeanFactory` 是一个轻量级的选择。
+- **选择 `ApplicationContext` 的理由**：如果你的应用程序需要高级特性，如事件驱动、国际化支持、资源加载等，那么 `ApplicationContext` 是更好的选择。
+
+在实际应用中，大多数情况下推荐使用 `ApplicationContext`，因为它提供了更丰富的功能，更适合构建复杂的企业级应用。Spring Boot 默认使用的就是 `ApplicationContext`（具体是 `AnnotationConfigApplicationContext` 或 `WebApplicationContext`），它为开发者提供了极大的便利。
+
+
 
 ## **Spring的AOP**
 
@@ -403,6 +323,88 @@ AOP代理（AOP Proxy）
 
 **afterCompletion**：controller返回后执行
 
+
+
+### Spring 的通知（Advice）类型
+
+在 Spring AOP（面向切面编程）中，通知（Advice）是一种可以在程序执行的特定点插入的代码段。通知类型定义了何时以及如何执行这些代码段。Spring AOP 支持五种主要的通知类型：
+
+1. **前置通知（Before Advice）**
+2. **后置通知（After Returning Advice）**
+3. **最终通知（After（Finally）Advice）**
+4. **异常通知（After Throwing Advice）**
+5. **环绕通知（Around Advice）**
+
+下面详细介绍每种通知类型及其应用场景：
+
+**前置通知（Before Advice）**
+
+- **描述**：在目标方法调用之前执行的代码段。
+- **应用场景**：通常用于日志记录、性能监控、安全检查等。
+  
+  ```java
+  @Before("execution(* com.example.service.*.*(..))")
+  public void beforeAdvice(JoinPoint joinPoint) {
+      System.out.println("Executing Before Advice");
+  }
+  ```
+
+**后置通知（After Returning Advice）**
+
+- **描述**：在目标方法成功返回后执行的代码段。
+- **应用场景**：通常用于释放资源、日志记录等。
+  
+  ```java
+  @AfterReturning(pointcut = "execution(* com.example.service.*.*(..))", returning = "result")
+  public void afterReturningAdvice(Object result) {
+      System.out.println("Executing After Returning Advice");
+  }
+  ```
+
+**最终通知（After（Finally）Advice）**
+
+- **描述**：无论目标方法是否正常返回还是抛出异常，都会执行的代码段。
+- **应用场景**：通常用于释放资源，如关闭文件流、数据库连接等。、
+- ```java
+  @After("execution(* com.example.service.*.*(..))")
+  public void afterAdvice() {
+      System.out.println("Executing Finally Advice");
+  }
+  ```
+
+**异常通知（After Throwing Advice）**
+
+- **描述**：在目标方法抛出异常后执行的代码段。
+- **应用场景**：通常用于异常处理、日志记录等。
+  
+  ```java
+  @AfterThrowing(pointcut = "execution(* com.example.service.*.*(..))", throwing = "exception")
+  public void afterThrowingAdvice(Exception exception) {
+      System.out.println("Executing After Throwing Advice");
+  }
+  ```
+
+环绕通知（Around Advice）
+
+- **描述**：在目标方法调用前后都可以执行的代码段，具有最大的灵活性。
+- **应用场景**：通常用于性能监控、事务管理等。
+  
+  ```java
+  @Around("execution(* com.example.service.*.*(..))")
+  public Object aroundAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
+      System.out.println("Before target method execution");
+      Object result = joinPoint.proceed();
+      System.out.println("After target method execution");
+      return result;
+  }
+  ```
+
+#### 总结
+
+这些通知类型在 Spring AOP 中都有其特定的作用和应用场景。通过合理使用这些通知类型，可以在不修改原有代码的基础上，增强系统的功能，如日志记录、性能监控、事务管理等。此外，Spring AOP 还支持组合使用这些通知类型，以实现更复杂的切面逻辑。在实际应用中，选择合适的通知类型可以有效地提升代码的可维护性和扩展性。
+
+
+
 ## **Spring定时**[**任务**](https://www.jianshu.com/p/1defb0f22ed1)
 
 @Scheduled
@@ -443,13 +445,15 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 - 其实整体处理过程类似，唯独是 B 在填充属性 A 时，先查询成品缓存、再查半成品缓存，最后在看看有没有单例工程类在三级缓存中。最终获取到以后调用 getObject 方法返回代理引用或者原始引用。
 - 至此也就解决了 Spring AOP 所带来的三级缓存问题。*本章节涉及到的 AOP 依赖有源码例子，可以进行调试*
 
-## @Autowired 与@Resource的区别
+## Spring注解
 
-### 相同点
+### @Autowired 与@Resource的区别
+
+#### 相同点
 
 @Resource的作用相当于@Autowired，均可标注在字段或属性的[setter方法](https://blog.51cto.com/qiangmzsx/1359952)上。
 
-### 不同点
+#### 不同点
 
 - **提供方**不一样： `@Autowired` 是由Spring提供； `@Resource` 是由java提供，是Java标准，绝大部分框架都支持。需要JDK1.6及以上。
 
@@ -459,7 +463,7 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 
 - **属性参数**有区别：Autowired只包含一个参数：required，表示是否开启自动准入，默认是true，也就是默认情况下它要求依赖对象必须存在。而@Resource包含七个参数，其中最重要的两个参数是：name 和 type。
 
-## @Component, @Repository, @Service的区别
+### @Component, @Repository, @Service的区别
 
 > 参考：[@Component, @Repository, @Service的区别](https://blog.csdn.net/fansili/article/details/78740877)
 
@@ -477,3 +481,25 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 | @Repository | 作用于持久层                    |
 | @Service    | 作用于业务逻辑层                  |
 | @Controller | 作用于表现层（spring-mvc的注解）     |
+
+### @Indexed注解
+
+配合 spring-context-indexer 依赖，要用于在使用组件扫描（Component scanning）的 Spring 应用中提高启动性能。它通过在编译时生成一个索引文件，来避免在运行时对类路径下的所有类进行扫描，从而加快应用的启动速度。
+
+- 在传统的 Spring 应用中，当使用`@ComponentScan`等注解进行组件扫描时，Spring 需要在运行时遍历类路径下的所有类，检查这些类是否带有`@Component`、`@Service`、`@Repository`、@Controller 等组件注解。这个过程可能会消耗大量的时间，尤其是在类路径非常复杂或者包含大量类的情况下。
+
+而 spring-context-indexer 在系统编译的时候会收集所有被@Indexed注解标识的类，然后记录在META-INF/spring.components文件中，那么系统启动的时候就只需要读取这个索引文件而不是遍历整个类路径，减少了组件扫描的时间，提升效率。
+
+#### 弊端
+
+**动态类加载场景受限**
+
+- 如前面所提到的，当应用在运行时动态地添加类或者改变类路径时，例如通过自定义的类加载器来加载一些插件类，这些新添加的类不会被包含在编译时生成的`spring.components`索引文件中。这就导致在这种动态类加载的场景下，Spring 容器无法直接通过索引文件识别这些新类，而仍然需要依赖传统的组件扫描机制来发现它们。这不仅可能导致性能上的损耗（因为需要同时使用索引和运行时扫描），还可能因为开发者的疏忽而造成组件无法被正确识别和加载的问题。
+
+**增加构建复杂性**
+
+- 在项目中引入 Spring - context - indexer 后，构建过程变得稍微复杂了一些。开发人员需要确保在构建过程中正确生成`spring.components`索引文件，并且需要注意构建工具（如 Maven 或 Gradle）的配置和版本兼容性问题。如果构建过程出现问题，可能会导致索引文件无法正确生成或者被错误地覆盖，从而影响应用的启动和运行。
+
+**可能的兼容性问题**
+
+- 当项目使用了一些不常见的或者高度定制化的 Spring 配置方式、自定义的注解处理器或者复杂的类加载机制时，Spring - context - indexer 可能会出现兼容性问题。例如，某些自定义的注解处理器可能会干扰索引文件的生成过程，或者与基于索引文件的组件加载机制产生冲突，导致应用出现难以预测的错误。

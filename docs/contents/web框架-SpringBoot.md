@@ -10,8 +10,8 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 
 ## 作用
 
-- 自动配置：针对很多Spring应用程序常见的应用功能，Spring Boot能自动提供相关配置
-- 起步依赖：告诉Spring Boot需要什么功能，它就能引入需要的库。
+- **自动配置**：针对很多Spring应用程序常见的应用功能，Spring Boot能自动提供相关配置
+- **起步依赖**：告诉Spring Boot需要什么功能，它就能引入需要的库。
 - 命令行界面：这是Spring Boot的可选特性，借此你只需写代码就能完成完整的应用程序，无需传统项目构建。
 - Actuator：让你能够深入运行中的Spring Boot应用程序，一探究竟。
 
@@ -23,12 +23,72 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 - 自带应用监控
 - 非常简洁的安全策略集成
 
-## 启动过程
+
+
+### 自动装配的流程
+
+**@SpringBootApplication 注解**是 Spring Boot 应用的核心注解，它是一个组合注解，其中包含了`@Configuration`、`@EnableAutoConfiguration`和`@ComponentScan`。其中 **@EnableAutoConfiguration 注解** 是实现自动装配的关键。它通过`@Import(AutoConfigurationImportSelector.class)`导入了`AutoConfigurationImportSelector`类。在`AutoConfigurationImportSelector`的`selectImports()`方法中，会从类路径下的`META-INF/spring.factories`文件中加载自动配置类的全限定名。每个自动配置类都使用了`@Conditional`系列注解来指定在满足特定条件时才进行自动装配。Spring 容器会根据这些自动配置类来进行 bean 的装配，从而实现了根据项目依赖自动配置 Spring 应用的功能。
+
+1. **加载META-INF/spring.factories文件**：
+   - 在Spring Boot应用程序启动时，首先加载`META-INF/spring.factories`文件，获取所有自动配置类的全限定名。该文件位于各个Starter依赖的jar包中，其中定义了自动配置类的全限定名。
+2. **条件评估**：
+   - Spring Boot根据条件注解对自动配置类进行条件评估。只有当条件满足时，相应的自动配置类才会被选中进行自动配置。
+3. **创建和注册Bean**：
+   - 对于被选中的自动配置类，Spring Boot会根据其中的配置信息创建相应的Bean，并将其注册到Spring容器中。
+4. **应用配置**：
+   - Spring Boot会遍历所有的自动配置类，将满足条件的配置都应用到应用程序中。
+
+
+
+#### 什么是 DeferredImportSelector
+
+`DeferredImportSelector` 是一个接口，它继承自 `ImportSelector`。它的主要用途是在某些情况下延迟配置类的导入，直到特定条件得到满足为止。这通常用于处理一些依赖于其他配置类的情况，或者当需要在运行时动态决定导入哪些类时。
+
+##### 使用场景
+
+- **场景 1：条件性导入配置类**
+  
+  假设我们需要根据一些条件来决定是否导入某个配置类。在这种情况下，我们可以使用 `DeferredImportSelector` 来实现条件性的导入。
+
+- **场景 2：避免循环依赖**
+  
+  有时候，两个配置类之间可能会出现相互依赖的情况。在这种情况下，可以使用 `DeferredImportSelector` 来延迟其中一个配置类的导入，以避免循环依赖的问题。
+
+
+
+### 什么是 bootstrap.yml
+
+`bootstrap.yml` 是 Spring Boot 应用程序中用于配置应用程序启动时的一些核心配置文件之一。它主要用于存储应用程序启动时的一些基础配置，如 Spring Cloud 的服务发现、配置中心等相关的配置。这些配置在应用程序启动之初就需要加载，因此它们通常位于 `bootstrap.yml` 文件中。
+
+- 在 Spring Boot 应用中，`bootstrap.yml`的加载顺序比`application.yml`（或`application.properties`）更早。这使得它适合配置一些在应用程序上下文创建之前就需要被加载的配置信息。
+- 例如，在使用 Spring Cloud Config 时，`bootstrap.yml`**用于**配置**从配置中心获取配置文件**的相关信息（如配置中心的地址、配置文件的名称等），这样在应用程序启动的早期就能从配置中心获取到配置信息并进行应用。
+
+#### bootstrap.yml 与 application.yml 的区别
+
+1. **加载时机不同**：
+   
+   - `bootstrap.yml`：在 Spring Boot 应用程序启动时最先加载，主要用于初始化 Spring 的环境变量，如激活特定的配置中心或服务发现客户端等。
+   - `application.yml`：在应用程序启动之后加载，主要用于配置应用程序的具体行为，如数据库连接、日志配置等。
+
+2. **配置优先级**：
+   
+   - `bootstrap.yml` 中的配置优先级高于 `application.yml` 中的配置。这意味着 `bootstrap.yml` 中的配置会覆盖 `application.yml` 中的同名配置项。
+
+#### 注意事项
+
+- 如果没有特殊的需求，可以不使用 `bootstrap.yml` 文件，而将所有配置放在 `application.yml` 或 `application.properties` 文件中。
+- 如果使用了 `bootstrap.yml` 文件，确保其中的配置不会与 `application.yml` 中的配置产生冲突。
+
+通过合理使用 `bootstrap.yml` 文件，可以更好地管理 Spring Boot 应用程序的启动配置，特别是在涉及微服务架构和云原生应用时，它可以显著提升应用程序的健壮性和灵活性。
+
+
+
+## 详细启动过程
 
 - SpringBoot的[启动过程](https://www.jianshu.com/p/cb5cb5937686)，实际上就是对ApplicationContext的初始化过程。
 - ApplicationContext创建后立刻为其设置Environment，并由**ApplicationContextInitializer**对其进一步封装。
 - 通过*SpringApplicationRunListener*在ApplicationContext初始化过程中各个时点发布各种广播事件，并由*ApplicationListener*负责接收广播事件。
-- 初始化过程中完成IoC的注入，包括通过**@EnableAutoConfiguration**导入的各种自动配置类。
+- 初始化过程中完成IoC的注入，包括通过@EnableAutoConfiguration导入的各种自动配置类。
 - 初始化完成前调用ApplicationRunner和CommandLineRunner的实现类。
 
 启动流程主要分为三个部分：

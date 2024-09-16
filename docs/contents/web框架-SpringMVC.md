@@ -9,7 +9,56 @@ Spring web MVC框架提供了MVC(模型 - 视图 - 控制器)架构和用于开�
 - **视图(View)** 负责渲染模型数据，一般来说它生成客户端浏览器可以**解释HTML**输出。
 - **控制器(Controller)** 负责处理用户请求并 **构建** 适当的模型，并将其传递给视图进行渲染（响应数据）。
 
- 
+
+
+## Spring MVC 构成
+
+Spring MVC 主要由以下几个部分构成：
+
+**1. 前端控制器（DispatcherServlet）**
+
+- 这是 Spring MVC 的核心组件，所有的请求都先进入该控制器。它负责接收 HTTP 请求，并将请求分发给相应的处理器（Handler）进行处理。
+- 它的配置通常在 web.xml 文件中或者通过 Java 配置类来完成。它实际是继承 HttpServlet。
+
+**2. 处理器映射器（HandlerMapping）**
+
+- 作用是根据请求的 URL 等信息找到对应的处理器（Handler），也就是具体的 Controller 中的方法。
+- 常见的处理器映射器有 SimpleUrlHandlerMapping、RequestMappingHandlerMapping 等。
+
+**3. 处理器（Handler）**
+
+- 通常是指开发人员编写的控制器（Controller）类中的处理方法。这些方法负责处理具体的业务逻辑，例如从数据库中获取数据、执行业务规则等。
+- 控制器中的方法可以接受请求参数，并返回一个 ModelAndView 对象或者其他数据类型。
+
+**4. 处理器适配器（HandlerAdapter）**
+
+- 因为处理器（Handler）可以有多种不同的形式，处理器适配器的作用就是将处理器包装成统一的形式，使得 DispatcherServlet 可以调用。
+- 例如，RequestMappingHandlerAdapter 用于适配使用了 @RequestMapping 注解的处理器方法。
+
+**5. 视图解析器（ViewResolver）**
+
+- 当处理器方法返回一个视图名称（View Name）时，视图解析器负责根据这个名称找到对应的实际视图（View），例如 JSP 页面、Thymeleaf 模板等。
+- 常见的视图解析器有 InternalResourceViewResolver、ThymeleafViewResolver 等。
+
+**6. 视图（View）**
+
+- 视图负责将处理结果呈现给用户。
+- 可以是静态的 HTML 页面、动态生成的 JSP 页面、基于模板引擎（如 Thymeleaf、FreeMarker 等）生成的页面等多种形式。
+
+
+
+### Spring MVC IOC 容器的形成
+
+**WebApplicationContext**：是专门为 Web 应用设计的上下文环境。它在 ApplicationContext 的基础上，添加了一些 Web 相关的特性，例如对 ServletContext 和 ServletConfig 的访问能力，以及对 Web 相关作用域（如 request、session 等）的支持。
+
+- 在 Spring MVC 中，存在一个专门用于 Web 层的 IOC 容器（WebApplicationContext）。这个容器实际上**是** Spring IOC 容器（**ApplicationContext**）的**子容器**。
+
+- 当配置 Spring MVC 时，会创建一个`DispatcherServlet`，而这个`DispatcherServlet`会初始化它自己的`WebApplicationContext`，这个`WebApplicationContext`就是作为根`ApplicationContext`的子容器。
+
+> **父子容器的关系和作用**
+> 
+> - **共享性**：子容器可以访问父容器中定义的 bean，但是父容器不能访问子容器中的 bean。这使得在 Spring MVC 中，Web 层的组件（定义在 Spring MVC 的子容器中）可以方便地使用在整个应用程序层面定义的服务和其他组件（定义在根 Spring 容器中）。
+> - **隔离性**：Spring MVC 的子容器可以独立于根容器进行配置和管理，这样可以将 Web 相关的配置和非 Web 相关的配置分开，提高了配置的清晰性和可维护性。例如，可以在根容器中配置数据访问层和业务逻辑层的 bean，而在 Spring MVC 的子容器中配置控制器（Controller）和与 Web 视图相关的 bean。
 
 
 
@@ -26,10 +75,6 @@ Spring web MVC框架提供了MVC(模型 - 视图 - 控制器)架构和用于开�
 - 本地化、主题的解析的支持，使我们更容易进行国际化和主题的切换。 
 - 强大的JSP标签库，使JSP编写更容易。 
 - 还有比如RESTful风格的支持、简单的文件上传、约定大于配置的契约式编程支持、基于注解的零配置支持等等。
-
-
-
- 
 
 ## **HttpServlet**
 
@@ -55,10 +100,6 @@ Servlet([Tomcat](onenote:Web容器.one#Tomcat&section-id={9B6AA5FE-49EA-422B-B61
 
 SpringMVC的**DispatcherServlet**间接**继承**了**HttpServlet**抽象类，来实现请求和响应的处理。如果需要自己造轮子(造MVC框架)去处理http请求，就继承HttpServlet去实现自己的方法即可。
 
- 
-
- 
-
 ## DispatcherServlet
 
 Spring Web模型 - 视图 - 控制器(MVC)框架是围绕**DispatcherServlet**设计的，它处理所有的HTTP请求和响应。又叫前端控制器，来自前端的请求会先到达这里，它负责到后台去匹配合适的handler。是SpringMVC的统一处理入口。
@@ -68,8 +109,6 @@ DispatcherServlet在初始化的时候就会根据 `DispatcherServlet.properties
 请求处理工作流如下图所示：
 
  ![image](../_images/32bb45b4-fd0d-4b61-99ad-32a11ffe6094.png)
-
-
 
 以下是对应于到DispatcherServlet的传入HTTP请求的事件顺序：
 
@@ -82,10 +121,6 @@ DispatcherServlet在初始化的时候就会根据 `DispatcherServlet.properties
 
 > 注：需要通过使用**web.xml**文件中的URL映射来映射希望**DispatcherServlet处理**的请求。
 
-
-
-
-
 ## HandlerMapping
 
 > HandlerMapping负责映射用户的URL和对应的处理类。
@@ -93,10 +128,6 @@ DispatcherServlet在初始化的时候就会根据 `DispatcherServlet.properties
 HandlerMapping在这个SpringMVC体系结构中有着举足轻重的地位，充当着**url和Controller之间映射**关系**配置**的角色。HandlerMapping是接口，Spring MVC提供了一系列HandlerMapping的实现，根据一定的规则选择controller。如果当前的HandlerMappign实现中没有能够满足你所需要的规则是，可以通过实现HandlerMapping接口进行扩展。它主要有三部分组成：HandlerMapping映射注册、根据url获取对应的处理器、拦截器注册。
 
 HandlerMapping是处理器映射器，根据请求找到处理器Handler，但并不是简单的返回处理器，而是将处理器和拦截器封装，形成一个处理器执行链(HandlerExecuteChain)。
-
-
-
-
 
 ## HandlerAdapter
 
@@ -116,10 +147,6 @@ DispatcherServlter会根据handlerMapping传过来的controller与已经注册�
 
 3. 通过调用handlerAdapter中的handler方法来处理及准备handler method的参数及annotation(这就是spring mvc如何将request中的参数变成handle method中的输入参数的地方)，最终调用实际的handler method。
 
-
-
-
-
 ## **初始化加载**
 
  ![image](../_images/dcea31aa-b4d6-4b64-b621-92b874f77272.jpg)
@@ -127,10 +154,6 @@ DispatcherServlter会根据handlerMapping传过来的controller与已经注册�
 从图中可以看出：
 Spring的ContextLoaderListener初始化的上下文加载的Bean是对于整个应用程序共享的，不管是使用什么表现层技术，一般如DAO层、Service层Bean；
 SpringMVC的DispatcherServlet初始化的上下文加载的Bean是只对Spring Web MVC有效的Bean，如Controller、HandlerMapping、HandlerAdapter等等，该初始化上下文应该只加载Web相关组件。
-
-
-
- 
 
 ## **Spring MVC获取表单参数**
 
@@ -143,10 +166,6 @@ Spring MVC获取表单参数有如下4种：
 
 - **HttpServletRequest(Controller)** ：通过request.getParameter("参数名")获取参数值。
 - **json**
-
- 
-
- 
 
 ## **Spring MVC数据绑定**
 
@@ -162,7 +181,7 @@ springMVC默认支持的数据绑定类型：
 // http://localhost:8088/smvc/login.action?id=100
 @RequestMapping(“/login”)
 public String login(Integer id){
-	//形式参数id就可以接收到请求url上的id属性值。
+    //形式参数id就可以接收到请求url上的id属性值。
 }
 ```
 
@@ -173,14 +192,12 @@ public String login(Integer id){
 ```java
 @RequestMapping(“/login”)
 public String login(@RequestParam(value="id",required=false,defaultValue="100")Integer user_id){
-	//形式参数id就可以接收到请求url上的id属性值。
-	//如上代码指定了随请求传递过来的名字为uid的参数将赋值给user_id,参数不是必须的，如果请求没有传递名字为id的参数，那么赋予user_id默认值为100
+    //形式参数id就可以接收到请求url上的id属性值。
+    //如上代码指定了随请求传递过来的名字为uid的参数将赋值给user_id,参数不是必须的，如果请求没有传递名字为id的参数，那么赋予user_id默认值为100
 }
 ```
 
 > Tips：如果Controller方法参数中定义的是基本数据类型，但是从页面 提交过来的数据为null或者””的话，会出现数据转换的异常。也就是必须保证表单传递过来的数据不能为null或””，所以，在开发过程中，对可能为空 的数据，最好将参数数据类型定义成包装类型
-
-
 
 **URI模板(template)映射**
 
@@ -196,8 +213,6 @@ URI Template可以允许@RequestMapping方法方便的选中URL的一部分内�
 @requestMapping("/path/{param1}/path2/{param2}")
 ```
 
-
-
 模板参数只有**一个**
 
 声明之后，在SpringMVC中你可以在一个方法参数上使用@PathVariable注解绑定它到这个URI模板变量上(方法参数可以是任意你想使用的简单数据类型,类似，int,double,String，Date等，后期数据绑定详细介绍...)。例如：
@@ -205,8 +220,8 @@ URI Template可以允许@RequestMapping方法方便的选中URL的一部分内�
 ```java
 @RequestMapping("/third/{userId}")
 public String third(@PathVariable Long userId){
-	System.out.println("userId:"+userId);
-	return "/index.jsp";
+    System.out.println("userId:"+userId);
+    return "/index.jsp";
 }
 ```
 
@@ -215,8 +230,8 @@ public String third(@PathVariable Long userId){
 ```java
 @RequestMapping("/third/{userId}")
 public String third(@PathVariable("userId") Long uid){
-	System.out.println("userId:"+uid);
-	return "/index.jsp";
+    System.out.println("userId:"+uid);
+    return "/index.jsp";
 }
 ```
 
@@ -227,10 +242,10 @@ public String third(@PathVariable("userId") Long uid){
 ```java
 @RequestMapping("/third/{userId}/update/{userId2}")
 public String third(@PathVariable("userId") Long uid,@PathVariable String userId2){
-	System.out.println("userId:"+uid);
-	System.out.println("userId2:"+userId2);
-	System.out.println("我是模板映射哟！");
-	return "/index.jsp";
+    System.out.println("userId:"+uid);
+    System.out.println("userId2:"+userId2);
+    System.out.println("我是模板映射哟！");
+    return "/index.jsp";
 }
 ```
 
@@ -238,32 +253,26 @@ public String third(@PathVariable("userId") Long uid,@PathVariable String userId
 // 使用一个map集合接收所有的参数：
 @RequestMapping("/users/{userid}/save/{name}")
 public String four(@PathVariable Map<String, String> vars){
-	for(String key:vars.keySet()){
-	System.out.println(key+"...."+vars.get(key));
-	}
-	return "/index.jsp";
+    for(String key:vars.keySet()){
+    System.out.println(key+"...."+vars.get(key));
+    }
+    return "/index.jsp";
 }
 ```
 
 此时将所有的模板参数名当做key值，访问时使用的替换值，作为map集合的value值存放。
-
-
 
 分别在**类级别**和**方法级**别使用模板URI：
 
 ```java
 @RequestMapping("/anno/{aid}")
 public class AnnoController {
-	@RequestMapping("/users/{userid}")
-	public String four(@PathVariable Long aid,@PathVariable userid){
-		return "/index.jsp";
-	}
+    @RequestMapping("/users/{userid}")
+    public String four(@PathVariable Long aid,@PathVariable userid){
+        return "/index.jsp";
+    }
 }
 ```
-
-
-
- 
 
 ## Spring MVC和Struts2的[区别](http://www.jb51.net/article/120410.htm)
 
