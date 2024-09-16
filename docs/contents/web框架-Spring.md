@@ -10,6 +10,22 @@
 
 - Spring Framework 5.x：支持 Java 8 到 Java 17
 
+
+
+## Bean的加载过程
+
+1. **资源定位**：定位到我们需要的进行ioc的bean；对于注解配置，会扫描指定包路径下带有特定注解（如 @Component 等）的类。
+
+2. **注册bean定义**：把 BeanDefinition 对象注册到 BeanFactory；以 Bean 名字为键，BeanDefinition 为值存储。
+
+3. **实例化bean**：根据 BeanDefinition，利用反射机制调用构造方法创建 Bean 实例。
+
+4. **依赖注入**；反射调用 setter 方法或其他方式，将属性值（包括对其他 Bean 的引用、基本类型、集合等）注入到 Bean 实例。
+
+5. **初始化bean**：Bean 实现了 InitializingBean 接口，则调用 afterPropertiesSet () 方法。
+
+
+
 ## bean的注入过程
 
 Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh()` 方法，该方法是个模板方法，定义了加载到容器的[全部过程](https://blog.csdn.net/ajianyingxiaoqinghan/article/details/107218224)。
@@ -230,8 +246,6 @@ class EventListenerApplicationTests implements ApplicationContextAware {
 7. **NESTED**
    
    如果当前存在事务，则在嵌套事务内执行；如果当前没有事务，则新建一个事务。嵌套事务是外部事务的子事务，外部事务回滚时，嵌套事务也会回滚，而嵌套事务回滚不会影响外部事务的提交。
-
-
 
 #### 七种事务属性
 
