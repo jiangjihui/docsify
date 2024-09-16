@@ -10,7 +10,9 @@
 
 - Spring Framework 5.x：支持 Java 8 到 Java 17
 
-## Bean的加载过程
+## Bean对象
+
+### Bean的加载过程
 
 1. **资源定位**：定位到我们需要的进行ioc的bean；对于注解配置，会扫描指定包路径下带有特定注解（如 @Component 等）的类。
 
@@ -22,7 +24,7 @@
 
 5. **初始化bean**：Bean 实现了 InitializingBean 接口，则调用 afterPropertiesSet () 方法。
 
-## bean的注入过程
+### bean的注入过程
 
 Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh()` 方法，该方法是个模板方法，定义了加载到容器的[全部过程](https://blog.csdn.net/ajianyingxiaoqinghan/article/details/107218224)。
 
@@ -43,7 +45,7 @@ Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh
 > - BeanFactoryPostProcessor，是由 Spring 框架组建提供的容器扩展机制，允许在 Bean 对象注册后但**未实例化**之前，对 Bean 的定义信息 `BeanDefinition` 执行修改操作。
 > - BeanPostProcessor，也是 Spring 提供的扩展机制，不过 BeanPostProcessor 是在 Bean 对象**实例化之后**修改 Bean 对象，也可以替换 Bean 对象。这部分与后面要实现的 AOP 有着密切的关系（动态代理）。
 
-### 过程
+#### 过程
 
 注册bean定义 -> ① -> 实例化bean -> 依赖的装配 -> ② -> 初始化bean -> ③ -> OK
 
@@ -65,7 +67,7 @@ Spring 包含并管理应用对象的配置和生命周期，在这个意义上�
 
 当一个 Bean 对象被定义存放以后，再由 Spring 统一进行装配，这个过程包括 Bean 的初始化、属性填充等，最终我们就可以完整的使用一个 Bean 实例化后的对象了。
 
-### refresh方法
+#### refresh方法
 
 ```java
 @Override
@@ -125,8 +127,6 @@ bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的
 
 > 如果想要详细了解原理，推荐阅读：[《Spring 手撸专栏》第 2 章：小试牛刀(让新手能懂)，实现一个简单的Bean容器](https://segmentfault.com/a/1190000040031724)
 
-### 
-
 ### 关键的类
 
 - **BeanDefinition**
@@ -144,9 +144,127 @@ bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的
   
   `ApplicationEvent`以及`Listener`是Spring为我们提供的一个事件监听、订阅的实现，内部实现原理是观察者设计模式，设计初衷也是为了系统业务逻辑之间的解耦，提高可扩展性以及可维护性。事件发布者并不需要考虑谁去监听，监听具体的实现内容是什么，发布者的工作只是为了[发布事件](https://segmentfault.com/a/1190000011433514)而已。
 
+### Bean是否是线程安全
 
+在 Spring 中，bean 是否线程安全取决于 bean 的作用域和其内部的实现方式：
 
- 
+**1. 单例作用域（Singleton Scope）**
+
+- **默认情况**：在 Spring 中，单例 bean 在整个应用程序中只有一个实例。如果 bean 没有共享的可变状态（即没有成员变量可以被多个线程同时修改），那么它是线程安全的。
+
+- **共享可变状态情况**：如果单例 bean 包含共享的可变状态，例如一个非线程安全的集合（如 ArrayList）被多个线程同时修改，那么就会出现线程安全问题。
+  
+  ```java
+  @Component
+  public class UnsafeSingletonBean {
+      private List<String> sharedList = new ArrayList<>();
+  
+      public void addToList(String element) {
+          sharedList.add(element);
+      }
+  }
+  ```
+
+        在上述例子中，`UnsafeSingletonBean`是一个单例 bean，`sharedList`是一个共享的可变状态。如果多个线程同时调用`addToList`方法，就可能导致`ConcurrentModificationException`等线程安全问题。
+
+**2. 原型作用域（Prototype Scope）**
+
+- 每次从容器中获取原型 bean 时，都会创建一个新的实例。虽然每个线程获取到的是不同的 bean 实例，但如果这些实例内部包含共享的可变状态（例如，它们共享对同一个非线程安全对象的引用），那么仍然可能出现线程安全问题。
+
+**3. 其他作用域（如 Request、Session 等）**
+
+- 对于`Request`和`Session`等作用域的 bean，每个 HTTP 请求或用户会话都会创建一个新的 bean 实例。与原型作用域类似，如果这些 bean 实例内部有共享的可变状态，也可能导致线程安全问题。
+
+### Bean的初始化
+
+#### 使用场景
+
+1. **验证依赖注入的属性**：确保所有必需的属性已被正确注入。
+2. **执行额外的初始化操作**：例如，初始化数据库连接、加载外部资源、设置默认值等。
+3. **配置资源**：如初始化缓存、打开连接等。
+
+#### 初始化方式
+
+1. **使用 @PostConstruct 注解**
+   
+   `@PostConstruct`是 Java EE 中的一个注解，Spring 也支持使用该注解来指定一个方法在 bean 初始化完成后被调用。它可以用于任何 Java 类，而不仅仅是 Spring 管理的 Bean。使用 `@PostConstruct` 更加简洁，但需要显式地标记初始化方法。
+   
+   ```java
+   import javax.annotation.PostConstruct;
+   import org.springframework.stereotype.Component;
+   
+   @Component
+   public class MyBean {
+       @PostConstruct
+       public void init() {
+           System.out.println("MyBean is initialized using @PostConstruct");
+       }
+   }
+   ```
+   
+   在这个例子中，`init`方法会在`MyBean`被创建并且依赖注入完成后自动执行，实现了 bean 的初始化操作。
+
+2. **实现 InitializingBean 接口**
+   
+   Spring 提供了`InitializingBean`接口，该接口中有一个`afterPropertiesSet`方法，实现该接口的 bean 在其所有属性被设置之后（即依赖注入完成后），`afterPropertiesSet`方法会被调用。
+   
+   除了 `InitializingBean`，还可以使用 `@PostConstruct` 注解来达到类似的效果，但使用 `InitializingBean` 可以提供更清晰的语义，并且在 Spring 应用程序中更为常见。
+   
+   ```java
+   import org.springframework.beans.factory.InitializingBean;
+   import org.springframework.stereotype.Component;
+   
+   @Component
+   public class MyBean implements InitializingBean {
+       @Override
+       public void afterPropertiesSet() throws Exception {
+           System.out.println("MyBean is initialized using InitializingBean");
+       }
+   }
+   ```
+   
+   这种方式可以让开发人员在`afterPropertiesSet`方法中编写初始化逻辑。
+
+3. **在 XML 配置中指定 init - method 属性**
+   
+   如果使用 XML 配置方式，在定义 bean 的时候可以通过`init - method`属性来指定一个方法作为 bean 的初始化方法。
+   
+   `<bean id="myBean" class="com.example.MyBean" init - method="initMethod" />`
+   
+   ```java
+   public class MyBean {
+       public void initMethod() {
+           System.out.println("MyBean is initialized using init - method in XML");
+       }
+   }
+   ```
+   
+   在这个例子中，当`myBean`被创建时，`initMethod`方法会被调用执行初始化操作。
+
+4. **通过配置类和 @Bean 注解**
+   
+   在基于 Java 的配置类中，使用`@Bean`注解定义 bean 时，可以通过`initMethod`属性指定初始化方法。
+   
+   ```java
+   import org.springframework.context.annotation.Bean;
+   import org.springframework.context.annotation.Configuration;
+   
+   @Configuration
+   public class AppConfig {
+       @Bean(initMethod = "init")
+       public MyBean myBean() {
+           return new MyBean();
+       }
+   }
+   
+   class MyBean {
+       public void init() {
+           System.out.println("MyBean is initialized using @Bean's initMethod");
+       }
+   }
+   ```
+   
+   这种方式结合了 Java 配置的简洁性和方法指定初始化的灵活性。
 
 ## 事务管理
 
@@ -228,7 +346,7 @@ Spring又添加了一种**新**的事务**属性**，**PROPAGATION_NESTED**，�
 
 当我们项目中仅仅使用hibernate，而没有集成进spring的时候，我们在一个service层中调用其他的业务逻辑方法，为了保证事物必须也要把当前的hibernate session传递到下一个方法中，或者采用ThreadLocal的方法，将session传递给下一个方法，其实都是一个目的。现在这个工作由spring来帮助我们完成，就可以让我们更加的专注于我们的业务逻辑。而不用去关心事务的问题。
 
-## **Spring的IOC**
+## Spring的IOC
 
 IOC （Inverse of Control） 控制反转，也可以称为依赖倒置。IOC理论提出的观点大体是这样的：借助于“第三方”**实现具有依赖关系的对象之间的解耦**。“第三方”，也就是IOC容器，通俗讲IOC容器负责加载各种依赖，并提供给各个模块所依赖的实例。
 
@@ -279,9 +397,7 @@ BeanFactory 和 ApplicationContext 都是 Spring 框架中用于管理 bean 的�
 
 在实际应用中，大多数情况下推荐使用 `ApplicationContext`，因为它提供了更丰富的功能，更适合构建复杂的企业级应用。Spring Boot 默认使用的就是 `ApplicationContext`（具体是 `AnnotationConfigApplicationContext` 或 `WebApplicationContext`），它为开发者提供了极大的便利。
 
-
-
-## **Spring的AOP**
+## Spring的AOP
 
 所谓AOP，即Aspect orientied program,就是[面向方面](http://www.ymq.io/2018/03/21/spring/#spring-aop的实现原理)(切面)的编程。
 
@@ -323,8 +439,6 @@ AOP代理（AOP Proxy）
 
 **afterCompletion**：controller返回后执行
 
-
-
 ### Spring 的通知（Advice）类型
 
 在 Spring AOP（面向切面编程）中，通知（Advice）是一种可以在程序执行的特定点插入的代码段。通知类型定义了何时以及如何执行这些代码段。Spring AOP 支持五种主要的通知类型：
@@ -340,6 +454,7 @@ AOP代理（AOP Proxy）
 **前置通知（Before Advice）**
 
 - **描述**：在目标方法调用之前执行的代码段。
+
 - **应用场景**：通常用于日志记录、性能监控、安全检查等。
   
   ```java
@@ -352,6 +467,7 @@ AOP代理（AOP Proxy）
 **后置通知（After Returning Advice）**
 
 - **描述**：在目标方法成功返回后执行的代码段。
+
 - **应用场景**：通常用于释放资源、日志记录等。
   
   ```java
@@ -375,6 +491,7 @@ AOP代理（AOP Proxy）
 **异常通知（After Throwing Advice）**
 
 - **描述**：在目标方法抛出异常后执行的代码段。
+
 - **应用场景**：通常用于异常处理、日志记录等。
   
   ```java
@@ -387,6 +504,7 @@ AOP代理（AOP Proxy）
 环绕通知（Around Advice）
 
 - **描述**：在目标方法调用前后都可以执行的代码段，具有最大的灵活性。
+
 - **应用场景**：通常用于性能监控、事务管理等。
   
   ```java
@@ -402,8 +520,6 @@ AOP代理（AOP Proxy）
 #### 总结
 
 这些通知类型在 Spring AOP 中都有其特定的作用和应用场景。通过合理使用这些通知类型，可以在不修改原有代码的基础上，增强系统的功能，如日志记录、性能监控、事务管理等。此外，Spring AOP 还支持组合使用这些通知类型，以实现更复杂的切面逻辑。在实际应用中，选择合适的通知类型可以有效地提升代码的可维护性和扩展性。
-
-
 
 ## **Spring定时**[**任务**](https://www.jianshu.com/p/1defb0f22ed1)
 
@@ -446,6 +562,47 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 - 至此也就解决了 Spring AOP 所带来的三级缓存问题。*本章节涉及到的 AOP 依赖有源码例子，可以进行调试*
 
 ## Spring注解
+
+### @ComponentScan注解
+
+`@ComponentScan` 是 Spring 框架中的一个注解，用于自动扫描和装配被 `@Component`、`@Service`、`@Repository` 或 `@Controller` 等注解标记的类。通过使用 `@ComponentScan`，可以简化 Spring 应用程序的配置，并使得组件的自动装配变得更加便捷。
+
+#### 用途
+
+`@ComponentScan` 注解主要用于以下场景：
+
+1. **自动检测组件**：扫描指定的包及其子包，自动检测并注册被 `@Component` 及其派生注解（如 `@Service`、`@Repository`、`@Controller`）标记的类。
+2. **减少配置**：不需要显式地定义 `<bean>` 元素或 `@Bean` 方法来配置组件。
+3. **增强灵活性**：可以根据需要动态配置扫描的范围，从而提高应用程序的灵活性。
+
+#### 配置方式
+
+- **指定包路径**：可以直接指定一个或多个包的路径，
+  
+  例如：`@ComponentScan("com.example.demo")`
+
+- **指定多个包路径**：也可以指定多个包路径，
+  
+  例如：`@ComponentScan({"com.example.package1", "com.example.package2"})`
+
+- **基于类的包路径**：可以通过指定一个类来间接指定包路径，Spring 会扫描该类所在的包及其子包。
+  
+  例如：`@ComponentScan(basePackageClasses = SomeClass.class)`
+
+#### 属性详解
+
+`@ComponentScan` 注解支持以下属性：
+
+- **`basePackages`**：指定要扫描的包的名称。
+- **`basePackageClasses`**：指定要扫描的类，Spring 会扫描这些类所在的包及其子包。
+- **`value`**：等同于 `basePackages`，用于指定要扫描的包的名称。
+- **`excludeFilters`**：用于排除某些类或包不被扫描。
+- **`includeFilters`**：用于仅包括某些类或包。
+- **`useDefaultFilters`**：默认值为 `true`，表示是否使用默认的过滤器（默认会扫描 `@Component`、`@Service`、`@Repository`、`@Controller` 等注解标记的类）。如果设为 `false`，则需要显式地指定过滤器。
+
+#### 总结
+
+`@ComponentScan` 是 Spring 框架中的一个重要注解，用于自动扫描和装配被 `@Component` 及其派生注解标记的类。使用 `@ComponentScan` 可以简化 Spring 应用程序的配置，并提高代码的可读性和可维护性。通过合理配置 `@ComponentScan` 的属性，可以灵活地控制扫描的范围和过滤条件，从而满足不同的应用场景需求。
 
 ### @Autowired 与@Resource的区别
 
@@ -503,3 +660,80 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 **可能的兼容性问题**
 
 - 当项目使用了一些不常见的或者高度定制化的 Spring 配置方式、自定义的注解处理器或者复杂的类加载机制时，Spring - context - indexer 可能会出现兼容性问题。例如，某些自定义的注解处理器可能会干扰索引文件的生成过程，或者与基于索引文件的组件加载机制产生冲突，导致应用出现难以预测的错误。
+
+### @Import注解
+
+`@Import` 注解用于在一个配置类中导入其他的配置类或者静态的配置信息。它允许你在一个地方声明多个配置类，而不需要显式地引用每一个类。它提供了一种灵活的方式来组合多个配置源，从而构建复杂的 Spring 应用程序配置。
+
+假设我们正在开发一个 Spring Boot 应用，其中包括几个不同的模块：一个用于数据库配置的模块、一个用于安全配置的模块以及一个主配置模块。
+
+```java
+// 数据库配置模块
+@Configuration
+public class DatabaseConfig {
+    @Bean
+    public DataSource dataSource() {
+        //...
+    }
+}
+
+// 安全配置模块
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    //... 
+}
+
+// 主配置模块
+@Configuration
+@Import({DatabaseConfig.class, SecurityConfig.class})
+public class MainConfig {
+    // 这里可以添加其他配置
+}
+```
+
+在这个主配置类中，我们使用了 `@Import` 注解来导入前面定义的两个配置模块。这样，当我们运行应用程序时，Spring 会自动加载 `DatabaseConfig` 和 `SecurityConfig` 中定义的所有 Bean。
+
+#### 用法
+
+1. **导入配置类**：
+   
+   ```java
+   @Configuration
+   @Import(OtherConfig.class)
+   public class AppConfig {
+       // 配置类的内容...
+   }
+   ```
+
+2. **使用 ImportSelector**：
+   
+   如果你需要动态地选择要导入的类，可以使用 `ImportSelector` 接口。例如：
+   
+   ```java
+   @Import(MyImportSelector.class)
+   public class AppConfig {
+       // 配置类的内容...
+   }
+   ```
+   
+   `MyImportSelector` 类需要实现 `ImportSelector` 接口，并重写 `selectImports` 方法来指定要导入的类。
+
+3. **使用 ImportBeanDefinitionRegistrar**：
+   
+   如果你需要更复杂的逻辑来注册 Bean，可以使用 `ImportBeanDefinitionRegistrar` 接口。例如：
+   
+   ```java
+   @Import(MyRegistrar.class)
+   public class AppConfig {
+       // 配置类的内容...
+   }
+   ```
+   
+   `MyRegistrar` 类需要实现 `ImportBeanDefinitionRegistrar` 接口，并重写 `registerBeanDefinitions` 方法来注册 Bean 定义。
+
+#### 注意事项
+
+- 使用 `@Import` 可以使你的配置更加模块化，提高代码的可维护性和可读性。
+- 如果你不希望某个类直接暴露给用户，而是作为一个内部配置类来使用，`@Import` 是一个很好的选择。
+- `@Import` 只能在 `@Configuration` 类上使用，而不能在普通的类上使用。

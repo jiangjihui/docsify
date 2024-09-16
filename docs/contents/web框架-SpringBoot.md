@@ -15,13 +15,33 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 - 命令行界面：这是Spring Boot的可选特性，借此你只需写代码就能完成完整的应用程序，无需传统项目构建。
 - Actuator：让你能够深入运行中的Spring Boot应用程序，一探究竟。
 
-## **Spring Boot** [特性](https://www.zhihu.com/question/39483566/answer/243413600)
+## Spring Boot 特性
 
 - 支持运行期内嵌容器，如 Tomcat、Jetty
 - 强大的开发包，支持热启动
 - 自动管理依赖
 - 自带应用监控
 - 非常简洁的安全策略集成
+
+
+
+### 优点
+
+1. **独立运行**
+   
+   内置 Web 服务器，Spring Boot 默认集成了 Tomcat、Jetty 或 Undertow 等内嵌 Web 服务器，使得应用程序可以独立运行，不需要外部的 Web 容器。
+
+2. **简化配置**
+   
+   约定优于配置：遵循 “约定优于配置” 的原则，减少了开发者需要进行的配置工作。例如，默认的配置文件`application.properties`或`application.yml`中已经定义了很多常用的配置项，开发者只需要根据项目需求修改其中的部分配置即可。
+
+3. **自动配置**
+   
+   Spring Boot 能够根据项目依赖自动配置 Spring 应用。例如，当在项目中添加了`spring-boot-starter-web`依赖时，Spring Boot 会自动配置 Tomcat 服务器、Spring MVC 框架等相关组件，无需开发者手动进行繁琐的配置工作。
+
+4. **应用监控**
+   
+   Spring Boot Actuator 提供了健康检查的功能，可以监控应用程序的状态。还提供了监控指标的功能，可以收集和展示应用程序的运行数据。
 
 
 
@@ -38,8 +58,6 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 4. **应用配置**：
    - Spring Boot会遍历所有的自动配置类，将满足条件的配置都应用到应用程序中。
 
-
-
 #### 什么是 DeferredImportSelector
 
 `DeferredImportSelector` 是一个接口，它继承自 `ImportSelector`。它的主要用途是在某些情况下延迟配置类的导入，直到特定条件得到满足为止。这通常用于处理一些依赖于其他配置类的情况，或者当需要在运行时动态决定导入哪些类时。
@@ -53,8 +71,6 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 - **场景 2：避免循环依赖**
   
   有时候，两个配置类之间可能会出现相互依赖的情况。在这种情况下，可以使用 `DeferredImportSelector` 来延迟其中一个配置类的导入，以避免循环依赖的问题。
-
-
 
 ### 什么是 bootstrap.yml
 
@@ -79,11 +95,43 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 - 如果没有特殊的需求，可以不使用 `bootstrap.yml` 文件，而将所有配置放在 `application.yml` 或 `application.properties` 文件中。
 - 如果使用了 `bootstrap.yml` 文件，确保其中的配置不会与 `application.yml` 中的配置产生冲突。
 
-通过合理使用 `bootstrap.yml` 文件，可以更好地管理 Spring Boot 应用程序的启动配置，特别是在涉及微服务架构和云原生应用时，它可以显著提升应用程序的健壮性和灵活性。
+#### 总结
 
+Spring Cloud 的一些核心功能，如从配置中心（如 Spring Cloud Config Server）获取配置信息，依赖于`bootstrap.yml`来配置与外部配置中心交互的相关属性，例如配置中心的地址、配置文件的名称、环境等信息。这些信息需要在应用启动的早期阶段就被加载和处理，以便在应用上下文创建之前就能够从配置中心获取到配置信息。这是 Spring Cloud 特有的需求，Spring Boot 本身没有这样的机制。
 
+## SpringApplication
 
-## 详细启动过程
+**1. 基本概念**
+
+SpringApplication 是 Spring Boot 应用程序的引导类，用于启动一个 Spring Boot 应用。它封装了启动 Spring 应用程序所需的复杂配置和初始化过程。
+
+**2. 主要作用**
+
+- **配置加载**：自动加载和配置应用程序的环境，包括从多个源（如 application.properties、application.yml 文件，系统环境变量，命令行参数等）读取配置信息，并将这些信息整合到 Spring 的 Environment 中。
+- **应用上下文创建**：根据应用的类型和配置，选择合适的应用程序上下文（如 AnnotationConfigApplicationContext 或 ServletWebServerApplicationContext 等）来管理应用程序中的 bean。
+- **启动流程管理**：负责整个启动流程的管理，包括触发各种启动相关的事件（如 ApplicationStartingEvent、ApplicationEnvironmentPreparedEvent 等），让开发者可以在不同的启动阶段进行自定义操作。
+
+### run方法做的事情
+
+Spring Boot 的 `run` 方法是启动 Spring Boot 应用程序的入口点。这个方法通常是通过调用 `SpringApplication.run()` 来实现，主要的关键步骤如下：
+
+1. **推断应用程序类型**：首先，`SpringApplication` 会尝试推断应用程序的类型（例如，是传统的 web 应用程序、反应式 web 应用程序还是其他类型）。这通常是通过检查类路径上的特定库（如 Spring MVC 或 Spring WebFlux）来完成的。
+
+2. **加载 Spring 应用上下文**：接下来，`SpringApplication` 会创建一个 `ApplicationContext`（应用上下文），这是 Spring 框架的核心接口，用于提供配置信息给应用程序中的对象。根据应用程序的类型，可能会创建不同类型的 `ApplicationContext`（如 `AnnotationConfigApplicationContext`、`AnnotationConfigReactiveWebApplicationContext` 等）。
+
+3. **加载 Spring Boot 自动配置**：Spring Boot 的自动配置是 Spring Boot 的核心特性之一。在这一步，Spring Boot 会尝试自动配置你的应用程序。它通过检查类路径上的项目依赖、属性设置和其他因素来推断你可能需要的配置，并自动应用这些配置。自动配置是通过 `@EnableAutoConfiguration` 注解触发的，该注解通常包含在 `@SpringBootApplication` 注解中。
+
+4. **加载应用程序的 Bean**：在创建并配置好 `ApplicationContext` 之后，Spring Boot 会加载应用程序中定义的 Bean。这包括通过 `@Component`、`@Service`、`@Repository`、`@Controller` 等注解标记的类，以及通过 Java 配置类（使用 `@Configuration` 和 `@Bean` 注解）定义的 Bean。
+
+5. **启动嵌入式服务器（如果适用）**：如果你的 Spring Boot 应用程序是一个 web 应用程序，并且你选择了使用 Spring Boot 的嵌入式服务器（如 Tomcat、Jetty 或 Undertow），那么在这一步，Spring Boot 会启动这个服务器。这允许你的应用程序作为一个独立的 web 服务器运行，而无需部署到外部容器中。
+
+6. **运行应用程序**：最后，一旦所有必要的配置和 Bean 都已加载，并且（如果适用）嵌入式服务器也已启动，Spring Boot 应用程序就会开始运行。这通常意味着你的应用程序现在可以接受请求（对于 web 应用程序）或执行其他类型的任务（对于非 web 应用程序）。
+
+**总结**
+
+`SpringApplication.run(...)` 方法是 Spring Boot 应用程序启动的核心，它负责初始化和启动整个 Spring 应用程序上下文。这一过程包括了解析命令行参数、创建和配置 `ApplicationContext`、注册 Bean 定义、刷新上下文、启动 Web 服务器（如果是 Web 应用程序）、执行启动后的初始化任务等。通过这一系列的操作，Spring Boot 应用程序能够快速启动并准备好接收请求。
+
+### 详细启动过程
 
 - SpringBoot的[启动过程](https://www.jianshu.com/p/cb5cb5937686)，实际上就是对ApplicationContext的初始化过程。
 - ApplicationContext创建后立刻为其设置Environment，并由**ApplicationContextInitializer**对其进一步封装。
@@ -112,6 +160,161 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
   **@EnableAutoConfiguration** 自动配置：从classpath中搜寻所有的META-INF/spring.factories配置文件，并将其中EnableAutoConfiguration对应的配置项通过反射（Java Refletion）实例化为对应的标注了@Configuration的JavaConfig形式的IoC容器配置类，然后汇总为一个并加载到IoC容器。
 
 > 出处：[Springboot 启动原理详细解析](https://www.cnblogs.com/jstarseven/p/11087157.html)
+
+## 配置读取
+
+Spring Boot 读取配置的方式主要有以下几种：
+
+- **使用 @Value 注解**
+  
+  @Value`注解可以直接将配置文件中的值注入到 Spring 管理的 bean 的成员变量中。可以指定默认值：例如：
+  
+  `@Value("${myapp.description:Default description}")`
+  
+  ```java
+  import org.springframework.beans.factory.annotation.Value;
+  import org.springframework.stereotype.Component;
+  
+  @Component
+  public class MyComponent {
+      @Value("${myapp.name}")
+      private String appName;
+  
+      // 可以在其他方法中使用appName变量
+  }
+  ```
+
+- **使用 @ConfigurationProperties 注解**
+  
+  当需要将一组相关的配置项映射到一个 Java 类时，可以使用`@ConfigurationProperties`注解。
+  
+  ```properties
+  myapp.database.url=jdbc:mysql://localhost:3306/mydb
+  myapp.database.username=root
+  myapp.database.password=secret
+  ```
+  
+  可以创建一个对应的类来接收这些配置：
+  
+  ```java
+  import org.springframework.boot.context.properties.ConfigurationProperties;
+  import org.springframework.stereotype.Component;
+  
+  @Component
+  @ConfigurationProperties(prefix = "myapp.database")
+  public class DatabaseConfig {
+      private String url;
+      private String username;
+      private String password;
+  
+      // 提供getter和setter方法
+  }
+  ```
+
+- **通过 Environment 对象**
+  
+  可以在 Spring 管理的 bean 中通过构造函数或者`@Autowired`注解注入`Environment`对象。使用`Environment`对象的`getProperty`方法来读取配置值。例如：
+  
+  ```java
+  import org.springframework.beans.factory.annotation.Autowired;
+  import org.springframework.core.env.Environment;
+  import org.springframework.stereotype.Component;
+  
+  @Component
+  public class MyComponent {
+      private final Environment environment;
+  
+      @Autowired
+      public MyComponent(Environment environment) {
+          this.environment = environment;
+      }
+  
+      public void doSomething() {
+          String appName = environment.getProperty("myapp.name");
+          // 使用appName进行操作
+      }
+  }
+  ```
+
+## 内嵌服务器
+
+Spring Boot 支持使用内嵌的 Web 服务器来快速构建和运行 Web 应用程序。内嵌服务器是指直接嵌入到应用程序中的 Web 服务器，而不是像传统 Java Web 应用那样需要单独部署到外部的 Web 服务器（如 Tomcat 或 Jetty）上。使用内嵌服务器可以简化开发流程，提高开发效率，并且使得部署更加简单。
+
+### 支持的内嵌服务器
+
+Spring Boot 默认支持以下几种内嵌服务器：
+
+1. **Tomcat**：Spring Boot **默认**使用**的内嵌服务器**。适合大多数传统的 Java Web 应用场景。
+2. **Jetty**：轻量级的内嵌服务器，适合高性能场景。
+3. **Undertow**：轻量级的内嵌服务器，由 Red Hat 开发，适合高并发场景。
+
+### 使用 Spring Boot 内嵌服务器的优势
+
+1. **简化开发流程**：不需要单独安装和配置外部 Web 服务器。
+2. **快速启动**：内嵌服务器启动速度快，适合开发环境。
+3. **简化部署**：打包后的应用程序可以直接运行，不需要额外的部署步骤。
+4. **轻量级**：内嵌服务器占用资源少，适合部署在资源受限的环境中。
+
+#### 更换为 Jetty 或 Undertow
+
+如果你想要更换内嵌服务器，可以通过添加相应的依赖来实现：
+
+Jetty：
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-jetty</artifactId>
+</dependency>
+```
+
+Undertow：
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-undertow</artifactId>
+</dependency>
+```
+
+## SpringBoot 打包的 jar
+
+Spring Boot 打包的 jar 和普通 jar 的区别简要如下：
+
+**内容方面**
+
+- Spring Boot jar：包含程序代码、**依赖库**、内嵌服务器、启动配置相关类。
+- 普通 jar：主要包含程序类文件、资源文件和明确依赖的库。
+
+**运行方式**
+
+- Spring Boot jar：可直接通过`java - jar`命令运行，Spring Boot 会自动配置并启动内嵌服务器。
+- 普通 jar：需在已有 Java 运行环境（如 Web 容器）中引用和运行。
+
+**目录结构**
+
+- Spring Boot jar：有独特结构，如依赖在`BOOT-INF/lib`，类文件在`BOOT-INF/classes`等。
+- 普通 jar：遵循标准格式，类和资源直接放在根目录下。
 
 ## 程序发布（Maven build打包程序）
 
