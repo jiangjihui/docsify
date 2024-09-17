@@ -344,11 +344,102 @@ Default options are read from the following files in the given order:
 
 开销和加锁速度介于表锁和行锁之间；会出现死锁；锁定粒度介于表锁和行锁之间，并发度一般
 
-## 索引优化-MRR
+## MySQL索引
+
+主要的索引类型：
+
+**普通索引（INDEX）**
+
+- 这是最基本的索引类型，没有任何限制，主要用于加速对数据的查询。
+  
+  ```sql
+  CREATE INDEX index_name ON table_name (column_name);
+  ```
+
+ **唯一索引（UNIQUE INDEX）**
+
+- 确保索引列的值是唯一的，可用于约束数据的唯一性，类似于在列上定义了唯一性约束。
+
+- 适用于需要保证某个字段或者几个字段组合起来的值在整个表中是唯一的情况，比如用户表中的用户名。
+  
+  ```sql
+  CREATE UNIQUE INDEX index_name ON table_name (column_name);
+  ```
+
+**主键索引（PRIMARY KEY）**
+
+- 它是一种特殊的唯一索引，每个表只能有一个主键索引。
+
+- 主键列的值不能为空且唯一，用于唯一标识表中的每一行记录。
+  
+  ```sql
+  ALTER TABLE table_name ADD PRIMARY KEY (column_name);
+  ```
+
+**组合索引（COMPOSITE INDEX）**
+
+- 也称为联合索引，是基于多个列创建的索引。
+
+- 在查询条件涉及多个列并且这些列经常一起使用时，可以提高查询效率。
+
+- 在创建组合索引时，要注意索引列的顺序，应该按照使用的频率和选择性从高到低进行排列。
+  
+  ```sql
+  CREATE INDEX index_name ON table_name (column1, column2,...);
+  ```
+
+**全文索引（FULLTEXT INDEX）**
+
+- 用于在文本数据类型（如 CHAR、VARCHAR、TEXT）的列上进行全文搜索。
+
+- 适用于对大段文本内容进行模糊搜索的场景，比如在文章内容中搜索关键词。
+  
+  ```sql
+  CREATE FULLTEXT INDEX index_name ON table_name (column_name);
+  ```
+
+### explain 的索引连接类型
+
+1. **ALL（全表扫描）**
+   
+   - 含义：表示 MySQL 需要遍历整个表来找到匹配的行，没有使用索引。
+   - 示例场景：如果在查询条件中没有合适的索引可以利用，或者查询条件涉及到对大部分数据的操作，MySQL 可能会选择全表扫描。比如对一个没有索引的大表进行查询，`SELECT * FROM table_name WHERE non_indexed_column = 'value';`可能导致`ALL`类型的执行计划。
+
+2. **index（索引全扫描）**
+   
+   - 含义：MySQL 使用索引来遍历整个表，但只读取索引中的数据，而不是实际的行数据。
+   - 示例场景：当只需要获取索引列的值，而不需要其他列的数据时，可能会出现这种情况。例如，`SELECT indexed_column FROM table_name;`，如果`indexed_column`上有索引，且查询只涉及该列，可能会使用`index`类型的扫描。
+
+3. **range（索引范围扫描）**
+   
+   - 含义：根据索引的范围来查找数据，通常用于`<`、`>`、`BETWEEN`、`IN`等操作符的查询条件。
+   - 示例场景：在一个有索引的列上进行范围查询时，如`SELECT * FROM table_name WHERE indexed_column > 10 AND indexed_column < 20;`，如果`indexed_column`上有索引，就会使用`range`类型的索引范围扫描。
+
+4. **ref（非唯一索引扫描）**
+   
+   - 含义：表示 MySQL 根据索引的等值匹配来查找数据，通常用于连接操作或者基于非唯一索引的等值查询。
+   - 示例场景：当通过一个非唯一索引列进行等值查询时，例如`SELECT * FROM table_name JOIN other_table ON table_name.indexed_column = other_table.column;`，如果`indexed_column`上有非唯一索引，就会使用`ref`类型的索引扫描。
+
+5. **eq_ref（唯一索引扫描）**
+   
+   - 含义：类似于`ref`，但它是基于唯一索引或者主键的等值匹配，能够更精确地定位到一行数据。
+   - 示例场景：在进行连接操作时，如果连接条件是基于唯一索引或者主键的等值匹配，就会使用`eq_ref`类型的索引扫描。比如`SELECT * FROM table_name JOIN other_table ON table_name.primary_key = other_table.column;`，其中`primary_key`是表`table_name`的主键。
+
+6. **const（常量值查询）**
+   
+   - 含义：当 MySQL 能够根据索引直接定位到一行数据，并且这行数据在查询过程中是常量时，就会使用`const`类型。
+   - 示例场景：查询条件是基于主键或者唯一索引的等值查询，并且能够直接定位到唯一的一行数据，例如`SELECT * FROM table_name WHERE primary_key = 1;`，其中`primary_key`是主键。
+
+7. **system（系统表查询）**
+   
+   - 含义：这是一种特殊的情况，当查询的表只有一行数据（系统表或者临时表）时，会使用`system`类型。
+   - 示例场景：在查询某些系统信息或者临时创建的只有一行数据的表时可能会出现这种情况，不过这种情况在实际应用中比较少见。
+
+### 索引优化-MRR
 
 > MRR针对于辅助索引上的范围查询进行优化,收集辅助索引对应主键rowid。进行排序后回表查询，随机IO转顺序IO
 
-### 介绍
+#### 介绍
 
 当我们需要对大表(基于辅助索引)进行范围扫描时，会导致产生许多随机/O。而对于普通磁盘来说，随机的性能很差，会遇到瓶颈，在 MySQL 5.6/5.7和MariaDB5.3/5.5/10.0/10.1版本里对这种情况进行了优化，一个新的名词 **Multi Range Read([MRR](https://www.jianshu.com/p/3d9b9b4ea186))**出现了，优化器会先扫描辅助索引，然后收集每行的主键（rowid ），并对主键进行排序（排序结果存储到read_rnd_buffer)，此时就可以用主键顺序访问基表，即用顺序IO代替随机IO。**MRR 在本质上是一种用空间换时间的算法**。
 
@@ -356,7 +447,7 @@ MRR 能够提升性能的核心在于，这条查询语句在索引上做的是�
 
 > 注意：MRR 只是针对优化回表查询的速度，当不需要回表访问的时候，MRR就失去意义了（比如覆盖索引）
 
-### 开启MRR
+#### 开启MRR
 
 mysql默认开启MRR优化。但是由优化器决定是否真正使用MRR（mrr=on,mrr_cost_based=on）。
 
@@ -367,7 +458,7 @@ SHOW VARIABLES LIKE '%optimizer_switch%'
 
 > mrr=on,mrr_cost_based=on
 
-## **MySQL事务实现原理**
+## MySQL事务实现原理
 
 [**MVCC**](https://blog.csdn.net/SnailMann/article/details/94724197)
 
@@ -401,7 +492,7 @@ Mysql的大多数事务型存储引擎实现的都不是简单的行级锁。基
 
 为了节省磁盘空间，InnoDB有专门的purge线程来清理deleted_bit为true的记录。为了不影响MVCC的正常工作，purge线程自己也维护了一个read view（这个read view相当于系统中最老活跃事务的read view）;如果某个记录的deleted_bit为true，并且DB_TRX_ID相对于purge线程的read view可见，那么这条记录一定是可以被安全清除的。
 
-## **MySQL数据库**[**优化**](https://mp.weixin.qq.com/s?__biz=MzA4Nzg5Nzc5OA==&mid=2651669647&idx=1&sn=2a72d20d7485e2879a6b772d9e2248ea&chksm=8bcb8726bcbc0e30b62fb971b25c28ea962c27e17ee20ca8bd82ffc73b1e83e95d0dff1c7454&scene=21#wechat_redirect)
+## MySQL数据库优化
 
 **拒绝默认设置**
 
@@ -465,9 +556,9 @@ innodb_buffer_pool_size=2048M
 
 **innodb**
 
-一般都是行锁，这个一般指的是sql用到索引的时候，**行锁是加在索引上的**，**不是加在数据记录上的**，如果sql没有用到索引，仍然会锁定表,mysql的读写之间是可以并发的，普通的select是不需要锁的，当查询的记录遇到锁时，用的是一致性的非锁定快照读，也就是根据数据库隔离级别策略，会去读被锁定行的快照，其它更新或加锁读语句用的是当前读，读取原始行；因为普通读与写不冲突，所以innodb不会出现读写饿死的情况，又因为在使用索引的时候用的是行锁，锁的粒度小，竞争相同锁的情况就少，就增加了并发处理，所以并发读写的效率还是很优秀的，问题在于索引查询后的根据主键的二次查找导致效率低
+一般都是行锁，这个一般指的是sql用到索引的时候，**行锁是加在索引上的**，**不是加在数据记录上的**，如果sql没有用到索引，仍然会锁定表,mysql的读写之间是可以并发的，普通的select是不需要锁的，当查询的记录遇到锁时，用的是一致性的非锁定快照读，也就是根据数据库隔离级别策略，会去读被锁定行的快照，其它更新或加锁读语句用的是当前读，读取原始行；因为普通读与写不冲突，所以innodb不会出现读写饿死的情况，又因为在使用索引的时候用的是行锁，锁的粒度小，竞争相同锁的情况就少，就增加了并发处理，所以并发读写的效率还是很优秀的，问题在于索引查询后的根据主键的二次查找导致效率低。
 
-备注：InnoDB行锁是通过给索引上的索引项加锁来实现的，这一点MySQL与Oracle不同，后者是通过在数据块中对相应数据行加锁来实现的。InnoDB这种行锁实现特点意味着：只有通过索引条件检索数据，InnoDB才使用行级锁，否则，InnoDB将使用表锁！在实际应用中，要特别注意InnoDB行锁的这一特性，不然的话，可能导致大量的锁冲突，从而影响并发性能。
+> 备注：InnoDB行锁是通过给索引上的索引项加锁来实现的，这一点MySQL与Oracle不同，后者是通过在数据块中对相应数据行加锁来实现的。InnoDB这种行锁实现特点意味着：只有通过索引条件检索数据，InnoDB才使用行级锁，否则，InnoDB将使用表锁！在实际应用中，要特别注意InnoDB行锁的这一特性，不然的话，可能导致大量的锁冲突，从而影响并发性能。
 
 因为 InnoDB 的数据文件本身要按主键聚集，所以 InnoDB 要求表必须有主键，如果没有显式指定，则 MySQL 系统会自动选择一个可以唯一标识数据记录的列作为主键，如果不存在这种列，则 MySQL 自动为 InnoDB 表生成一个隐含字段作为主键，这个字段长度为6个字节，类型为长整形。
 
@@ -500,7 +591,7 @@ Mysql默认的事务隔离级别是**可重复读(Repeatable Read)**，即保证
 
 如果索引设置了唯一(unique)属性，在进行修改操作时，InnoDB必须进行唯一性检查。也就是说，索引页即使不在缓冲池，磁盘上的页读取无法避免(否则怎么校验是否唯一？)
 
-## **redo log**
+### redo log
 
 InnoDB 记录了对数据文件的物理更改，并保证总是[日志先行](https://www.cnblogs.com/hoxis/p/10070256.html)。
 
@@ -522,7 +613,7 @@ MySQL 的每一次更新并没有每次都写入磁盘，InnoDB 引擎会先将�
 
 有了 redo log，InnoDB 就可以保证即使数据库发生异常重启，之前提交的记录都不会丢失，这个能力称为 crash-safe。
 
-## **bin log**
+### bin log
 
 MySQL 整体可以分为 Server 层和引擎层。其实，**redo log** 是属于引擎层的 **InnoDB** **所特有**的日志，而 Server 层也有自己的日志，即 binlog（归档日志）。
 
@@ -577,11 +668,11 @@ redo log记录的东西是偏向于物理性质的，如：“对什么数据，
 
 其实 MySQL 在提交事务的时候，不仅仅会将 redo log buffer  中的数据写入到redo log 文件中，同时也会将本次修改的数据记录到 bin log文件中，同时会将本次修改的bin log文件名和修改的内容在bin log中的位置记录到redo log中，最后还会在redo log最后写入 commit 标记，这样就表示本次事务被成功的提交了。
 
-## MySQL页
+### MySQL页
 
 InnoDB不能以单行基础上工作。InnoDB总是在页上操作。一旦页被加载，它就会扫描页以寻找所请求的行/记录。
 
-### 基础结构
+#### 基础结构
 
 [**Page**](https://segmentfault.com/a/1190000008545713)是Innodb存储的最基本结构，也是Innodb磁盘管理的最小单位，与数据库相关的所有内容都存储在Page结构里。Page分为几种类型：`数据页（B-Tree Node）`，`Undo页（Undo Log Page）`，`系统页（System Page）`，`事务数据页（Transaction System Page）`等；每个数据页的大小为`16kb`，每个Page使用一个32位（一位表示的就是0或1）的int值来表示，正好对应Innodb最大64TB的存储容量(16kb * 2^32=64tib)
 
@@ -597,7 +688,7 @@ Innodb中存在四种不同的Record，分别是
 
 这四种节点Record格式上有差异，但是内部都存储着Next指针指向下一个Record
 
-### User Record
+#### User Record
 
 User Record在Page内以单链表的形式存在，最初数据是按照插入的先后顺序排列的，但是随着新数据的插入和旧数据的删除，数据物理顺序发生改变，但是他们依然保持着逻辑上的先后顺序。同一页内数据顺续不一定一致，但不同页之间的数据顺续是一致的。
 
@@ -607,7 +698,7 @@ User Record在Page内以单链表的形式存在，最初数据是按照插入�
 
 ![clipboard.png](../_images/bVJ1hP.jpg)
 
-### 如何定位一个Record
+#### 如何定位一个Record
 
 1. 通过根节点开始遍历一个索引的B+树，通过各层非叶子节点达到底层的叶子节点的数据页（Page），这个Page内部存放的都是叶子节点
 2. 在Page内部从“Infimum”节点开始遍历单链表（遍历一般会被优化），如果找到键则返回。如果遍历到了“Supremum”，说明当前Page里没有合适的键，这时借助Page页内部的next page指针，跳转到下一个page继续从“Infmum”开始逐个查找
@@ -624,7 +715,7 @@ Page和B+树之间并没有一一对应的关系，Page只是作为一个Record�
 
 **索引长度 = 字段长度 + 是否为空(+1) + 是否变长(+2)**
 
-## **压测工具mysqlslap**
+## 压测工具mysqlslap
 
 安装MySQL时附带了一个压力测试工具[mysqlslap](https://juejin.im/post/5c6b9c09f265da2d8a55a855)（位于bin目录下）
 
@@ -658,11 +749,13 @@ mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=myisam -
 
 InnoDB表只是把自增主键的最大ID记录到内存中，所以重启数据库或者是对表进行OPTIMIZE操作，都会导致最大ID丢失。
 
-## **字符数还是字节数**
+## 字符数还是字节数
 
 对于MySql中的varchar长度究竟是字节还是字符是这样的：在version4之前，按字节；version5（MySQL 5.0+）之后，按字符。
 
-## **sql_mode=only_full_group_by异常**
+## 常见异常
+
+- sql_mode=only_full_group_by异常
 
 执行语句：
 
@@ -1430,8 +1523,6 @@ MySQL 中的查询缓存虽然能够提升数据库的查询性能，但是查�
 
 > 内容来源： [MySQL查询缓存详解 | JavaGuide(Java面试 + 学习指南)](https://javaguide.cn/database/mysql/mysql-query-cache.html)
 
-
-
 ## Buffer Pool
 
 在 MySQL 中，Buffer Pool 主要指的是 InnoDB 存储引擎使用的缓存机制。Buffer Pool 的作用是在内存中缓存 InnoDB 表的数据页和索引页，以提高数据访问的速度。Buffer Pool 是 InnoDB 缓存策略的关键组成部分，它可以显著提升查询性能，尤其是在频繁访问相同数据的情况下。
@@ -1467,8 +1558,6 @@ MySQL 中的查询缓存虽然能够提升数据库的查询性能，但是查�
    
    - 将 bin log 文件名字和更新内容在 bin log 中的位置记录到redo log中，同时在 redo log 最后添加 commit 标记
 
-
-
 ### Buffer Pool 的管理
 
 1. **LRU 列表**：
@@ -1483,3 +1572,29 @@ MySQL 中的查询缓存虽然能够提升数据库的查询性能，但是查�
    
    - 当数据页被修改时，会标记为脏页（dirty page）。InnoDB 会在适当的时候将脏页写回到磁盘上，以确保数据的一致性。
    - 脏页的写入操作可以通过调整参数 `innodb_flush_log_at_trx_commit` 来控制。
+
+
+
+## 双写缓冲区
+
+双写缓冲区是 InnoDB 存储引擎中的一个内存区域，大小为 2MB。它位于**系统表空间**中，由连续的 128 个页（每页 16KB）组成。系统表空间也被称为共享表空间。共享表空间是一个或多个磁盘文件，它存储了 InnoDB 存储引擎的数据字典、双写缓冲区、撤销日志（undo logs）等信息。在数据库的运行过程中，共享表空间为双写缓冲区提供了物理存储位置，确保双写缓冲区中的数据能够在系统故障后用于数据恢复。
+
+### 产生原因
+
+- **部分页写入问题**：在计算机系统中，由于数据库文件存储在磁盘上，而磁盘的写入操作可能在某些情况下（如突然断电、系统崩溃等）不能保证原子性。例如，一个页（16KB）的数据正在写入磁盘时，可能只写入了部分数据，就发生了系统故障，这会导致该页的数据损坏。导致出现**写失效**的问题。
+- **数据一致性保障需求**：InnoDB 存储引擎是以页为单位进行数据读写操作的，页是数据存储的基本单位。为了确保数据页在写入磁盘过程中的完整性，避免出现部分页写入导致的数据损坏问题，引入了双写缓冲区机制。
+
+### 工作原理
+
+- **数据写入过程**
+  - **先写入缓冲区**：当 InnoDB 需要将数据页写入磁盘时，首先会将数据页写入双写缓冲区。写入双写缓冲区是顺序写入操作，这比直接写入磁盘的随机写入要快。
+  - **同步到磁盘**：在数据成功写入双写缓冲区后，InnoDB 才会将数据页从双写缓冲区写入磁盘上的数据文件中对应的位置。
+
+- **故障恢复机制**
+  - 如果在将数据页从双写缓冲区写入磁盘的过程中发生了系统故障或其他异常情况，导致部分页写入失败。
+  - 当系统重新启动后，InnoDB 会在恢复过程中检查双写缓冲区中的页，如果发现某个页的副本在双写缓冲区中是完整的，而磁盘上对应的页是损坏的（通过检查页的校验和等方式），InnoDB 会使用双写缓冲区中的页副本重新写入磁盘，从而恢复数据的完整性。
+
+### 作用
+
+- **提高可靠性**：即使在写入过程中发生系统崩溃，由于数据页是作为一个整体写入磁盘的，因此不会出现部分写入的情况，从而保证了数据的一致性。
+- **简化恢复过程**：如果系统崩溃后重启，InnoDB 可以更容易地检测到哪些数据页已经被完全写入磁盘，哪些还没有写入，从而简化恢复过程。
