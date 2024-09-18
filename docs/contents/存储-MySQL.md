@@ -1,4 +1,6 @@
-## **基本操作**
+## 常用
+
+### 基本操作
 
 **启动**
 
@@ -25,7 +27,7 @@ service mysql stop
 service mysql restart
 ```
 
-## **维护**
+### 维护
 
 ```sql
 -- 查看数据库端口号占用情况
@@ -54,7 +56,7 @@ SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
 mysqladmin -uroot -p processlist|awk -F "|" '{print $2}'|xargs -n 1 mysqladmin -uroot -p kill
 ```
 
-## **管理用户**
+### 管理用户
 
 **创建**
 
@@ -131,7 +133,7 @@ GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'root' WITH GRANT OPTION
 mysql -h192.168.69.8 -p3306 -uroot -p;
 ```
 
-## **管理数据库**
+### 管理数据库
 
 **创建数据库**
 
@@ -222,7 +224,7 @@ select * from information_schema.`COLUMNS` where TABLE_SCHEMA='数据库名' and
 mysqldump -u mysql_user --lock-tables=false --default-character-set=utf8 -p mysql_db mysql_table --where="ID > 20"  > backup.sql
 ```
 
-## 配置
+### 配置
 
 **查看和设置MySQL最大连接数**
 
@@ -282,7 +284,7 @@ select concat(round(sum(data_length/1024/1024),2),'MB') as data from information
 
 **show variables like '**%storage_engine%**';**
 
-## 处理逗号分隔的字符串
+### 处理逗号分隔的字符串
 
 ```sql
 select * from b_program_publish where find_in_set ('0c52dab',terminals);
@@ -290,7 +292,7 @@ select * from b_program_publish where find_in_set ('0c52dab',terminals);
 
 在翻这些函数的过程中，你应该已经深深地体会到mysql的设计者对[以逗号分割存储字段](https://blog.csdn.net/rovast/article/details/50519144)方法的肯定，因为有很多方法就是设计用来处理这种问题的。 
 
-## **配置文件**
+### 配置文件
 
 **添加或修改配置**
 
@@ -321,6 +323,742 @@ which mysqld
 Default options are read from the following files in the given order:
 /etc/my.cnf /etc/mysql/my.cnf ~/.my.cnf 
 ```
+
+### 常见异常
+
+- sql_mode=only_full_group_by异常
+
+执行语句：
+
+```sql
+SET @@global.sql_mode ='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+```
+
+### 数据库最大连接数设置
+
+```sql
+-- 查看最大连接数
+show variables like "max_connections";
+
+-- 设置最大连接数为400
+set GLOBAL max_connections=400;
+```
+
+### limit 20000加载很慢怎么[解决](https://mp.weixin.qq.com/s/9TxItfrkh5d1mNFKMvH6LA)
+
+\# 执行时间：4.73s
+
+select * from user where age = 10 limit 100000,10;
+
+\# 执行时间：0.53s
+
+SELECT a.* FROM USER a
+
+INNER JOIN
+
+(SELECT id FROM USER WHERE age = 10 LIMIT 100000,10) b
+
+ON a.id = b.id;
+
+其中需要对where条件增加索引，id因为是主键自带索引。select返回减少回表可以提升查询性能,所以采用查询主键字段后进行关联大幅度提升了查询效率。
+
+### MySQL压缩版的安装
+
+[详细步骤](https://baijiahao.baidu.com/s?id=1630347658327095638&wfr=spider&for=pc)
+
+1 下载压缩包，解压压缩包到指定目录：
+
+https://downloads.mysql.com/archives/community/
+
+2 以管理员打开命令行并进入到解压根目录/bin目录下
+
+创建配置文件my.ini。默认解压文件中没有，我们可以新建完添加解压根目录下。（新建文本文档，并将后缀名改成.ini）然后我们编辑此文件，设置MySQL根目录，以及数据库数据存放的目录。
+
+```
+[mysql]
+# 设置mysql客户端默认字符集
+default-character-set=utf8
+[mysqld]
+#设置3306端口
+port = 3306
+# 设置mysql的安装目录
+basedir=D:\\Program Files\\mysql-5.7.24-winx64
+# 允许最大连接数
+max_connections=200
+# 服务端使用的字符集默认为8比特编码的latin1字符集
+character-set-server=utf8
+# 创建新表时将使用的默认存储引擎
+default-storage-engine=INNODB
+```
+
+3 初始化MySQL数据目录
+
+```
+mysqld --initialize
+```
+
+> 注：如果出现找不到MSVCP140.dll错误，说明没有安装VC++2015运行库，MySQL运行需要这个运行库，可以去微软官网下载，大概实十几M大小。
+
+4 获取初始化数据库随机密码。执行完上一步之后，在data目录下生的文件有一个.err文件，这里面有初始化的密码。我们编辑打开此文件，找到密码。（root@localhost：后面跟的就是随机密码）
+
+5 安装MySQL服务
+
+```
+mysqld --install mysql5.7
+```
+
+6 启动mysql服务
+
+```
+net start mysql8.0
+```
+
+7 用root账号、随机密码登录连接MySQL，输入上面的随机密码（.err文件）成功登录
+
+```
+mysql -u root -p
+```
+
+8 修改随机密码
+
+```sql
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
+```
+
+### MySQL备份脚本（Window）
+
+```powershell
+::换成默认的gbk（避免获取日期错误）https://www.cnblogs.com/a-fun/p/9391301.html
+chcp 936
+@echo off
+set hour=%time:~0,2%
+if "%time:~0,1%"==" " set hour=0%time:~1,1%
+set now=%Date:~0,4%%Date:~5,2%%Date:~8,2%_%hour%%Time:~3,2%%Time:~6,2%
+echo %now%
+set host=localhost
+set port=3306
+set user=root
+set pass=root
+set dbname=hro
+set backupfile=D:\app\backup\database\%dbname%_%now%.sql
+D:\app\mysql-5.7.28-winx64\bin\mysqldump -h%host% -P%port% -u%user% -p%pass% -c -R --default-character-set=utf8 --single-transaction=TRUE --add-drop-table %dbname% > %backupfile%
+echo delete files before 30 days
+forfiles /p "D:\app\backup\database" /m *.sql /d -30 /c "cmd /c del @file /f"
+```
+
+### Docker备份和导入文件
+
+```shell
+# 备份文件
+docker exec some-mysql sh -c 'exec mysqldump -R -uroot -p"$MYSQL_ROOT_PASSWORD" merck' > /some/path/merck.sql
+
+# 导入文件
+docker exec -i mysql8_db_1 sh -c 'exec mysql -uroot -pmima merck' < /mnt/hdd/docker/mysql8/merck.sql
+```
+
+### MySQL双机热备的实现
+
+**条件：**
+
+1. 主服务器的版本**低于**从服务器版本
+
+2. 主服务器上需要备份的数据库在从服务器的mysql数据库中不能对应不上（即：主服务器有testdb数据库，从服务器也有名称为testdb数据库）
+
+**步骤：**
+
+**主服务器Master配置**
+
+1. 创建好同步连接的帐户
+
+2. 修改mysql配置文件[/etc/mysql/conf.d/my.cnf]
+
+```
+[mysqld]
+server-id = 1　　　　　　　　//唯一id
+log-bin=mysql-bin       //其中这两行是本来就有的，可以不用动，添加下面两行即可.指定日志文件
+binlog-do-db = test　　　　 //记录日志的数据库
+binlog-ignore-db = mysql  //不记录日志的数据库
+```
+
+3. 重启mysql服务
+
+```shell
+service mysql restart     //如果是运行的docker，直接重启docker
+```
+
+4. 查看主服务器状态[记录数据信息，后面需要用到]
+
+```shell
+mysql> show master status\G;
+```
+
+**从服务器Slave配置**
+
+1. 修改mysql配置文件[/etc/mysql/conf.d/my.cnf]
+
+```
+[mysqld]
+server-id = 2
+log-bin=mysql-bin
+replicate-do-db = test
+replicate-ignore-db = mysql,information_schema,performance_schema
+```
+
+2. 重启mysql服务
+
+```shell
+service mysql restart     //如果是运行的docker，直接重启docker
+```
+
+3、指定同步位置
+
+```
+mysql>stop slave;     //先停步slave服务线程，这个是很重要的，如果不这样做会造成以下操作不成功。
+mysql>change master to master_host='59.151.15.36',master_user='replicate',master_password='123456', master_log_file='mysql-bin.000016',master_log_pos=107;
+```
+
+> **注：**master_log_file, master_log_pos由主服务器（Master）查出的状态值中确定。也就是刚刚叫注意的。master_log_file对应File, master_log_pos对应Position。Mysql 5.x以上版本已经不支持在配置文件中指定主服务器相关选项。
+
+```
+mysql>start slave;
+```
+
+4、查看从服务器（Slave）状态
+
+```
+mysql> show slave status\G;
+## 查看下面两项值均为Yes，即表示设置从服务器成功。
+Slave_IO_Running: Yes
+Slave_SQL_Running: Yes
+```
+
+> 参考：https://www.cnblogs.com/fnlingnzb-learner/p/7000898.html
+
+### Linux安装Mysql-5.7版本
+
+```shell
+groupadd mysql      ## 添加一个mysql组
+useradd -r -g mysql mysql    ## 添加一个用户
+# 解压缩下载的包
+tar -xzvf /data/software/mysql-5.7.13-linux-glibc2.5-x86_64.tar.gz
+# 然后 mv 解压后的包  mysql   ##相当于重命名
+chown -R mysql:mysql ./   ##进入mysql包中， 给这个包授权 给mysql
+bin/mysqld --initialize --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data
+## 进入mysql文件名  basedir 为mysql 的路径， datadir 为mysql的 data 包，里面存放着mysql自己的包， 如user
+## 重要：此处需要注意记录生成的临时密码，如上文：YLi>7ecpe;YP
+bin/mysql_ssl_rsa_setup  --datadir=/usr/local/mysql/data           
+## 进入mysql support-files
+cp my-default.cnf /etc/my.cnf             ##注释或者删除掉 my.cnf里一般配置选项 中的socket=...的内容
+cp mysql.server /etc/init.d/mysql
+vim /etc/init.d/mysql             ##修改basedir=自己的路径     修改datadir=自己的路径
+bin/mysqld_safe --user=mysql --disable-partition-engine-check &     ## 启动mysql
+bin/mysql --user=root –p   
+## 输入临时密码
+set password=password('A123456');
+grant all privileges on *.* to root@'%' identified by 'A123456';
+flush privileges;
+use mysql;
+select host,user from user;
+## 远程链接数据库，或者重启。
+```
+
+> 参考：
+> 
+> http://www.cnblogs.com/zfxJava/p/6004188.html
+> 
+> http://blog.csdn.net/xyang81/article/details/51792144
+
+### CentOS7安装MySQL
+
+在CentOS中默认安装有MariaDB，这个是MySQL的分支，但为了需要，还是要在系统中安装[MySQL](https://blog.csdn.net/qq_36582604/article/details/80526287)，而且安装完成之后可以直接覆盖掉MariaDB。
+
+```bash
+wget -i -c http://dev.mysql.com/get/mysql57-community-release-el7-10.noarch.rpm
+
+yum -y install mysql57-community-release-el7-10.noarch.rpm
+# 安装MySQL服务器
+yum -y install mysql-community-server
+```
+
+### Red Hat安装MYSQL
+
+> 参考：[Red Hat环境下安装MYSQL（图文）](https://blog.csdn.net/weixin_43931875/article/details/103500815)
+
+首先根据RedHat的版本到mysql官网https://downloads.mysql.com/archives/community/下载安装包：
+
+```bash
+cat /etc/redhat-release
+cat /etc/system-release
+```
+
+在服务器上创建文件夹：
+
+```java
+mkdir /mysql
+```
+
+比如下载到`mysql-8.0.25-1.el7.x86_64.rpm-bundle.tar`，使用`tar`指令进行解压：
+
+```bash
+tar -xf  mysql-8.0.18-1.el7.x86_64.rpm-bundle.tar
+```
+
+开始安装：
+由于系统中存在mariadb 包会导致 mysql安装时报错mariadb-libs 被 mysql-community-libs-8.0.11-1.el7.x86_64 取代
+
+需要先卸载mariadb 包：
+
+```bash
+yum remove mariadb*
+```
+
+之后开始安装，注意顺序不能乱！
+
+```bash
+rpm -ivh mysql-community-common-8.0.18-1.el7.x86_64.rpm
+
+rpm -ivh mysql-community-libs-8.0.11-1.el7.x86_64.rpm
+
+rpm -ivh mysql-community-client-8.0.18-1.el7.x86_64.rpm 
+
+rpm -ivh mysql-community-server-8.0.18-1.el7.x86_64.rpm 
+```
+
+安装完成后初始化mysql数据库：
+
+```bash
+cd /etc
+mysqld --initialize --user=mysql
+```
+
+初始密码每个人都不一样，查看初始随机密码：
+
+```bash
+cat /var/log/mysqld.log
+```
+
+接下来，登陆mysql
+
+```bash
+mysql -u root -p
+```
+
+最后一步，修改密码：
+
+```mysql
+alter user 'root'@'localhost'identified by '123456';
+```
+
+### 压测工具mysqlslap
+
+安装MySQL时附带了一个压力测试工具[mysqlslap](https://juejin.im/post/5c6b9c09f265da2d8a55a855)（位于bin目录下）
+
+**自动生成sql测试**
+
+mysqlslap --auto-generate-sql -uroot -proot
+
+**并发测试**
+
+mysqlslap --auto-generate-sql --concurrency=100 -uroot -proot
+
+**多轮测试**
+
+mysqlslap --auto-generate-sql --concurrency=150 --iterations=10 -uroot -proot
+
+存储引擎测试
+
+mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=innodb -uroot -proot
+
+mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=myisam -uroot -proot
+
+### MYSQL的JSON类型
+
+#### json对象的介绍
+
+在mysql未支持json数据类型时，我们通常使用varchar、blob或text的数据类型存储json字符串，对mysql来说，用户插入的数据只是序列化后的一个普通的字符串，不会对JSON文档本身的语法合法性做检查，文档的合法性需要用户自己保证。在使用时需要先将整个json对象从数据库读取出来，在内存中完成解析及相应的计算处理，这种方式增加了数据库的网络开销并降低处理效率。
+
+从 MySQL 5.7.8 开始，MySQL 支持RFC 7159定义的全部json 数据类型，具体的包含四种基本类型（strings, numbers, booleans,and null）和两种结构化类型（objects and arrays）。可以有效地访问 JSON文档中的数据。与将 JSON 格式的字符串存储在字符串列中相比，该数据类型具有以下优势：
+
+- 自动验证存储在 JSON列中的 JSON 文档。无效的文档会产生错误。
+- 优化的存储格式。存储在列中的 JSON 文档被转换为允许快速读取文档元素的内部格式。当读取 JSON 值时，不需要从文本表示中解析该值，使服务器能够直接通过键或数组索引查找子对象或嵌套值，而无需读取文档中它们之前或之后的所有值。
+
+#### json类型的存储结构
+
+mysql为了提供对json对象的支持，提供了一套将json字符串转为结构化二进制对象的存储方式。json会被转为二进制的doc对象存储于磁盘中（在处理JSON时MySQL使用的utf8mb4字符集，utf8mb4是utf8和ascii的超集）。
+
+doc对象包含两个部分，type和value部分。其中type占1字节，可以表示16种类型：大的和小的json object类型、大的和小的 json array类型、literal类型（true、false、null三个值）、number类型（int6、uint16、int32、uint32、int64、uint64、double类型、utf8mb4 string类型和custom data（mysql自定义类型），具体可以参考源码json_binary.cc和json_binary.h进行学习。
+
+下面进行简单介绍：
+
+```
+type ::=  
+0x00 | // small JSON object  
+0x01 | // large JSON object  
+0x02 | // small JSON array  
+0x03 | // large JSON array  
+0x04 | // literal (true/false/null)  
+0x05 | // int16  
+0x06 | // uint16  
+0x07 | // int32  
+0x08 | // uint32  
+0x09 | // int64  
+0x0a | // uint64  
+0x0b | // double  
+0x0c | // utf8mb4 string  
+0x0f // custom data (any MySQL data type)
+```
+
+1. value包含 object、array、literal、number、string和custom-data六种类型，与type的16种类型对应。
+2. object表示json对象类型，由6部分组成：
+3. object ::= element-count size key-entry ***value-entry*** key ***value***  
+   其中:  
+   element-count表示对象中包含的成员（key）个数，在array类型中表示数组元素个数。  
+   size表示整个json对象的二进制占用空间大小。小对象用2Bytes空间表示（最大64K），大对象用4Bytes表示（最大4G）  
+   key-entry可以理解为一个用于指向真实key值的数组。本身用于二分查找，加速json字段的定位。  
+   key-entry由两个部分组成：  
+   key-entry ::= key-offset key-length  
+   其中:  
+   key-offset：表示key值存储的偏移量，便于快速定位key的真实值。  
+   key-length：表示key值的长度，用于分割不同key值的边界。长度为2Bytes，这说明，key值的长度最长不能超过64kb.
+4. value-entry与key-enter功能类似，不同之处在于，value-entry可能存储真实的value值。  
+   value-entry由两部分组成：  
+   value-entry ::= type offset-or-inlined-value  
+   其中：  
+   type表示value类型，如上文所示，支持16种基本类型，从而可以表示各种类型的嵌套。
+5. offset-or-inlined-value：有两层含义，如果value值足够小，可以存储于此，那么就存储数据本身，如果数据本身较大，则存储真实值的偏移用于快速定位。  
+   key 表示key值的真实值，类型为：key ::= utf8mb4-data,这里无需指定key值长度，因为key-entry中已经声明了key的存储长度。同时，在同一个json对象中，key值的长度总是一样的。
+
+![](assets/2023-08-10-15-49-08-image.png)
+
+举例说明：
+
+![](assets/2023-08-10-15-51-31-image.png)
+
+![](assets/2023-08-10-15-52-03-image.png)
+
+![](assets/2023-08-10-15-52-42-image.png)
+
+需要注意的是：
+
+- JSON对象的Key索引（图中橙色部分）都是排序好的，先按长度排序，长度相同的按照code point排序；Value索引（图中黄色部分）根据对应的Key的位置依次排列，最后面真实的数据存储（图中白色部分）也是如此
+- Key和Value的索引对存储了对象内的偏移和大小，单个索引的大小固定，可以通过简单的算术跳转到距离为N的索引
+- 通过MySQL5.7.16源代码可以看到，在序列化JSON文档时，MySQL会动态检测单个对象的大小，如果小于64KB使用两个字节的偏移量，否则使用四个字节的偏移量，以节省空间。同时，动态检查单个对象是否是大对象，会造成对大对象进行两次解析，源代码中也指出这是以后需要优化的点
+- 现在受索引中偏移量和存储大小四个字节大小的限制，单个JSON文档的大小不能超过4G；单个KEY的大小不能超过两个字节，即64K
+- 索引存储对象内的偏移是为了方便移动，如果某个键值被改动，只用修改受影响对象整体的偏移量
+- 索引的大小现在是冗余信息，因为通过相邻偏移可以简单的得到存储大小，主要是为了应对变长JSON对象值更新，如果长度变小，JSON文档整体都不用移动，只需要当前对象修改大小
+- 现在MySQL对于变长大小的值没有预留额外的空间，也就是说如果该值的长度变大，后面的存储都要受到影响
+- 结合JSON的路径表达式可以知道，JSON的搜索操作只用反序列化路径上涉及到的元素，速度非常快，实现了读操作的高性能
+- MySQL对于大型文档的变长键值的更新操作可能会变慢，可能并不适合写密集的需求
+
+#### json类型基本操作
+
+##### json数据插入
+
+son类型数据插入时有两种方式，一种是基于字符串格式插入，另一种是基于json_object()函数，在使用json_object()函数只需按k-v顺序，以,符号隔开顺序插入即可，MYSQL会自动验证 JSON 文档，无效的文档会产生错误。
+
+```sql
+mysql> CREATE TABLE t1 (jdoc JSON);
+Query OK, 0 rows affected (0.20 sec)
+
+mysql> INSERT INTO t1 VALUES('{"key1": "value1", "key2": "value2"}');
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO t1 VALUES('[1, 2,');
+ERROR 3140 (22032) at line 2: Invalid JSON text:
+"Invalid value." at position 6 in value (or column)  '[1, 2,'.
+```
+
+当一个字符串被解析并发现是一个有效的 JSON 文档时，它也会被规范化：具有与文档中先前找到的键重复的键的成员被丢弃（即使值不同）。以下第一个sql中通过 JSON_OBJECT()调用生成的对象值不包括第二个key1元素，因为该键名出现在值的前面；第二个sql中只保留了x第一次出现的值：
+
+```sql
+mysql> SELECT JSON_OBJECT('key1', 1, 'key2', 'abc', 'key1', 'def');
++------------------------------------------------------+
+| JSON_OBJECT('key1', 1, 'key2', 'abc', 'key1', 'def') |
++------------------------------------------------------+
+| {"key1": 1, "key2": "abc"}                           |
++------------------------------------------------------+
+
+mysql> INSERT INTO t1 VALUES
+     >     ('{"x": 17, "x": "red"}'),
+     >     ('{"x": 17, "x": "red", "x": [3, 5, 7]}');
+
+mysql> SELECT c1 FROM t1;
++-----------+
+| c1        |
++-----------+
+| {"x": 17} |
+| {"x": 17} |
++-----------+
+```
+
+##### json合并
+
+MySQL 5.7支持JSON_MERGE（）的合并算法，多个对象合并时产生一个对象。  可将多个数组合并为一个数组：
+
+```sql
+mysql> SELECT JSON_MERGE('[1, 2]', '["a", "b"]', '[true, false]');
++-----------------------------------------------------+
+| JSON_MERGE('[1, 2]', '["a", "b"]', '[true, false]') |
++-----------------------------------------------------+
+| [1, 2, "a", "b", true, false]                       |
++-----------------------------------------------------+
+```
+
+当合并数组与对象时，会将对象转换为新数组进行合并：
+
+```sql
+mysql> SELECT JSON_MERGE('[10, 20]', '{"a": "x", "b": "y"}');
++------------------------------------------------+
+| JSON_MERGE('[10, 20]', '{"a": "x", "b": "y"}') |
++------------------------------------------------+
+| [10, 20, {"a": "x", "b": "y"}]                 |
++------------------------------------------------+
+```
+
+如果多个对象具有相同的键，则生成的合并对象中该键的值是包含键值的数组：
+
+```sql
+mysql> SELECT JSON_MERGE('{"a": 1, "b": 2}', '{"c": 3, "a": 4}');
++----------------------------------------------------+
+| JSON_MERGE('{"a": 1, "b": 2}', '{"c": 3, "a": 4}') |
++----------------------------------------------------+
+| {"a": [1, 4], "b": 2, "c": 3}                      |
++----------------------------------------------------+
+```
+
+MySQL 8.0.3（及更高版本）支持两种合并算法，由函数 JSON_MERGE_PRESERVE()和 JSON_MERGE_PATCH(). 它们在处理重复键的方式上有所不同：JSON_MERGE_PRESERVE()保留重复键的值（与5.7版本的JSON_MERGE（）相同），而 JSON_MERGE_PATCH()丢弃除最后一个值之外的所有值。具体的
+
+- JSON_MERGE_PRESERVE() 函数接受两个或多个 JSON 文档并返回组合结果。如果参数为两个object,相同的key将会把value合并为array(即使value也相同，也会合并为array),不同的key则直接合并。如果其中一个参数为json array，则另一个json object整体作为一个元素，加入array结果。
+- JSON_MERGE_PATCH()函数接受两个或多个 JSON 文档并返回组合结果。如果参数为两个object,相同的key的value将会被后面参数的value覆盖,不同的key则直接合并。如果合并的是数组，将按照“最后一个重复键获胜”逻辑仅保留最后一个参数。
+
+```sql
+mysql> SELECT JSON_MERGE_PRESERVE('{"a":1,"b":2}', '{"a":3,"c":3}');
++-------------------------------------------------------+
+| JSON_MERGE_PRESERVE('{"a":1,"b":2}', '{"a":3,"c":3}') |
++-------------------------------------------------------+
+| {"a": [1, 3], "b": 2, "c": 3}                         |
++-------------------------------------------------------+
+1 row in set (0.01 sec)
+mysql> SELECT JSON_MERGE_PATCH('{"a":1,"b":2}', '{"a":3,"c":3}');
++----------------------------------------------------+
+| JSON_MERGE_PATCH('{"a":1,"b":2}', '{"a":3,"c":3}') |
++----------------------------------------------------+
+| {"a": 3, "b": 2, "c": 3}                           |
++----------------------------------------------------+
+1 row in set (0.02 sec)
+
+mysql> SELECT JSON_MERGE_PRESERVE('["a", 1]', '"a"','{"key": "value"}');
++-----------------------------------------------------------+
+| JSON_MERGE_PRESERVE('["a", 1]', '"a"','{"key": "value"}') |
++-----------------------------------------------------------+
+| ["a", 1, "a", {"key": "value"}]                           |
++-----------------------------------------------------------+
+1 row in set (0.00 sec)
+mysql> SELECT JSON_MERGE_PATCH('["a", 1]', '"a"','{"key": "value"}') ;
++--------------------------------------------------------+
+| JSON_MERGE_PATCH('["a", 1]', '"a"','{"key": "value"}') |
++--------------------------------------------------------+
+| {"key": "value"}                                       |
++--------------------------------------------------------+
+1 row in set (0.01 sec)
+```
+
+##### json数据查询
+
+MySQL 5.7.7+本身提供了很多原生的函数以及路径表达式来方便用户访问JSON数据。  
+JSON_EXTRACT()函数用于解析json对象，->符号是就一种JSON_EXTRACT()函数的等价模式。例如查询上面t1表中 jdoc字段中key值为x的值
+
+```sql
+SELECT jdoc->'$.x' FROM t1;
+SELECT JSON_EXTRACT(jdoc,'$.x') FROM t1;
+```
+
+JSON_EXTRACT返回值会带有” “,如果想获取原本的值可以使用JSON_UNQUOTE
+
+```sql
+mysql> SELECT JSON_EXTRACT('{"id": 14, "name": "Aztalan"}', '$.name');
++---------------------------------------------------------+
+| JSON_EXTRACT('{"id": 14, "name": "Aztalan"}', '$.name') |
++---------------------------------------------------------+
+| "Aztalan"                                               |
++---------------------------------------------------------+
+
+mysql> SELECT JSON_UNQUOTE(json_extract('{"id": 14, "name": "Aztalan"}', '$.name'));;
++-----------------------------------------------------------------------+
+| JSON_UNQUOTE(json_extract('{"id": 14, "name": "Aztalan"}', '$.name')) |
++-----------------------------------------------------------------------+
+| Aztalan                                                               |
++-----------------------------------------------------------------------+
+```
+
+json路径的语法：
+
+```
+pathExpression:
+    scope[(pathLeg)*]
+
+pathLeg:
+    member | arrayLocation | doubleAsterisk
+
+member:
+    period ( keyName | asterisk )
+
+arrayLocation:
+    leftBracket ( nonNegativeInteger | asterisk ) rightBracket
+
+keyName:
+    ESIdentifier | doubleQuotedString
+
+doubleAsterisk:
+    '**'
+
+period:
+    '.'
+
+asterisk:
+    '*'
+
+leftBracket:
+    '['
+
+rightBracket:
+    ']'
+```
+
+以 `json { “a”: [ [ 3, 2 ], [ { “c” : “d” }, 1 ] ], “b”: { “c” : 6 }, “one potato”: 7, “b.c” : 8 }` 为例：
+
+```
+$.a[1] 获取的值为 [ { “c” : “d” }, 1 ] $.b.c 获取的值为 6  
+$.”b.c” 获取的值为 8（因为键名包含不合法的表达式所以需要使用引号）
+
+
+mysql>  select json_extract('{ "a": [ [ 3, 2 ], [ { "c" : "d" }, 1 ] ], "b": { "c" : 6 }, "one potato": 7, "b.c" : 8 }','$**.c');
++-------------------------------------------------------------------------------------------------------------------+
+| JSON_EXTRACT('{ "a": [ [ 3, 2 ], [ { "c" : "d" }, 1 ] ], "b": { "c" : 6 }, "one potato": 7, "b.c" : 8 }','$**.c') |
++-------------------------------------------------------------------------------------------------------------------+
+| ["d", 6]                                                                                                          |
++-------------------------------------------------------------------------------------------------------------------+
+
+$**.c 匹配到了两个路径 :
+$.a[1].c 获取的值是”d”
+$.b.c 获取的值为 6
+```
+
+##### json数据更新
+
+一些函数采用现有的 JSON 文档，以某种方式对其进行修改，然后返回结果修改后的文档。路径表达式指示在文档中进行更改的位置。例如，JSON_SET()、 JSON_INSERT()和 JSON_REPLACE()函数各自采用现有的 JSON 文档，加上一个或多个路径和值对，来描述修改文档和要更新的值。这些函数在处理文档中现有值和不存在值的方式上有所不同。
+具体如下
+
+```sql
+mysql> SET @j = '["a", {"b": [true, false]}, [10, 20]]';
+```
+
+JSON_SET()替换存在的路径的值并添加不存在的路径的值：
+
+```sql
+mysql> SELECT JSON_SET(@j, '$[1].b[0]', 1, '$[2][2]', 2);
++--------------------------------------------+
+| JSON_SET(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
++--------------------------------------------+
+| ["a", {"b": [1, false]}, [10, 20, 2]]      |
++--------------------------------------------+
+```
+
+在这种情况下，路径$[1].b[0]选择一个现有值 ( true)，该值将替换为路径参数 ( 1) 后面的值。该路径$[2][2]不存在，因此将相应的值 ( 2) 添加到 选择的值中$[2]。  
+JSON_INSERT()添加新值但不替换现有值：
+
+```sql
+mysql> SELECT JSON_INSERT(@j, '$[1].b[0]', 1, '$[2][2]', 2);
++-----------------------------------------------+
+| JSON_INSERT(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
++-----------------------------------------------+
+| ["a", {"b": [true, false]}, [10, 20, 2]]      |
++-----------------------------------------------+
+```
+
+JSON_REPLACE()替换现有值并忽略新值：
+
+```sql
+mysql> SELECT JSON_REPLACE(@j, '$[1].b[0]', 1, '$[2][2]', 2);
++------------------------------------------------+
+| JSON_REPLACE(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
++------------------------------------------------+
+| ["a", {"b": [1, false]}, [10, 20]]             |
++------------------------------------------------+
+```
+
+JSON_REMOVE()接受一个 JSON 文档和一个或多个路径，这些路径指定要从文档中删除的值。返回值是原始文档减去文档中存在的路径选择的值：
+
+```sql
+mysql> SELECT JSON_REMOVE(@j, '$[2]', '$[1].b[1]', '$[1].b[1]');
++---------------------------------------------------+
+| JSON_REMOVE(@j, '$[2]', '$[1].b[1]', '$[1].b[1]') |
++---------------------------------------------------+
+| ["a", {"b": [true]}]                              |
++---------------------------------------------------+
+
+$[2]匹配[10, 20] 并删除它。
+$[1].b[1]匹配 元素false中 的第一个实例b并将其删除。
+不匹配的第二个实例$[1].b[1]：该元素已被删除，路径不再存在，并且没有效果。
+```
+
+##### json比较与排序
+
+JSON值可以使用=, <, <=, >, >=, <>, !=, <=>等操作符，BETWEEN, IN,GREATEST, LEAST等操作符现在还不支持。JSON值使用的两级排序规则，第一级基于JSON的类型，类型不同的使用每个类型特有的排序规则。
+JSON类型按照优先级从高到低为：
+
+```
+BLOB
+BIT
+OPAQUE
+DATETIME
+TIME
+DATE
+BOOLEAN
+ARRAY
+OBJECT
+STRING
+INTEGER, DOUBLE
+NULL
+```
+
+优先级高的类型大，不用再进行其他的比较操作；如果类型相同，每个类型按自己的规则排序。具体的规则如下：
+
+- BLOB/BIT/OPAQUE: 比较两个值前N个字节，如果前N个字节相同，短的值小
+- DATETIME/TIME/DATE: 按照所表示的时间点排序
+- BOOLEAN: false小于true
+- ARRAY: 两个数组如果长度和在每个位置的值相同时相等，如果不想等，取第一个不相同元素的排序结果，空元素最小。例：[] < [“a”] < [“ab”] < [“ab”, “cd”, “ef”] < [“ab”, “ef”]
+- OBJECT: 如果两个对象有相同的KEY，并且KEY对应的VALUE也都相同，两者相等。否则，两者大小不等，但相对大小未规定。例：{“a”: 1, “b”: 2} = {“b”: 2, “a”: 1}
+- STRING: 取两个STRING较短的那个长度为N，比较两个值utf8mb4编码的前N个字节，较短的小，空值最小。例：”a” < “ab” < “b” < “bc”；此排序等同于使用 collat​​ion 对 SQL 字符串进行排序utf8mb4_bin。因为 utf8mb4_bin是二进制排序规则，所以 JSON 值的比较区分大小写：”A” < “a”
+- INTEGER/DOUBLE: 包括精确值和近似值的比较
+
+#### JSON的索引
+
+现在MySQL不支持对JSON列进行索引，官网文档的说明是：
+
+JSON columns cannot be indexed. You can work around this restriction by creating an index on a generated column that extracts a scalar value from the JSON column.
+
+虽然不支持直接在JSON列上建索引，但MySQL规定，可以首先使用路径表达式对JSON文档中的标量值建立虚拟列，然后在虚拟列上建立索引。这样用户可以使用表达式对自己感兴趣的键值建立索引。举个具体的例子来说明：
+
+```sql
+ALTER TABLE features ADD feature_street VARCHAR(30) AS (JSON_UNQUOTE(feature->"$.properties.STREET"));
+ALTER TABLE features ADD INDEX (feature_street);
+```
+
+两个步骤，可以对feature列中properties键值下的STREET键(feature->”$.properties.STREET”)创建索引。
+
+其中，feature_street列就是新添加的虚拟列。之所以取名虚拟列，是因为与它对应的还有一个存储列(stored column)。它们最大的区别为虚拟列只修改数据库的metadata，并不会存储真实的数据在硬盘上，读取过程也是实时计算的方式；而存储列会把表达式的列存储在硬盘上。两者使用的场景不一样，默认情况下通过表达式生成的列为虚拟列。
+
+这样虚拟列的添加和删除都会非常快，而在虚拟列上建立索引跟传统的建立索引的方式并没有区别，会提高虚拟列读取的性能，减慢整体插入的性能。虚拟列的特性结合JSON的路径表达式，可以方便的为用户提供高效的键值索引功能。
+
+#### 总结
+
+1. JSON类型无须预定义字段，适合拓展信息的存储
+2. 单个JSON文档的大小不能超过4G；单个KEY的大小不能超过两个字节，即64K
+3. JSON类型适合应用于不常更新的静态数据
+4. 对搜索较频繁的数据建议增加虚拟列并建立索引
+
+> [MYSQL中JSON类型介绍 | 京东物流技术团队 - 京东云开发者的独家号 - 开发者头条](https://toutiao.io/posts/mqg9ogj)
 
 ## MySQL锁
 
@@ -427,6 +1165,34 @@ MySQL 默认的事务隔离级别是可重复读（REPEATABLE READ），在这�
 3. **死锁报告**：死锁发生时，InnoDB 会生成一个详细的死锁报告，展示参与死锁的事务及其锁定的资源。
 
 ## MySQL索引
+
+### 索引结构
+
+#### B+树
+
+- B树的特点：
+  
+  - 节点排序，**每个节点可以包含多个子节点**
+  
+  - 一个节点可以存多个元素，多个元素之间有序
+  
+  - **所有键值都存储在树中**
+
+- B+树的特点：
+  
+  - 拥有B树的特点
+  
+  - 叶子节点之间有指针
+  
+  - 非叶子节点上的元素在叶子节点上都冗余了，也就是叶子节点中存储了所有的元素，并且排好顺序
+  
+  - **数据只存储在叶子节点**，**非叶子节点仅存储索引信息**
+
+
+
+
+
+### 索引类型
 
 主要的索引类型：
 
@@ -653,7 +1419,13 @@ innodb_buffer_pool_size=2048M
 
 幸运的是，MySQL 能够在峰值操作时轻易地获悉所用到的连接数量。通常，您需要确保在应用程序所使用到的最大连接数和可用的最大连接数之间至少有 30％ 的差额。
 
-## MySQL存储引擎[区别](http://www.cnblogs.com/y-rong/p/8110596.html)
+
+
+## 存储引擎
+
+### MySQL存储引擎区别
+
+> [区别](http://www.cnblogs.com/y-rong/p/8110596.html)
 
 **MyISAM**：ISAM是Indexed Sequential Access Method (有索引的顺序访问方法) 的缩写，设计简单，数据以紧密格式存储。对于只读数据，或者表比较小、可以容忍修复操作，则依然可以使用它。。
 
@@ -675,7 +1447,9 @@ innodb_buffer_pool_size=2048M
 | **外键**                                                    | 不支持                             | 支持                   |
 | **锁支持（锁是避免资源争用的一个机制，MySQL锁对用户几乎是透明的）**                    | 表级锁定                            | 行级锁定、表级锁定，锁定力度小并发能力高 |
 
-## MySQL不同引擎的[优化](https://www.zhihu.com/question/19719997/answer/81930332)
+### MySQL不同引擎的优化
+
+> [优化](https://www.zhihu.com/question/19719997/answer/81930332)
 
 **myisam**
 
@@ -888,8 +1662,6 @@ Page和B+树之间并没有一一对应的关系，Page只是作为一个Record�
 
 **索引长度 = 字段长度 + 是否为空(+1) + 是否变长(+2)**
 
-
-
 ## 主从复制
 
 MySQL 的主从复制（Master-Slave Replication）是一种常见的数据同步机制，它允许从一个或多个主服务器（Master）将数据复制到一个或多个从服务器（Slave）。主从复制不仅可以用于数据冗余和备份，还可以用于负载均衡和读写分离，从而提高系统的可用性和性能。
@@ -904,30 +1676,6 @@ MySQL 的主从复制（Master-Slave Replication）是一种常见的数据同�
 
 1. **主服务器记录二进制日志（Binlog）**：每当在主服务器上执行一个事务或 SQL 语句时，MySQL 会记录一个二进制日志（Binlog）条目。这些条目包含了 SQL 语句的执行信息。
 2. **从服务器拉取 Binlog 并应用**：从服务器定期拉取主服务器的 Binlog，并在本地应用这些 Binlog 条目，从而使数据保持一致。
-
-
-
-## 压测工具mysqlslap
-
-安装MySQL时附带了一个压力测试工具[mysqlslap](https://juejin.im/post/5c6b9c09f265da2d8a55a855)（位于bin目录下）
-
-**自动生成sql测试**
-
-mysqlslap --auto-generate-sql -uroot -proot
-
-**并发测试**
-
-mysqlslap --auto-generate-sql --concurrency=100 -uroot -proot
-
-**多轮测试**
-
-mysqlslap --auto-generate-sql --concurrency=150 --iterations=10 -uroot -proot
-
-存储引擎测试
-
-mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=innodb -uroot -proot
-
-mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=myisam -uroot -proot
 
 ## ID自增问题
 
@@ -944,718 +1692,6 @@ InnoDB表只是把自增主键的最大ID记录到内存中，所以重启数据
 ## 字符数还是字节数
 
 对于MySql中的varchar长度究竟是字节还是字符是这样的：在version4之前，按字节；version5（MySQL 5.0+）之后，按字符。
-
-## 常见异常
-
-- sql_mode=only_full_group_by异常
-
-执行语句：
-
-```sql
-SET @@global.sql_mode ='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
-```
-
-## **数据库最大连接数设置**
-
-```sql
--- 查看最大连接数
-show variables like "max_connections";
-
--- 设置最大连接数为400
-set GLOBAL max_connections=400;
-```
-
-## limit 20000加载很慢怎么[解决](https://mp.weixin.qq.com/s/9TxItfrkh5d1mNFKMvH6LA)
-
-\# 执行时间：4.73s
-
-select * from user where age = 10 limit 100000,10;
-
-\# 执行时间：0.53s
-
-SELECT a.* FROM USER a
-
-INNER JOIN 
-
-  (SELECT id FROM USER WHERE age = 10 LIMIT 100000,10) b 
-
-ON a.id = b.id;
-
-其中需要对where条件增加索引，id因为是主键自带索引。select返回减少回表可以提升查询性能,所以采用查询主键字段后进行关联大幅度提升了查询效率。
-
-## MySQL压缩版的安装[详细步骤](https://baijiahao.baidu.com/s?id=1630347658327095638&wfr=spider&for=pc)
-
-1 下载压缩包，解压压缩包到指定目录：
-
-https://downloads.mysql.com/archives/community/
-
-2 以管理员打开命令行并进入到解压根目录/bin目录下
-
-创建配置文件my.ini。默认解压文件中没有，我们可以新建完添加解压根目录下。（新建文本文档，并将后缀名改成.ini）然后我们编辑此文件，设置MySQL根目录，以及数据库数据存放的目录。
-
-```
-[mysql]
-# 设置mysql客户端默认字符集
-default-character-set=utf8
-[mysqld]
-#设置3306端口
-port = 3306
-# 设置mysql的安装目录
-basedir=D:\\Program Files\\mysql-5.7.24-winx64
-# 允许最大连接数
-max_connections=200
-# 服务端使用的字符集默认为8比特编码的latin1字符集
-character-set-server=utf8
-# 创建新表时将使用的默认存储引擎
-default-storage-engine=INNODB
-```
-
-3 初始化MySQL数据目录
-
-```
-mysqld --initialize
-```
-
-> 注：如果出现找不到MSVCP140.dll错误，说明没有安装VC++2015运行库，MySQL运行需要这个运行库，可以去微软官网下载，大概实十几M大小。
-
-4 获取初始化数据库随机密码。执行完上一步之后，在data目录下生的文件有一个.err文件，这里面有初始化的密码。我们编辑打开此文件，找到密码。（root@localhost：后面跟的就是随机密码）
-
-5 安装MySQL服务
-
-```
-mysqld --install mysql5.7
-```
-
-6 启动mysql服务
-
-```
-net start mysql8.0
-```
-
-7 用root账号、随机密码登录连接MySQL，输入上面的随机密码（.err文件）成功登录
-
-```
-mysql -u root -p
-```
-
-8 修改随机密码
-
-```sql
-ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
-```
-
-## MySQL备份脚本（Window）
-
-```powershell
-::换成默认的gbk（避免获取日期错误）https://www.cnblogs.com/a-fun/p/9391301.html
-chcp 936
-@echo off
-set hour=%time:~0,2%
-if "%time:~0,1%"==" " set hour=0%time:~1,1%
-set now=%Date:~0,4%%Date:~5,2%%Date:~8,2%_%hour%%Time:~3,2%%Time:~6,2%
-echo %now%
-set host=localhost
-set port=3306
-set user=root
-set pass=root
-set dbname=hro
-set backupfile=D:\app\backup\database\%dbname%_%now%.sql
-D:\app\mysql-5.7.28-winx64\bin\mysqldump -h%host% -P%port% -u%user% -p%pass% -c -R --default-character-set=utf8 --single-transaction=TRUE --add-drop-table %dbname% > %backupfile%
-echo delete files before 30 days
-forfiles /p "D:\app\backup\database" /m *.sql /d -30 /c "cmd /c del @file /f"
-```
-
-## **Docker备份和导入文件**
-
-```shell
-# 备份文件
-docker exec some-mysql sh -c 'exec mysqldump -R -uroot -p"$MYSQL_ROOT_PASSWORD" merck' > /some/path/merck.sql
-
-# 导入文件
-docker exec -i mysql8_db_1 sh -c 'exec mysql -uroot -pmima merck' < /mnt/hdd/docker/mysql8/merck.sql
-```
-
-## MySQL双机热备的实现
-
-**条件：**
-
-1. 主服务器的版本**低于**从服务器版本
-
-2. 主服务器上需要备份的数据库在从服务器的mysql数据库中不能对应不上（即：主服务器有testdb数据库，从服务器也有名称为testdb数据库）
-
-**步骤：**
-
-**主服务器Master配置**
-
-1. 创建好同步连接的帐户
-
-2. 修改mysql配置文件[/etc/mysql/conf.d/my.cnf]
-
-```
-[mysqld]
-server-id = 1　　　　　　　　//唯一id
-log-bin=mysql-bin       //其中这两行是本来就有的，可以不用动，添加下面两行即可.指定日志文件
-binlog-do-db = test　　　　 //记录日志的数据库
-binlog-ignore-db = mysql  //不记录日志的数据库
-```
-
-3. 重启mysql服务
-
-```shell
-service mysql restart     //如果是运行的docker，直接重启docker
-```
-
-4. 查看主服务器状态[记录数据信息，后面需要用到]
-
-```shell
-mysql> show master status\G;
-```
-
-**从服务器Slave配置**
-
-1. 修改mysql配置文件[/etc/mysql/conf.d/my.cnf]
-
-```
-[mysqld]
-server-id = 2
-log-bin=mysql-bin
-replicate-do-db = test
-replicate-ignore-db = mysql,information_schema,performance_schema
-```
-
-2. 重启mysql服务
-
-```shell
-service mysql restart     //如果是运行的docker，直接重启docker
-```
-
-3、指定同步位置
-
-```
-mysql>stop slave;     //先停步slave服务线程，这个是很重要的，如果不这样做会造成以下操作不成功。
-mysql>change master to master_host='59.151.15.36',master_user='replicate',master_password='123456', master_log_file='mysql-bin.000016',master_log_pos=107;
-```
-
-> **注：**master_log_file, master_log_pos由主服务器（Master）查出的状态值中确定。也就是刚刚叫注意的。master_log_file对应File, master_log_pos对应Position。Mysql 5.x以上版本已经不支持在配置文件中指定主服务器相关选项。
-
-```
-mysql>start slave;
-```
-
-4、查看从服务器（Slave）状态
-
-```
-mysql> show slave status\G;
-## 查看下面两项值均为Yes，即表示设置从服务器成功。
-Slave_IO_Running: Yes
-Slave_SQL_Running: Yes
-```
-
-> 参考：https://www.cnblogs.com/fnlingnzb-learner/p/7000898.html
-
-## **Linux安装Mysql-5.7版本**
-
-```shell
-groupadd mysql      ## 添加一个mysql组
-useradd -r -g mysql mysql    ## 添加一个用户
-# 解压缩下载的包
-tar -xzvf /data/software/mysql-5.7.13-linux-glibc2.5-x86_64.tar.gz
-# 然后 mv 解压后的包  mysql   ##相当于重命名
-chown -R mysql:mysql ./   ##进入mysql包中， 给这个包授权 给mysql
-bin/mysqld --initialize --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data
-## 进入mysql文件名  basedir 为mysql 的路径， datadir 为mysql的 data 包，里面存放着mysql自己的包， 如user
-## 重要：此处需要注意记录生成的临时密码，如上文：YLi>7ecpe;YP
-bin/mysql_ssl_rsa_setup  --datadir=/usr/local/mysql/data           
-## 进入mysql support-files
-cp my-default.cnf /etc/my.cnf             ##注释或者删除掉 my.cnf里一般配置选项 中的socket=...的内容
-cp mysql.server /etc/init.d/mysql
-vim /etc/init.d/mysql             ##修改basedir=自己的路径     修改datadir=自己的路径
-bin/mysqld_safe --user=mysql --disable-partition-engine-check &     ## 启动mysql
-bin/mysql --user=root –p   
-## 输入临时密码
-set password=password('A123456');
-grant all privileges on *.* to root@'%' identified by 'A123456';
-flush privileges;
-use mysql;
-select host,user from user;
-## 远程链接数据库，或者重启。
-```
-
-> 参考：
-> 
-> http://www.cnblogs.com/zfxJava/p/6004188.html
-> 
-> http://blog.csdn.net/xyang81/article/details/51792144
-
-## CentOS7安装MySQL
-
-在CentOS中默认安装有MariaDB，这个是MySQL的分支，但为了需要，还是要在系统中安装[MySQL](https://blog.csdn.net/qq_36582604/article/details/80526287)，而且安装完成之后可以直接覆盖掉MariaDB。
-
-```bash
-wget -i -c http://dev.mysql.com/get/mysql57-community-release-el7-10.noarch.rpm
-
-yum -y install mysql57-community-release-el7-10.noarch.rpm
-# 安装MySQL服务器
-yum -y install mysql-community-server
-```
-
-## Red Hat安装MYSQL
-
-> 参考：[Red Hat环境下安装MYSQL（图文）](https://blog.csdn.net/weixin_43931875/article/details/103500815)
-
-首先根据RedHat的版本到mysql官网https://downloads.mysql.com/archives/community/下载安装包：
-
-```bash
-cat /etc/redhat-release
-cat /etc/system-release
-```
-
-在服务器上创建文件夹：
-
-```java
-mkdir /mysql
-```
-
-比如下载到`mysql-8.0.25-1.el7.x86_64.rpm-bundle.tar`，使用`tar`指令进行解压：
-
-```bash
-tar -xf  mysql-8.0.18-1.el7.x86_64.rpm-bundle.tar
-```
-
-开始安装：
-由于系统中存在mariadb 包会导致 mysql安装时报错mariadb-libs 被 mysql-community-libs-8.0.11-1.el7.x86_64 取代
-
-需要先卸载mariadb 包：
-
-```bash
-yum remove mariadb*
-```
-
-之后开始安装，注意顺序不能乱！
-
-```bash
-rpm -ivh mysql-community-common-8.0.18-1.el7.x86_64.rpm
-
-rpm -ivh mysql-community-libs-8.0.11-1.el7.x86_64.rpm
-
-rpm -ivh mysql-community-client-8.0.18-1.el7.x86_64.rpm 
-
-rpm -ivh mysql-community-server-8.0.18-1.el7.x86_64.rpm 
-```
-
-安装完成后初始化mysql数据库：
-
-```bash
-cd /etc
-mysqld --initialize --user=mysql
-```
-
-初始密码每个人都不一样，查看初始随机密码：
-
-```bash
-cat /var/log/mysqld.log
-```
-
-接下来，登陆mysql
-
-```bash
-mysql -u root -p
-```
-
-最后一步，修改密码：
-
-```mysql
-alter user 'root'@'localhost'identified by '123456';
-```
-
-## MYSQL中JSON类型介绍
-
-### json对象的介绍
-
-在mysql未支持json数据类型时，我们通常使用varchar、blob或text的数据类型存储json字符串，对mysql来说，用户插入的数据只是序列化后的一个普通的字符串，不会对JSON文档本身的语法合法性做检查，文档的合法性需要用户自己保证。在使用时需要先将整个json对象从数据库读取出来，在内存中完成解析及相应的计算处理，这种方式增加了数据库的网络开销并降低处理效率。
-
-从 MySQL 5.7.8 开始，MySQL 支持RFC 7159定义的全部json 数据类型，具体的包含四种基本类型（strings, numbers, booleans,and null）和两种结构化类型（objects and arrays）。可以有效地访问 JSON文档中的数据。与将 JSON 格式的字符串存储在字符串列中相比，该数据类型具有以下优势：
-
-- 自动验证存储在 JSON列中的 JSON 文档。无效的文档会产生错误。
-- 优化的存储格式。存储在列中的 JSON 文档被转换为允许快速读取文档元素的内部格式。当读取 JSON 值时，不需要从文本表示中解析该值，使服务器能够直接通过键或数组索引查找子对象或嵌套值，而无需读取文档中它们之前或之后的所有值。
-
-### json类型的存储结构
-
-mysql为了提供对json对象的支持，提供了一套将json字符串转为结构化二进制对象的存储方式。json会被转为二进制的doc对象存储于磁盘中（在处理JSON时MySQL使用的utf8mb4字符集，utf8mb4是utf8和ascii的超集）。
-
-doc对象包含两个部分，type和value部分。其中type占1字节，可以表示16种类型：大的和小的json object类型、大的和小的 json array类型、literal类型（true、false、null三个值）、number类型（int6、uint16、int32、uint32、int64、uint64、double类型、utf8mb4 string类型和custom data（mysql自定义类型），具体可以参考源码json_binary.cc和json_binary.h进行学习。
-
-下面进行简单介绍：  
-
-```
-type ::=  
-0x00 | // small JSON object  
-0x01 | // large JSON object  
-0x02 | // small JSON array  
-0x03 | // large JSON array  
-0x04 | // literal (true/false/null)  
-0x05 | // int16  
-0x06 | // uint16  
-0x07 | // int32  
-0x08 | // uint32  
-0x09 | // int64  
-0x0a | // uint64  
-0x0b | // double  
-0x0c | // utf8mb4 string  
-0x0f // custom data (any MySQL data type)
-```
-
-1. value包含 object、array、literal、number、string和custom-data六种类型，与type的16种类型对应。
-2. object表示json对象类型，由6部分组成：
-3. object ::= element-count size key-entry ***value-entry*** key ***value***  
-   其中:  
-   element-count表示对象中包含的成员（key）个数，在array类型中表示数组元素个数。  
-   size表示整个json对象的二进制占用空间大小。小对象用2Bytes空间表示（最大64K），大对象用4Bytes表示（最大4G）  
-   key-entry可以理解为一个用于指向真实key值的数组。本身用于二分查找，加速json字段的定位。  
-   key-entry由两个部分组成：  
-   key-entry ::= key-offset key-length  
-   其中:  
-   key-offset：表示key值存储的偏移量，便于快速定位key的真实值。  
-   key-length：表示key值的长度，用于分割不同key值的边界。长度为2Bytes，这说明，key值的长度最长不能超过64kb.
-4. value-entry与key-enter功能类似，不同之处在于，value-entry可能存储真实的value值。  
-   value-entry由两部分组成：  
-   value-entry ::= type offset-or-inlined-value  
-   其中：  
-   type表示value类型，如上文所示，支持16种基本类型，从而可以表示各种类型的嵌套。
-5. offset-or-inlined-value：有两层含义，如果value值足够小，可以存储于此，那么就存储数据本身，如果数据本身较大，则存储真实值的偏移用于快速定位。  
-   key 表示key值的真实值，类型为：key ::= utf8mb4-data,这里无需指定key值长度，因为key-entry中已经声明了key的存储长度。同时，在同一个json对象中，key值的长度总是一样的。
-
-![](assets/2023-08-10-15-49-08-image.png)
-
-举例说明：
-
-![](assets/2023-08-10-15-51-31-image.png)
-
-![](assets/2023-08-10-15-52-03-image.png)
-
-![](assets/2023-08-10-15-52-42-image.png)
-
-需要注意的是：
-
-- JSON对象的Key索引（图中橙色部分）都是排序好的，先按长度排序，长度相同的按照code point排序；Value索引（图中黄色部分）根据对应的Key的位置依次排列，最后面真实的数据存储（图中白色部分）也是如此
-- Key和Value的索引对存储了对象内的偏移和大小，单个索引的大小固定，可以通过简单的算术跳转到距离为N的索引
-- 通过MySQL5.7.16源代码可以看到，在序列化JSON文档时，MySQL会动态检测单个对象的大小，如果小于64KB使用两个字节的偏移量，否则使用四个字节的偏移量，以节省空间。同时，动态检查单个对象是否是大对象，会造成对大对象进行两次解析，源代码中也指出这是以后需要优化的点
-- 现在受索引中偏移量和存储大小四个字节大小的限制，单个JSON文档的大小不能超过4G；单个KEY的大小不能超过两个字节，即64K
-- 索引存储对象内的偏移是为了方便移动，如果某个键值被改动，只用修改受影响对象整体的偏移量
-- 索引的大小现在是冗余信息，因为通过相邻偏移可以简单的得到存储大小，主要是为了应对变长JSON对象值更新，如果长度变小，JSON文档整体都不用移动，只需要当前对象修改大小
-- 现在MySQL对于变长大小的值没有预留额外的空间，也就是说如果该值的长度变大，后面的存储都要受到影响
-- 结合JSON的路径表达式可以知道，JSON的搜索操作只用反序列化路径上涉及到的元素，速度非常快，实现了读操作的高性能
-- MySQL对于大型文档的变长键值的更新操作可能会变慢，可能并不适合写密集的需求
-
-### json类型基本操作
-
-#### json数据插入
-
-son类型数据插入时有两种方式，一种是基于字符串格式插入，另一种是基于json_object()函数，在使用json_object()函数只需按k-v顺序，以,符号隔开顺序插入即可，MYSQL会自动验证 JSON 文档，无效的文档会产生错误。
-
-```sql
-mysql> CREATE TABLE t1 (jdoc JSON);
-Query OK, 0 rows affected (0.20 sec)
-
-mysql> INSERT INTO t1 VALUES('{"key1": "value1", "key2": "value2"}');
-Query OK, 1 row affected (0.01 sec)
-
-mysql> INSERT INTO t1 VALUES('[1, 2,');
-ERROR 3140 (22032) at line 2: Invalid JSON text:
-"Invalid value." at position 6 in value (or column)  '[1, 2,'.
-```
-
-当一个字符串被解析并发现是一个有效的 JSON 文档时，它也会被规范化：具有与文档中先前找到的键重复的键的成员被丢弃（即使值不同）。以下第一个sql中通过 JSON_OBJECT()调用生成的对象值不包括第二个key1元素，因为该键名出现在值的前面；第二个sql中只保留了x第一次出现的值：
-
-```sql
-mysql> SELECT JSON_OBJECT('key1', 1, 'key2', 'abc', 'key1', 'def');
-+------------------------------------------------------+
-| JSON_OBJECT('key1', 1, 'key2', 'abc', 'key1', 'def') |
-+------------------------------------------------------+
-| {"key1": 1, "key2": "abc"}                           |
-+------------------------------------------------------+
-
-mysql> INSERT INTO t1 VALUES
-     >     ('{"x": 17, "x": "red"}'),
-     >     ('{"x": 17, "x": "red", "x": [3, 5, 7]}');
-
-mysql> SELECT c1 FROM t1;
-+-----------+
-| c1        |
-+-----------+
-| {"x": 17} |
-| {"x": 17} |
-+-----------+
-```
-
-#### json合并
-
-MySQL 5.7支持JSON_MERGE（）的合并算法，多个对象合并时产生一个对象。  可将多个数组合并为一个数组：
-
-```sql
-mysql> SELECT JSON_MERGE('[1, 2]', '["a", "b"]', '[true, false]');
-+-----------------------------------------------------+
-| JSON_MERGE('[1, 2]', '["a", "b"]', '[true, false]') |
-+-----------------------------------------------------+
-| [1, 2, "a", "b", true, false]                       |
-+-----------------------------------------------------+
-```
-
-当合并数组与对象时，会将对象转换为新数组进行合并：
-
-```sql
-mysql> SELECT JSON_MERGE('[10, 20]', '{"a": "x", "b": "y"}');
-+------------------------------------------------+
-| JSON_MERGE('[10, 20]', '{"a": "x", "b": "y"}') |
-+------------------------------------------------+
-| [10, 20, {"a": "x", "b": "y"}]                 |
-+------------------------------------------------+
-```
-
-如果多个对象具有相同的键，则生成的合并对象中该键的值是包含键值的数组：
-
-```sql
-mysql> SELECT JSON_MERGE('{"a": 1, "b": 2}', '{"c": 3, "a": 4}');
-+----------------------------------------------------+
-| JSON_MERGE('{"a": 1, "b": 2}', '{"c": 3, "a": 4}') |
-+----------------------------------------------------+
-| {"a": [1, 4], "b": 2, "c": 3}                      |
-+----------------------------------------------------+
-```
-
-MySQL 8.0.3（及更高版本）支持两种合并算法，由函数 JSON_MERGE_PRESERVE()和 JSON_MERGE_PATCH(). 它们在处理重复键的方式上有所不同：JSON_MERGE_PRESERVE()保留重复键的值（与5.7版本的JSON_MERGE（）相同），而 JSON_MERGE_PATCH()丢弃除最后一个值之外的所有值。具体的
-
-- JSON_MERGE_PRESERVE() 函数接受两个或多个 JSON 文档并返回组合结果。如果参数为两个object,相同的key将会把value合并为array(即使value也相同，也会合并为array),不同的key则直接合并。如果其中一个参数为json array，则另一个json object整体作为一个元素，加入array结果。
-- JSON_MERGE_PATCH()函数接受两个或多个 JSON 文档并返回组合结果。如果参数为两个object,相同的key的value将会被后面参数的value覆盖,不同的key则直接合并。如果合并的是数组，将按照“最后一个重复键获胜”逻辑仅保留最后一个参数。
-
-```sql
-mysql> SELECT JSON_MERGE_PRESERVE('{"a":1,"b":2}', '{"a":3,"c":3}');
-+-------------------------------------------------------+
-| JSON_MERGE_PRESERVE('{"a":1,"b":2}', '{"a":3,"c":3}') |
-+-------------------------------------------------------+
-| {"a": [1, 3], "b": 2, "c": 3}                         |
-+-------------------------------------------------------+
-1 row in set (0.01 sec)
-mysql> SELECT JSON_MERGE_PATCH('{"a":1,"b":2}', '{"a":3,"c":3}');
-+----------------------------------------------------+
-| JSON_MERGE_PATCH('{"a":1,"b":2}', '{"a":3,"c":3}') |
-+----------------------------------------------------+
-| {"a": 3, "b": 2, "c": 3}                           |
-+----------------------------------------------------+
-1 row in set (0.02 sec)
-
-mysql> SELECT JSON_MERGE_PRESERVE('["a", 1]', '"a"','{"key": "value"}');
-+-----------------------------------------------------------+
-| JSON_MERGE_PRESERVE('["a", 1]', '"a"','{"key": "value"}') |
-+-----------------------------------------------------------+
-| ["a", 1, "a", {"key": "value"}]                           |
-+-----------------------------------------------------------+
-1 row in set (0.00 sec)
-mysql> SELECT JSON_MERGE_PATCH('["a", 1]', '"a"','{"key": "value"}') ;
-+--------------------------------------------------------+
-| JSON_MERGE_PATCH('["a", 1]', '"a"','{"key": "value"}') |
-+--------------------------------------------------------+
-| {"key": "value"}                                       |
-+--------------------------------------------------------+
-1 row in set (0.01 sec)
-```
-
-#### json数据查询
-
-MySQL 5.7.7+本身提供了很多原生的函数以及路径表达式来方便用户访问JSON数据。  
-JSON_EXTRACT()函数用于解析json对象，->符号是就一种JSON_EXTRACT()函数的等价模式。例如查询上面t1表中 jdoc字段中key值为x的值
-
-```sql
-SELECT jdoc->'$.x' FROM t1;
-SELECT JSON_EXTRACT(jdoc,'$.x') FROM t1;
-```
-
-JSON_EXTRACT返回值会带有” “,如果想获取原本的值可以使用JSON_UNQUOTE
-
-```sql
-mysql> SELECT JSON_EXTRACT('{"id": 14, "name": "Aztalan"}', '$.name');
-+---------------------------------------------------------+
-| JSON_EXTRACT('{"id": 14, "name": "Aztalan"}', '$.name') |
-+---------------------------------------------------------+
-| "Aztalan"                                               |
-+---------------------------------------------------------+
-
-mysql> SELECT JSON_UNQUOTE(json_extract('{"id": 14, "name": "Aztalan"}', '$.name'));;
-+-----------------------------------------------------------------------+
-| JSON_UNQUOTE(json_extract('{"id": 14, "name": "Aztalan"}', '$.name')) |
-+-----------------------------------------------------------------------+
-| Aztalan                                                               |
-+-----------------------------------------------------------------------+
-```
-
-json路径的语法：
-
-```
-pathExpression:
-    scope[(pathLeg)*]
-
-pathLeg:
-    member | arrayLocation | doubleAsterisk
-
-member:
-    period ( keyName | asterisk )
-
-arrayLocation:
-    leftBracket ( nonNegativeInteger | asterisk ) rightBracket
-
-keyName:
-    ESIdentifier | doubleQuotedString
-
-doubleAsterisk:
-    '**'
-
-period:
-    '.'
-
-asterisk:
-    '*'
-
-leftBracket:
-    '['
-
-rightBracket:
-    ']'
-```
-
-以 `json { “a”: [ [ 3, 2 ], [ { “c” : “d” }, 1 ] ], “b”: { “c” : 6 }, “one potato”: 7, “b.c” : 8 }` 为例：  
-
-```
-$.a[1] 获取的值为 [ { “c” : “d” }, 1 ] $.b.c 获取的值为 6  
-$.”b.c” 获取的值为 8（因为键名包含不合法的表达式所以需要使用引号）
-
-
-mysql>  select json_extract('{ "a": [ [ 3, 2 ], [ { "c" : "d" }, 1 ] ], "b": { "c" : 6 }, "one potato": 7, "b.c" : 8 }','$**.c');
-+-------------------------------------------------------------------------------------------------------------------+
-| JSON_EXTRACT('{ "a": [ [ 3, 2 ], [ { "c" : "d" }, 1 ] ], "b": { "c" : 6 }, "one potato": 7, "b.c" : 8 }','$**.c') |
-+-------------------------------------------------------------------------------------------------------------------+
-| ["d", 6]                                                                                                          |
-+-------------------------------------------------------------------------------------------------------------------+
-
-$**.c 匹配到了两个路径 :
-$.a[1].c 获取的值是”d”
-$.b.c 获取的值为 6
-```
-
-#### json数据更新
-
-一些函数采用现有的 JSON 文档，以某种方式对其进行修改，然后返回结果修改后的文档。路径表达式指示在文档中进行更改的位置。例如，JSON_SET()、 JSON_INSERT()和 JSON_REPLACE()函数各自采用现有的 JSON 文档，加上一个或多个路径和值对，来描述修改文档和要更新的值。这些函数在处理文档中现有值和不存在值的方式上有所不同。
-具体如下
-
-```sql
-mysql> SET @j = '["a", {"b": [true, false]}, [10, 20]]';
-```
-
-JSON_SET()替换存在的路径的值并添加不存在的路径的值：
-
-```sql
-mysql> SELECT JSON_SET(@j, '$[1].b[0]', 1, '$[2][2]', 2);
-+--------------------------------------------+
-| JSON_SET(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
-+--------------------------------------------+
-| ["a", {"b": [1, false]}, [10, 20, 2]]      |
-+--------------------------------------------+
-```
-
-在这种情况下，路径$[1].b[0]选择一个现有值 ( true)，该值将替换为路径参数 ( 1) 后面的值。该路径$[2][2]不存在，因此将相应的值 ( 2) 添加到 选择的值中$[2]。  
-JSON_INSERT()添加新值但不替换现有值：
-
-```sql
-mysql> SELECT JSON_INSERT(@j, '$[1].b[0]', 1, '$[2][2]', 2);
-+-----------------------------------------------+
-| JSON_INSERT(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
-+-----------------------------------------------+
-| ["a", {"b": [true, false]}, [10, 20, 2]]      |
-+-----------------------------------------------+
-```
-
-JSON_REPLACE()替换现有值并忽略新值：
-
-```sql
-mysql> SELECT JSON_REPLACE(@j, '$[1].b[0]', 1, '$[2][2]', 2);
-+------------------------------------------------+
-| JSON_REPLACE(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
-+------------------------------------------------+
-| ["a", {"b": [1, false]}, [10, 20]]             |
-+------------------------------------------------+
-```
-
-JSON_REMOVE()接受一个 JSON 文档和一个或多个路径，这些路径指定要从文档中删除的值。返回值是原始文档减去文档中存在的路径选择的值：
-
-```sql
-mysql> SELECT JSON_REMOVE(@j, '$[2]', '$[1].b[1]', '$[1].b[1]');
-+---------------------------------------------------+
-| JSON_REMOVE(@j, '$[2]', '$[1].b[1]', '$[1].b[1]') |
-+---------------------------------------------------+
-| ["a", {"b": [true]}]                              |
-+---------------------------------------------------+
-
-$[2]匹配[10, 20] 并删除它。
-$[1].b[1]匹配 元素false中 的第一个实例b并将其删除。
-不匹配的第二个实例$[1].b[1]：该元素已被删除，路径不再存在，并且没有效果。
-```
-
-#### json比较与排序
-
-JSON值可以使用=, <, <=, >, >=, <>, !=, <=>等操作符，BETWEEN, IN,GREATEST, LEAST等操作符现在还不支持。JSON值使用的两级排序规则，第一级基于JSON的类型，类型不同的使用每个类型特有的排序规则。
-JSON类型按照优先级从高到低为：
-
-```
-BLOB
-BIT
-OPAQUE
-DATETIME
-TIME
-DATE
-BOOLEAN
-ARRAY
-OBJECT
-STRING
-INTEGER, DOUBLE
-NULL
-```
-
-优先级高的类型大，不用再进行其他的比较操作；如果类型相同，每个类型按自己的规则排序。具体的规则如下：
-
-- BLOB/BIT/OPAQUE: 比较两个值前N个字节，如果前N个字节相同，短的值小
-- DATETIME/TIME/DATE: 按照所表示的时间点排序
-- BOOLEAN: false小于true
-- ARRAY: 两个数组如果长度和在每个位置的值相同时相等，如果不想等，取第一个不相同元素的排序结果，空元素最小。例：[] < [“a”] < [“ab”] < [“ab”, “cd”, “ef”] < [“ab”, “ef”]
-- OBJECT: 如果两个对象有相同的KEY，并且KEY对应的VALUE也都相同，两者相等。否则，两者大小不等，但相对大小未规定。例：{“a”: 1, “b”: 2} = {“b”: 2, “a”: 1}
-- STRING: 取两个STRING较短的那个长度为N，比较两个值utf8mb4编码的前N个字节，较短的小，空值最小。例：”a” < “ab” < “b” < “bc”；此排序等同于使用 collat​​ion 对 SQL 字符串进行排序utf8mb4_bin。因为 utf8mb4_bin是二进制排序规则，所以 JSON 值的比较区分大小写：”A” < “a”
-- INTEGER/DOUBLE: 包括精确值和近似值的比较
-
-### JSON的索引
-
-现在MySQL不支持对JSON列进行索引，官网文档的说明是：
-
-JSON columns cannot be indexed. You can work around this restriction by creating an index on a generated column that extracts a scalar value from the JSON column.
-
-虽然不支持直接在JSON列上建索引，但MySQL规定，可以首先使用路径表达式对JSON文档中的标量值建立虚拟列，然后在虚拟列上建立索引。这样用户可以使用表达式对自己感兴趣的键值建立索引。举个具体的例子来说明：
-
-```sql
-ALTER TABLE features ADD feature_street VARCHAR(30) AS (JSON_UNQUOTE(feature->"$.properties.STREET"));
-ALTER TABLE features ADD INDEX (feature_street);
-```
-
-两个步骤，可以对feature列中properties键值下的STREET键(feature->”$.properties.STREET”)创建索引。
-
-其中，feature_street列就是新添加的虚拟列。之所以取名虚拟列，是因为与它对应的还有一个存储列(stored column)。它们最大的区别为虚拟列只修改数据库的metadata，并不会存储真实的数据在硬盘上，读取过程也是实时计算的方式；而存储列会把表达式的列存储在硬盘上。两者使用的场景不一样，默认情况下通过表达式生成的列为虚拟列。
-
-这样虚拟列的添加和删除都会非常快，而在虚拟列上建立索引跟传统的建立索引的方式并没有区别，会提高虚拟列读取的性能，减慢整体插入的性能。虚拟列的特性结合JSON的路径表达式，可以方便的为用户提供高效的键值索引功能。
-
-### 总结
-
-1. JSON类型无须预定义字段，适合拓展信息的存储
-2. 单个JSON文档的大小不能超过4G；单个KEY的大小不能超过两个字节，即64K
-3. JSON类型适合应用于不常更新的静态数据
-4. 对搜索较频繁的数据建议增加虚拟列并建立索引
-
-> [MYSQL中JSON类型介绍 | 京东物流技术团队 - 京东云开发者的独家号 - 开发者头条](https://toutiao.io/posts/mqg9ogj)
 
 ## MySQL 查询缓存
 
@@ -1714,8 +1750,6 @@ MySQL 中的查询缓存虽然能够提升数据库的查询性能，但是查�
 ---
 
 > 内容来源： [MySQL查询缓存详解 | JavaGuide(Java面试 + 学习指南)](https://javaguide.cn/database/mysql/mysql-query-cache.html)
-
-
 
 ## Buffer Pool
 
@@ -1793,8 +1827,6 @@ MySQL 中的查询缓存虽然能够提升数据库的查询性能，但是查�
 
 查询缓存 管理复杂，缓存命中率低，在 MySQL 8.0 及以后版本中，查询缓存已被弃用。可以考虑使用其他机制，如使用索引、优化查询语句等来提高查询性能。
 
-
-
 ## 双写缓冲区
 
 双写缓冲区是 InnoDB 存储引擎中的一个内存区域，大小为 2MB。它位于**系统表空间**中，由连续的 128 个页（每页 16KB）组成。系统表空间也被称为共享表空间。共享表空间是一个或多个磁盘文件，它存储了 InnoDB 存储引擎的数据字典、双写缓冲区、撤销日志（undo logs）等信息。在数据库的运行过程中，共享表空间为双写缓冲区提供了物理存储位置，确保双写缓冲区中的数据能够在系统故障后用于数据恢复。
@@ -1820,3 +1852,5 @@ MySQL 中的查询缓存虽然能够提升数据库的查询性能，但是查�
 
 - **提高可靠性**：即使在写入过程中发生系统崩溃，由于数据页是作为一个整体写入磁盘的，因此不会出现部分写入的情况，从而保证了数据的一致性。
 - **简化恢复过程**：如果系统崩溃后重启，InnoDB 可以更容易地检测到哪些数据页已经被完全写入磁盘，哪些还没有写入，从而简化恢复过程。
+
+ 
