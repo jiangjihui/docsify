@@ -22,6 +22,7 @@
 - 存储/数据库
   - [SQL](contents/存储-SQL.md)
   - [MySQL](contents/存储-MySQL.md)
+  - [TiDB](contents/存储-TiDB.md)
   - [Oracle](contents/存储-Oracle.md)
   - [Redis](contents/存储-Redis.md)
   - [MongoDB](contents/存储-MongoDB.md)
