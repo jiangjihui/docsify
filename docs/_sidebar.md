@@ -27,6 +27,7 @@
   - [Redis](contents/存储-Redis.md)
   - [MongoDB](contents/存储-MongoDB.md)
   - [Elasticsearch](contents/存储-Elasticsearch.md)
+  - [ClickHouse](contents/存储-ClickHouse.md)
 
 - web容器
   - [Nginx](contents/web容器-Nginx.md)
