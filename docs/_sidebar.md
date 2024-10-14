@@ -61,6 +61,7 @@
   - [消息队列](contents/消息队列.md)
   - [RabbitMQ](contents/消息队列-RabbitMQ.md)
   - [RocketMQ](contents/消息队列-RocketMQ.md)
+  - [Kafka](contents/消息队列-Kafka.md)
 
 - 大数据
   - [Hadoop](contents/大数据-Hadoop.md)
