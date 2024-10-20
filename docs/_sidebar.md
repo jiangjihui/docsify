@@ -65,7 +65,7 @@
 
 - 大数据
   - [Hadoop](contents/大数据-Hadoop.md)
-  - [Flink](configuration.md)
+  - [Flink](contents/大数据-Flink.md)
 
 - [Awesome docsify](subdir/quickstart.md)
 - [Changelog](none.md)
