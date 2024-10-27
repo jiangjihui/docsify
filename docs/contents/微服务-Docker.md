@@ -26,8 +26,6 @@
 
 镜像是容器的根本性发明，是封装和运行的标准，其它什么namespace，cgroups，早就有了。这是技术方面。
 
-
-
 ## Docker和K8S的关系
 
 Docker和K8S本质上都是创建容器的工具，Docker作用与单机，K8S作用与集群。
@@ -61,8 +59,6 @@ Docker和K8S本质上都是创建容器的工具，Docker作用与单机，K8S�
 ![](assets/2023-08-22-10-40-39-image.png)
 
 > 来源： https://mp.weixin.qq.com/s?__biz=MzI3OTA2MDQyOQ==&mid=2247484252&idx=1&sn=537245a28ef2422ce9635e21c8dd5155&chksm=eb4cc9fedc3b40e833663241ec5dd522c0f31b4da28cd81bda511406fc51e64d401899ee95f9#rd
-
-
 
 ## **DevOps**
 
@@ -724,7 +720,7 @@ services:
                         - MYSQL_ROOT_PASSWORD=root
 ```
 
-### **Docker-MySQL5.7**
+### Docker-MySQL5.7
 
 **docker run -p** 3307:3306 **--name** mysql5.7 **-v** $PWD/logs:/logs **-v** $PWD/data:/var/lib/mysql **-e** MYSQL_ROOT_PASSWORD=root **-d mysql:5.7** 
 
@@ -734,13 +730,13 @@ services:
 
 **具体操作：**首先需要创建将要映射到容器中的目录以及.cnf文件，然后再创建容器
 
-### **MySQL主从库**
+### MySQL主从库
 
 **docker run -d -e** REPLICATION_MASTER=true **-e** REPLICATION_PASS=mypass **-p** 3306:3306 **--name** mysql tutum/mysql
 
 **docker run -d -e** REPLICATION_SLAVE=true **-p** 3307:3306 **--link** mysql:mysql tutum/mysql
 
-### **Docker-Redis**
+### Docker-Redis
 
 **docker run -p** 6379:6379 **-v** $PWD/data:/data **-d** redis **redis-server --appendonly** yes
 
@@ -756,7 +752,7 @@ services:
 
 **docker run** -d --name myredis -p 6379:6379 redis --requirepass "mypassword"
 
-### **Docker-influxdb**
+### Docker-influxdb
 
 docker-compose.yml
 
@@ -776,7 +772,7 @@ services:
             - "8086:8086"
 ```
 
-### **Docker-PostgreSQL**
+### Docker-PostgreSQL
 
 **docker run -p** 54321:5432 **-e** POSTGRES_PASSWORD=root **-d** postgres
 
@@ -788,7 +784,7 @@ services:
 > 
 > -d postgres : 所使用镜像的名称
 
-### **Docker-OracleXE**
+### Docker-OracleXE
 
 **docker pull** wnameless/oracle-xe-11g
 
@@ -800,7 +796,7 @@ services:
 > 
 > 数据库信息：**username**: system/sys **password**: oracle
 
-### **Docker-SQLServer**
+### Docker-SQLServer
 
 docker-compose.yml
 
@@ -823,7 +819,7 @@ services:
 > ACCEPT_EULA=Y的意思是同意许可协议，必选；
 > MSSQL_SA_PASSWORD为密码，要求是最少8位的强密码，要有大写字母，小写字母，数字以及特殊符号，不然会有一个大坑（docker启动sqlserver容器后过几秒就停止了）；
 
-### **Docker-WordPress**
+### Docker-WordPress
 
 **docker run** **--name** mywordpress **--link** 23144a2854f0:mysql **-p 808****1****:80 -****d** wordpress
 
@@ -1018,7 +1014,190 @@ docker-compose up -d #  -d 指后台运行
 
 > http://192.168.1.7:8080
 
-## **Maven结合Docker**
+### Docker-APISIX
+
+#### 创建docker容器
+
+以下是docker运行apisix的示例
+
+```shell
+# 下载项目
+git clone https://github.com/apache/apisix-docker.git
+cd apisix-docker/example
+```
+
+修改 docker-compose.yml 文件，在文件中添加dashboard服务，方便在界面上进行管理，完整文件内容如下（可只关注其中的dashboard服务）：
+
+```yml
+version: "3"
+
+services:
+  apisix:
+    image: apache/apisix:${APISIX_IMAGE_TAG:-3.11.0-debian}
+    volumes:
+      - ./apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+    depends_on:
+      - etcd
+    ##network_mode: host
+    ports:
+      - "9180:9180/tcp"
+      - "9080:9080/tcp"
+      - "9091:9091/tcp"
+      - "9443:9443/tcp"
+      - "9092:9092/tcp"
+    networks:
+      apisix:
+
+  etcd:
+    image: bitnami/etcd:3.5.11
+    volumes:
+      - etcd_data:/bitnami/etcd
+    environment:
+      ETCD_ENABLE_V2: "true"
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://192.168.1.7:2379"
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+    ports:
+      - "2379:2379/tcp"
+    networks:
+      apisix:
+
+  web1:
+    image: nginx:1.19.0-alpine
+    volumes:
+      - ./upstream/web1.conf:/etc/nginx/nginx.conf
+    ports:
+      - "9081:80/tcp"
+    environment:
+      - NGINX_PORT=80
+    networks:
+      apisix:
+
+  web2:
+    image: nginx:1.19.0-alpine
+    volumes:
+      - ./upstream/web2.conf:/etc/nginx/nginx.conf
+    ports:
+      - "9082:80/tcp"
+    environment:
+      - NGINX_PORT=80
+    networks:
+      apisix:
+
+  prometheus:
+    image: prom/prometheus:v2.25.0
+    volumes:
+      - ./prometheus_conf/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      apisix:
+
+  grafana:
+    image: grafana/grafana:7.3.7
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./grafana_conf/provisioning:/etc/grafana/provisioning"
+      - "./grafana_conf/dashboards:/var/lib/grafana/dashboards"
+      - "./grafana_conf/config/grafana.ini:/etc/grafana/grafana.ini"
+    networks:
+      apisix:
+
+  dashboard:
+    image: "apache/apisix-dashboard:latest"
+    volumes:
+      - ../all-in-one/apisix-dashboard/conf.yaml:/usr/local/apisix-dashboard/conf/conf.yaml:ro
+    depends_on:
+      - etcd
+    ports:
+      - "9000:9000/tcp"
+    networks:
+      - apisix
+
+networks:
+  apisix:
+    driver: bridge
+
+volumes:
+  etcd_data:
+    driver: local
+```
+
+修改 apisix-docker/all-in-one/apisix-dashboard/conf.yaml 文件，主要修改其中 `etcd:endpoints:` 的ip地址为etcd，以及添加 `plugins`，完整内容如下：
+
+```yml
+conf:
+  listen:
+    host: 0.0.0.0     # `manager api` listening ip or host name
+    port: 9000          # `manager api` listening port
+  etcd:
+    endpoints:          # supports defining multiple etcd host addresses for an etcd cluster
+      - etcd:2379
+
+                        # etcd basic auth info
+    # username: "root"    # ignore etcd username if not enable etcd auth
+    # password: "123456"  # ignore etcd password if not enable etcd auth
+  log:
+    error_log:
+      level: warn       # supports levels, lower to higher: debug, info, warn, error, panic, fatal
+      file_path:
+        logs/error.log  # supports relative path, absolute path, standard output
+                        # such as: logs/error.log, /tmp/logs/error.log, /dev/stdout, /dev/stderr
+authentication:
+  secret:
+    secret              # secret for jwt token generation.
+                        # NOTE: Highly recommended to modify this value to protect `manager api`.
+                        # if it's default value, when `manager api` start, it will generate a random string to replace it.
+  expire_time: 3600     # jwt token expire time, in second
+  users:
+    - username: admin   # username and password for login `manager api`
+      password: admin
+    - username: user
+      password: user
+
+plugins:
+  - limit-conn
+  - limit-count
+  - limit-req
+
+plugin_attr:
+  prometheus:
+    export_addr:
+      ip: "0.0.0.0"
+      port: 9091
+```
+
+修改 apisix-docker/example/apisix_conf/config.yaml 文件，在文件最后添加 plugins ，内容如下：
+
+```yml
+plugins:
+  - limit-conn
+  - limit-count
+  - limit-req
+```
+
+创建docker容器：
+
+```shell
+docker-compose -p docker-apisix up -d
+```
+
+#### 使用
+
+1. 访问 http://localhost:9000/ ，账号/密码：admin/admin
+
+2. 添加上游、服务、路由。
+   
+   . 在上游菜单中创建1个上游，其中[目标节点]下设置 2个[主机名]，分别为 {本机地址}:9081 与 {本机地址}:9082，比如我电脑的ip地址为 192.168.1.7，则设置为 192.168.1.7:9081 与 192.168.1.7:9082。
+   
+   . 在服务菜单中创建1个服务，其中 [选择上游服务] 选择我们刚创建的上游。
+   
+   . 在路由菜单中创建1个路由，其中 [基本信息]>[绑定服务] 选择我们刚创建的服务。[匹配条件]>[路径] 可填写 `/web/*`，此处对应后面测试所使用的路径地址。
+
+3. 访问 http://127.0.0.1:9080/web/1 即可验证apisix是否起作用。
+
+## Maven结合Docker
 
 docker开启[远程访问](https://blog.csdn.net/she_lock/article/details/79557022)：
 
@@ -1039,7 +1218,7 @@ systemctl daemon-reload //重新读取配置文件
 
 systemctl restart docker //重新启动服务
 
-## **Docker-Machine**
+## Docker-Machine
 
 [Docker Machine](https://www.jianshu.com/p/0d9659080bd5) 是 Docker 官方提供的一个工具，它可以帮助我们在远程的机器上安装 Docker，或者在虚拟机 host 上直接安装虚拟机并在虚拟机中安装 Docker。我们还可以通过 docker-machine 命令来管理这些虚拟机和 Docker。
 
@@ -1049,7 +1228,7 @@ systemctl restart docker //重新启动服务
 
 其中，RHEL/CentOS 软件源中的 Docker 包名为 docker；Ubuntu 软件源中的 Docker 包名为 docker.io；而很古老的 Docker 源中 Docker 也曾叫做 lxc-docker。这些都是非常老旧的 Docker 版本，并且基本不会更新到最新的版本，而对于使用 Docker 而言，使用最新版本非常重要。另外，17.04 以后，包名从 docker-engine 改为 docker-ce，因此从现在开始安装，应该都使用 docker-ce 这个包。
 
-## **Docker时区**
+## Docker时区
 
 Base Image 使用的基本上都是 Docker 官方的，所以里面的时间设置大多是 Etc/UTC，也就是标准的 UTC 时间，所以要简单的[调整](https://tommy.net.cn/2015/02/05/config-timezone-in-docker/)一下，变成中国标准时间。
 
@@ -1083,7 +1262,7 @@ environment:
 docker cp /etc/localtime [容器ID或者NAME]:/etc/localtime
 ```
 
-## **Docker搭建私有仓库**
+## Docker搭建私有仓库
 
 1 使用docker-compose.yml创建镜像服务器：
 
