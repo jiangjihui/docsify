@@ -20,7 +20,7 @@
   - [JPA](contents/web框架-JPA.md)
 
 - 存储/数据库
-  - [SQL](contents/存储-基础.md)
+  - [基础](contents/存储-基础.md)
   - [MySQL](contents/存储-MySQL.md)
   - [PostgreSQL](contents/存储-PostgreSQL.md)
   - [TiDB](contents/存储-TiDB.md)
