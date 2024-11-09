@@ -69,7 +69,7 @@
   - [基础](contents/大数据-基础.md)
   - [Hadoop](contents/大数据-Hadoop.md)
   - [Flink](contents/大数据-Flink.md)
-  - [Flink](contents/大数据-Doris.md)
+  - [Doris](contents/大数据-Doris.md)
 
 - [Awesome docsify](subdir/quickstart.md)
 - [Changelog](none.md)
