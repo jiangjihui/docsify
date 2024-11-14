@@ -784,6 +784,45 @@ services:
 > 
 > -d postgres : 所使用镜像的名称
 
+
+
+docker-compose.yml
+
+```yaml
+
+version: '3.9'
+# https://blog.csdn.net/u013078871/article/details/136985267
+services:
+
+  db:
+    image: postgres
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    # or set shared memory limit when deploy via swarm stack
+    #volumes:
+    #  - type: tmpfs
+    #    target: /dev/shm
+    #    tmpfs:
+    #      size: 134217728 # 128*2^20 bytes = 128Mb
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      ALLOW_IP_RANGE: 0.0.0.0/0
+    ports:
+      - 15432:5432
+    volumes:
+     #postgis数据卷映射到本地环境
+    - ./postgis/data:/var/lib/postgis/data
+     #postgresql数据卷映射到本地环境
+    - ./postgresql/data:/var/lib/postgresql/data
+
+  # 数据库管理工具，可以用来管理多种数据库，包括PostgreSQL
+  adminer:
+    image: adminer
+    ports:
+      - 19380:8080
+```
+
 ### Docker-OracleXE
 
 **docker pull** wnameless/oracle-xe-11g
