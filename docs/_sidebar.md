@@ -55,7 +55,7 @@
   - [服务描述](contents/微服务-服务描述.md)
   - [相关组件](contents/微服务-相关组件.md)
   - [Docker](contents/微服务-Docker.md)
-  - [Docker](contents/微服务-K8s.md)
+  - [Kubernetes](contents/微服务-K8s.md)
   - [Spring-Cloud](contents/微服务-Spring-Cloud-Netflix.md)
   - [Spring-Cloud-Alibaba](contents/微服务-Spring-Cloud-Alibaba.md)
   - [架构](contents/微服务-架构.md)
