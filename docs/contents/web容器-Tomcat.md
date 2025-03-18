@@ -1,3 +1,29 @@
+## SpringBoot中的Tomcat
+
+### 请求限制
+
+Spring Boot 默认使用 Tomcat 作为 Web 容器，未修改配置时，拒绝访问的条件由以下参数决定：
+
+- **最大线程数（`maxThreads`）**：200  
+  当并发请求数超过 200 时，新请求会被放入队列。
+- **队列容量（`acceptCount`）**：100  
+  当队列满 100 个请求时，后续请求会被拒绝（返回`503 Service Unavailable`）。
+
+**总拒绝阈值 = 最大线程数 + 队列容量 = 200 + 100 = 300**  
+即当并发请求数达到 300 时，服务开始拒绝新请求。
+
+#### 示例配置
+
+```properties
+# 通用优化配置
+server.tomcat.max-threads=300          # 最大线程数
+server.tomcat.min-spare-threads=50     # 最小空闲线程数（减少冷启动延迟）
+server.tomcat.accept-count=200         # 队列容量
+server.tomcat.connection-timeout=60000 # 连接超时时间（毫秒）
+```
+
+
+
 ## Tomcat处理[资源](https://www.zhihu.com/question/57400909/answer/154753720)
 
 Tomcat访问所有的资源，都是用Servlet来实现的。所以Tomcat又叫Servlet容器嘛，什么都交给Servlet来处理。
@@ -39,8 +65,6 @@ ServletContext 被 Servlet 程序用来与 Web 容器通信。例如写日志，
 
 3. 简单的聊天系统
 
-
-
 ### 线程池
 
 tomcat线程池与java线程池不一样，tomcat线程池其实**就是连接池**，主要用于处理网络请求。
@@ -54,8 +78,6 @@ tomcat线程池与java线程池不一样，tomcat线程池其实**就是连接�
 **二、工作原理**
 
 当请求到达 Tomcat 服务器时，Tomcat 会从线程池中分配一个线程来处理该请求。如果当前线程池中没有可用的线程，并且线程数量未达到最大线程数，Tomcat 会创建新的线程来处理请求。这点与java线程池先放入等待队列的逻辑不一样。当请求处理完成后，线程会返回到线程池中，等待下一个请求的到来。如果线程在一段时间内没有被使用，它可能会被回收，以释放系统资源。
-
-
 
 ## Tomcat调优
 
