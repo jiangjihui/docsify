@@ -402,5 +402,312 @@ public class SemaphoreExample {
 }
 ```
 
-> 作者：程序猿DD 
+> 作者：程序猿DD
 > 链接： https://mp.weixin.qq.com/s/teZiU3wq8D2bBEURiLMewA
+
+
+
+## JAVA 22（2024年3月）
+
+### 未命名变量和模式（JEP 456）
+
+Java 22 正式引入了未命名变量和模式，使用下划线 `_` 表示不需要的变量。这大大提升了代码的可读性，明确表达了"这个值我不需要"的意图。
+
+```java
+// for 循环中不需要索引
+for (Order _ : orders) {
+    total++;
+}
+
+// try-with-resources 中不需要使用的资源
+try (var _ = ScopedContext.acquire()) {
+    // ...
+}
+
+// catch 中不需要使用的异常
+catch (NumberFormatException _) {
+    // ...
+}
+
+// lambda 参数中不需要使用
+_ -> "NODE"
+```
+
+在 `switch` 模式匹配中也很实用：
+
+```java
+switch (ball) {
+    case RedBall _ -> process(ball);
+    case BlueBall _ -> process(ball);
+}
+```
+
+### Stream Gatherers（JEP 461 - 预览）
+
+Java 22 为 Stream API 引入了自定义中间操作的能力，通过 `Gatherer` 接口实现。这是 Stream API 自 Java 8 以来最重要的增强！
+
+**内置收集器**（`java.util.stream.Gatherers`）：
+
+```java
+// 固定窗口分组
+List<List<Integer>> result = Stream.of(1,2,3,4,5,6,7,8,9)
+    .gather(Gatherers.windowFixed(3))
+    .toList();
+// 结果: [[1,2,3],[4,5,6],[7,8,9]]
+
+// 滑动窗口 - 检测异常温度变化
+List<List<Reading>> suspicious = source
+    .gather(Gatherers.windowSliding(2))
+    .filter(w -> w.size() == 2 && isSuspicious(w.get(0), w.get(1)))
+    .toList();
+
+// 前缀扫描
+Stream.of(1,2,3,4,5)
+    .gather(Gatherers.scan(Integer::sum))
+    .forEach(System.out::println);
+// 输出: 1 3 6 10 15
+```
+
+### 结构化并发（JEP 462 - 第二预览）
+
+结构化并发将并发任务组作为单一工作单元管理，简化了多线程编程。
+
+```java
+// 使用 StructuredTaskScope
+try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+    Supplier<String> user = scope.fork(() -> findUser());
+    Supplier<List<Order>> orders = scope.fork(() -> findOrders());
+
+    scope.join();
+    scope.throwIfFailed();
+
+    System.out.println("User: " + user.get());
+    System.out.println("Orders: " + orders.get());
+}
+```
+
+**核心优势**：
+- 子任务生命周期限于词法作用域
+- 自动取消传播
+- 线程层级在转储中可见
+
+### 作用域值（JEP 464 - 第二预览）
+
+作用域值（Scoped Values）提供了一种安全、高效的方式在调用链和子线程间共享不可变数据，解决了 ThreadLocal 的缺陷。
+
+```java
+private static final ScopedValue<String> CONTEXT = ScopedValue.newInstance();
+
+// 绑定值
+ScopedValue.where(CONTEXT, "user-123").run(() -> {
+    // 在当前线程和子线程中都可以读取
+    System.out.println(CONTEXT.get()); // "user-123"
+    helper();
+});
+
+// 嵌套绑定
+void bar() {
+    System.out.println(CONTEXT.get()); // "user-123"
+    ScopedValue.where(CONTEXT, "inner-data").run(() -> {
+        baz(); // 读取 "inner-data"
+    });
+    System.out.println(CONTEXT.get()); // 仍然是 "user-123"
+}
+```
+
+**与虚拟线程结合**：
+
+```java
+try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+    // 子线程自动继承父线程的作用域值
+    scope.fork(() -> readUserInfo());
+    scope.fork(() -> fetchOffers());
+    scope.join();
+}
+```
+
+### 隐式声明类（JEP 463 - 第二预览）
+
+允许在单文件程序中省略类声明：
+
+```java
+// 无需 public class Main，直接写方法
+void main() {
+    System.out.println("Hello Java 22!");
+}
+```
+
+
+
+## JAVA 23（2024年9月）
+
+### 模块导入声明（JEP 476 - 预览）
+
+允许从模块中导入包，而不需要模块路径配置：
+
+```java
+import module java.base@23 java.io;
+import module java.base@23 java.util;
+
+public class Main {
+    void test() {
+        var list = new ArrayList<String>();
+    }
+}
+```
+
+### Stream Gatherers（JEP 473 - 第二预览）
+
+继续改进 Stream 收集器，功能与 Java 22 类似。
+
+### ZGC 默认开启分代模式（JEP 474）
+
+ZGC 从 Java 23 开始默认使用分代模式，提供更好的内存管理和更低的延迟：
+
+```bash
+# 不再需要 -XX:+ZGenerational
+java -jar app.jar  # 默认使用分代 ZGC
+```
+
+### 结构化并发（JEP 480 - 第三预览）/ 作用域值（JEP 481 - 第三预览）
+
+继续改进，继续收集反馈。
+
+### 隐式声明类（JEP 477 - 第三预览）
+
+继续改进单文件程序的编写体验。
+
+### 灵活构造函数体（JEP 482 - 第二预览）
+
+允许在调用 `super()` 或 `this()` 之前执行代码：
+
+```java
+class Rectangle {
+    int x, y, width, height;
+
+    Rectangle(int size) {
+        this(size, size); // 先调用另一个构造方法
+    }
+
+    Rectangle(int width, int height) {
+        // 可以在 super() 之前执行验证逻辑
+        if (width < 0 || height < 0) {
+            throw new IllegalArgumentException();
+        }
+        this.width = width;
+        this.height = height;
+    }
+}
+```
+
+
+
+## JAVA 24（2025年3月）LTS
+
+### Stream Gatherers 正式版（JEP 484）
+
+Stream Gatherers 从预览版升级为正式 API，成为 Java Stream API 的永久组成部分：
+
+```java
+// 固定窗口
+Stream.of(1,2,3,4,5)
+    .gather(Gatherers.windowFixed(2))
+    .toList();
+
+// 滑动窗口
+Stream.of(1,2,3,4,5)
+    .gather(Gatherers.windowSliding(3))
+    .toList();
+
+// 并发映射（带限流）
+Stream.of("a", "b", "c")
+    .gather(Gatherers.mapConcurrent(10, String::toUpperCase))
+    .toList();
+```
+
+### 类文件 API 正式版（JEP 485）
+
+提供处理 Java 类文件的标准 API：
+
+```java
+import java.lang.classfile.*;
+import java.lang.classfile.constantpool.*;
+
+// 读取和操作 class 文件
+ClassModel classFile = ClassFile.of().parse(bytes);
+for (Method m : classFile.methods()) {
+    System.out.println(m.methodName() + m.type());
+}
+```
+
+### 虚拟线程无锁同步（JEP 491）
+
+Java 24 最重要的改进之一！消除了虚拟线程在 `synchronized` 中的 pinning 问题：
+
+- 虚拟线程现在可以独立于 carrier 线程获取、持有和释放监视器
+- 等待锁或执行 `Object.wait()` 时自动卸载
+- **无需修改现有代码**，可以直接使用 `synchronized`
+
+```java
+// 现在可以放心使用 synchronized 了！
+public synchronized void process() {
+    // 虚拟线程在这里不会 pinning
+    // 等待时会自动卸载，释放 carrier 线程
+}
+```
+
+### 提前类加载和链接（JEP 483）
+
+通过 AOT 缓存提升启动性能：
+
+```bash
+# 1. 训练运行 - 记录应用配置
+java -XX:StartAOTRecording=app.aotconf -jar app.jar
+
+# 2. 生成 AOT 缓存
+java -XX:AOTCreateCache=app.aot @app.aotconf
+
+# 3. 后续运行使用缓存
+java -XX:AOTLoadCache=app.aot -jar app.jar
+```
+
+**性能提升示例**：
+- 简单 Stream 程序：启动时间减少 42%
+- Spring PetClinic：启动时间减少 40%+
+
+### 作用域值（JEP 487 - 第四预览）
+
+继续改进，准备正式发布。
+
+### ZGC 移除非分代模式（JEP 490）
+
+ZGC 现在只保留分代模式，简化使用：
+
+```bash
+# 不再支持 -XX:-ZGenerational
+java -XX:+UseZGC -jar app.jar
+```
+
+
+
+## Java 版本时间线
+
+| 版本 | 发布日期 | 类型 |
+|------|----------|------|
+| Java 8 | 2014年3月 | LTS |
+| Java 9 | 2017年9月 | |
+| Java 10 | 2018年3月 | |
+| Java 11 | 2018年9月 | LTS |
+| Java 12 | 2019年3月 | |
+| Java 13 | 2019年9月 | |
+| Java 14 | 2020年3月 | |
+| Java 15 | 2020年9月 | |
+| Java 16 | 2021年3月 | |
+| Java 17 | 2021年9月 | LTS |
+| Java 18 | 2022年3月 | |
+| Java 19 | 2022年9月 | |
+| Java 20 | 2023年3月 | |
+| Java 21 | 2023年9月 | LTS |
+| Java 22 | 2024年3月 | |
+| Java 23 | 2024年9月 | |
+| Java 24 | 2025年3月 | LTS |
