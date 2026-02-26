@@ -5,6 +5,12 @@
 [![docsify](https://img.shields.io/badge/powered%20by-docsify-blue.svg)](https://docsify.js.org/)
 [![GitHub Pages](https://img.shields.io/badge/deployed%20on-GitHub%20Pages-green.svg)](https://jiangjihui.github.io/docsify)
 
+
+## 🔗 在线访问
+
+[访问在线笔记](https://jiangjihui.github.io/docsify)
+
+
 ## 📖 项目介绍
 
 这是一个基于 [docsify](https://github.com/docsifyjs/docsify/) 构建的技术笔记文档，用于记录日常工作和学习中的技术知识点。
@@ -71,10 +77,6 @@
 
 ### 💼 实践
 - SQL 优化 | 生产环境问题诊断 | 线上服务器问题处理
-
-## 🔗 在线访问
-
-[访问在线笔记](https://jiangjihui.github.io/docsify)
 
 ## 🤝 贡献指南
 
