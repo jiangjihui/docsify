@@ -1,4 +1,8 @@
-# 体系
+# Java JVM
+
+> Java 虚拟机（JVM）是 Java 技术的核心，本文详细介绍 JVM 的内存结构、垃圾回收、类加载机制等核心知识。
+
+## 体系结构
 
 ![img](../_images/java-jvm-overview.png)
 
@@ -743,3 +747,225 @@ top -H -p {pid}
 > -XX:+CMSClassUnloadingEnabled，使用CMS回收Perm区
 
 ## [JVM资料合集](https://zhuanlan.zhihu.com/p/25042028)
+
+---
+
+# 现代 JVM 新特性
+
+## ZGC 演进
+
+### ZGC 简介
+
+ZGC（Z Garbage Collector）是一个可扩展的低延迟垃圾收集器，旨在满足以下目标：
+- 停顿时间不超过 10ms
+- 停顿时间不随堆大小增加而增加
+- 支持几百 MB 到几 TB 的堆内存
+
+### Java 23: ZGC 默认分代模式（JEP 474）
+
+从 Java 23 开始，ZGC 默认使用分代模式，无需额外配置：
+
+```bash
+# Java 23+ 不需要额外参数，默认使用分代 ZGC
+java -XX:+UseZGC -jar app.jar
+```
+
+**分代 ZGC 的优势**：
+- 更低的内存占用
+- 更短的 GC 停顿时间
+- 更好的吞吐量
+
+### Java 24: ZGC 移除非分代模式（JEP 490）
+
+从 Java 24 开始，ZGC 只保留分代模式，非分代模式已被移除：
+
+```bash
+# Java 24 不再支持 -XX:-ZGenerational
+# 必须使用分代模式
+java -XX:+UseZGC -jar app.jar
+```
+
+### ZGC 常用参数
+
+| 参数 | 说明 |
+|------|------|
+| -XX:+UseZGC | 启用 ZGC |
+| -XX:SoftMaxHeapSize | 设置软最大堆大小 |
+| -XX:ZCollectionInterval | GC 间隔时间（秒） |
+| -XX:ZFragmentationLimit | 最大碎片百分比 |
+| -XX:+ZProactive | 主动 GC（默认开启） |
+
+## Shenandoah GC
+
+### 概述
+
+Shenandoah 是由 Red Hat 开发的低停顿垃圾收集器，与 ZGC 类似，致力于减少 GC 停顿时间。
+
+**特点**：
+- 并发标记和压缩
+- 停顿时间与堆大小无关
+- 不需要分代
+
+### Java 24: Generational Shenandoah（JEP 404）
+
+Java 24 引入了实验性的 Generational Shenandoah，结合了 Shenandoah 的低停顿和分代的优势：
+
+```bash
+# 开启实验性 Generational Shenandoah
+java -XX:+UnlockExperimentalVMOptions -XX:+UseShenandoahGC -jar app.jar
+```
+
+**注意**：这是实验性特性，可能在未来的 JDK 版本中发生变化。
+
+## 虚拟线程与内存
+
+### 虚拟线程栈内存
+
+虚拟线程（Virtual Thread）是 Java 21 引入的重要特性，其栈内存管理与传统线程不同：
+
+```java
+// 虚拟线程默认栈大小
+// 虚拟线程的栈是动态增长的，最大可达平台线程的倍数
+Thread.ofVirtual().start(() -> {
+    // 虚拟线程栈按需增长
+});
+```
+
+**虚拟线程栈特点**：
+- 默认栈大小更小（大约 1MB）
+- 动态扩展，最大可达数 MB
+- 不占用 OS 线程时，栈内存可以释放
+
+### 虚拟线程内存参数
+
+| 参数 | 说明 |
+|------|------|
+| -XX:VThreadSize | 虚拟线程默认栈大小 |
+| -XX:MaxVThreadSize | 虚拟线程最大栈大小 |
+| -XX:VThreadStackSize | 虚拟线程栈大小（与上面等价） |
+
+### 虚拟线程与堆外内存
+
+虚拟线程的堆外内存（DirectBuffer）管理：
+- 虚拟线程可以安全使用 DirectByteBuffer
+- 不再受 pinning 问题困扰（Java 24+）
+
+## JVM 启动性能优化
+
+### 提前类加载和链接（JEP 483）
+
+Java 24 引入了 AOT 类加载缓存，显著提升启动性能：
+
+```bash
+# 1. 训练运行 - 记录应用配置
+java -XX:StartAOTRecording=app.aotconf -jar app.jar
+
+# 2. 生成 AOT 缓存
+java -XX:AOTCreateCache=app.aot @app.aotconf
+
+# 3. 后续运行使用缓存
+java -XX:AOTLoadCache=app.aot -jar app.jar
+```
+
+**性能提升**：
+- 简单应用启动时间减少 40%+
+- Spring 应用启动时间减少 30%+
+
+### 类数据共享（CDS）
+
+CDS 允许将类数据打包共享，减少类加载时间：
+
+```bash
+# 导出类列表
+java -Xshare:dump
+
+# 使用共享类
+java -Xshare:on -jar app.jar
+```
+
+### 常用启动参数
+
+| 参数 | 说明 |
+|------|------|
+| -Xshare:on | 强制使用类数据共享 |
+| -Xshare:off | 禁用类数据共享 |
+| -Xbootclasspath/a:path | 追加引导类路径 |
+| -XX:CompileThreshold | JIT 编译阈值 |
+
+## Java Flight Recorder（JFR）
+
+### 概述
+
+Java Flight Recorder 是 JVM 的诊断和性能分析工具，已开源并集成到 OpenJDK 中。
+
+### 基本使用
+
+```bash
+# 启动时启用 JFR
+java -XX:StartFlightRecording=dumponexit=true,filename=recording.jfr -jar app.jar
+
+# 运行时录制
+jcmd <pid> JFR.start
+jcmd <pid> JFR.dump filename=recording.jfr
+jcmd <pid> JFR.stop
+```
+
+### JFR 事件
+
+常用 JFR 事件：
+
+| 事件 | 说明 |
+|------|------|
+| jdk.CPULoad | CPU 使用率 |
+| jdk.GCHeapSummary | GC 堆摘要 |
+| jdk.OldObjectSample | 对象采样 |
+| jdk.ExecutionSample | 执行采样 |
+
+### jcmd 常用命令
+
+```bash
+# 查看 JVM 信息
+jcmd <pid> VM.version
+
+# 查看系统属性
+jcmd <pid> VM.system_properties
+
+# 查看 VM 标志
+jcmd <pid> VM.flags
+
+# 导出堆转储
+jcmd <pid> GC.heap_dump heap.hprof
+
+# 查看 GC 日志
+jcmd <pid> GC.heap_info
+```
+
+## JVM 参数演进（Java 17+）
+
+### 新增重要参数
+
+| 参数 | 引入版本 | 说明 |
+|------|----------|------|
+| -XX:+UseStringDeduplication | Java 8u20+ | 字符串去重 |
+| -XX:+DisableExplicitGC | Java | 禁用显式 GC |
+| -XX:+AlwaysPreTouch | Java | 预触摸堆内存 |
+| -XX:+UnlockExperimentalVMOptions | Java | 解锁实验性选项 |
+| -XX:+UseFastAccessorMethods | Java | 快速 accessor 方法 |
+
+### G1 GC 参数
+
+| 参数 | 说明 |
+|------|------|
+| -XX:+UseG1GC | 启用 G1 |
+| -XX:MaxGCPauseMillis | 最大 GC 停顿时间 |
+| -XX:G1HeapRegionSize | Region 大小 |
+| -XX:InitiatingHeapOccupancyPercent | 触发 GC 堆占用比 |
+
+### ZGC 参数
+
+| 参数 | 说明 |
+|------|------|
+| -XX:+UseZGC | 启用 ZGC |
+| -XX:ZPath | ZGC 日志路径 |
+| -XX:ZCollectionInterval | GC 间隔 |
+| -XX:ZFragmentationLimit | 碎片化限制 |
