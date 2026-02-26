@@ -80,7 +80,7 @@
 
 ## 🤝 贡献指南
 
-欢迎提交 Issue 或 Pull Request 共同完善笔记内容！
+非常欢迎提交 Issue 或 Pull Request 共同完善笔记内容！
 
 1. Fork 本仓库
 2. 创建特性分支 (`git checkout -b feature/xxx`)
@@ -91,3 +91,4 @@
 ---
 
 > 这世上没有白走的路，每走一步，都算数
+
