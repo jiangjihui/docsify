@@ -1,14 +1,82 @@
 ## Spring历史更新
 
-![](assets/2023-07-28-15-58-53-image.png)
+### Spring Framework 版本历史
 
-> 来源： https://www.pdai.tech/md/spring/spring-x-framework-helloworld.html
+| 版本 | 发布日期 | 主要特性 |
+|------|----------|----------|
+| Spring Framework 1.0 | 2004年1月 | 初始版本，开启 Spring 时代 |
+| Spring Framework 2.0 | 2006年10月 | XML 配置增强、JDBC 模板 |
+| Spring Framework 2.5 | 2007年11月 | 注解支持 (@Component, @Autowired) |
+| Spring Framework 3.0 | 2009年12月 | Java Config、REST 支持、SpEL |
+| Spring Framework 3.1 | 2012年3月 | 缓存抽象、@EnableXXX |
+| Spring Framework 4.0 | 2013年12月 | Java 8 特性、@Conditional |
+| Spring Framework 4.3 | 2016年6月 | 库版本要求提升、Lambda 支持 |
+| Spring Framework 5.0 | 2017年9月 | Spring WebFlux、响应式编程、Log4j2 |
+| Spring Framework 5.1 | 2018年9月 | JDK 11 支持、Kotlin 支持增强 |
+| Spring Framework 5.2 | 2019年9月 | 事务优化、RSocket 支持 |
+| Spring Framework 5.3 | 2020年10月 | 性能提升、Lambda 统一 |
+| Spring Framework 6.0 | 2022年11月 | JDK 17+、Jakarta EE 9+、AOT 支持 |
+| Spring Framework 6.1 | 2023年11月 | 性能优化、Observability 增强 |
+| Spring Framework 6.2 | 2024年 | JDK 21 支持、Spring Boot 3.3 集成 |
+| Spring Framework 7.0 | 2024年11月 | JDK 24 支持、现代响应式编程 |
 
 ### 各版本支持的JDK
 
 - Spring Framework 4.x：支持 Java 6、7 和 8
 
 - Spring Framework 5.x：支持 Java 8 到 Java 17
+
+- Spring Framework 6.x：支持 Java 17 到 Java 21
+
+- Spring Framework 7.x：支持 Java 21 到 Java 24
+
+### 大版本升级概览
+
+#### Spring 2.x：XML 配置时代
+- 引入 XML 命名空间简化配置
+- JDBC 模板提供统一的数据访问方式
+- AOP 增强，支持 AspectJ 切点表达式
+
+#### Spring 3.x：注解驱动时代
+- **Java Config**：`@Configuration` 注解实现零 XML 配置
+- RESTful 支持：`@RestController`
+- SpEL（Spring Expression Language）表达式语言
+- 任务调度：`@Scheduled`、`@Async`
+
+#### Spring 4.x：全面拥抱 Java 8
+- Java 8 特性支持（Lambda、Stream、Optional）
+- `@Conditional` 条件装配
+- 泛型依赖注入
+- 移动应用支持
+
+#### Spring 5.x：响应式编程时代
+- **Spring WebFlux**：响应式 Web 框架
+- 响应式编程支持：Reactor、WebClient
+- 日志升级：Log4j2
+- Kotlin 支持
+- 函数式编程风格
+
+#### Spring 6.x：现代化转型
+- **JDK 17+ 强制要求**：最低支持 Java 17
+- **Jakarta EE 9+**：从 `javax.*` 迁移到 `jakarta.*`
+- **AOT 原生支持**：GraalVM 原生镜像
+- 观测性增强：Micrometer 集成
+- 事务管理优化
+
+#### Spring 7.x：AI 与现代架构
+- **JDK 21+ 支持**
+- **虚拟线程友好**：全面支持 Java 21 虚拟线程
+- **现代响应式编程**：RSocket 增强
+- **云原生优化**：更好的容器化支持
+- **性能持续优化**：启动速度、内存占用进一步降低
+
+### 升级建议
+
+| 从版本 | 升级到 | 注意事项 |
+|--------|--------|----------|
+| 4.x | 5.x | 移除部分弃用 API，注意响应式编程学习曲线 |
+| 5.x | 6.x | JDK 17+ 强制要求，Jakarta EE 迁移 |
+| 6.x | 7.x | JDK 21+ 要求，评估虚拟线程集成 |
 
 ## Bean对象
 
