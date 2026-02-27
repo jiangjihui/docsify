@@ -1,6 +1,8 @@
-## 概述
+# Spring Boot
 
-Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhihu.com/question/53729800)是用于简化 Spring 应用从搭建到开发的过程。应用**开箱即用**，只要通过一个指令，包括命令行 java -jar 、SpringApplication 应用启动类 、 Spring Boot Maven 插件等，就可以启动应用了。另外，Spring Boot 强调只需要很少的配置文件，所以在开发生产级 Spring 应用中，让开发变得更加高效和简易。目前，Spring Boot 版本是 2.x 版本。Spring Boot 包括 WebFlux。
+Spring Boot 是用于简化 Spring 应用从搭建到开发的框架。应用**开箱即用**，只要通过一个指令，包括命令行 java -jar 、SpringApplication 应用启动类 、 Spring Boot Maven 插件等，就可以启动应用了。另外，Spring Boot 强调只需要很少的配置文件，所以在开发生产级 Spring 应用中，让开发变得更加高效和简易。
+
+目前，Spring Boot 最新版本是 **4.x**（LTS），要求 JDK 17+。Spring Boot 包括 WebFlux。
 
 ## Spring Boot 核心特性
 
@@ -43,16 +45,26 @@ Spring Boot （Boot 顾名思义，是引导的意思）[框架](https://www.zhi
 
 ### 自动装配的流程
 
-**@SpringBootApplication 注解**是 Spring Boot 应用的核心注解，它是一个组合注解，其中包含了`@Configuration`、`@EnableAutoConfiguration`和`@ComponentScan`。其中 **@EnableAutoConfiguration 注解** 是实现自动装配的关键。它通过`@Import(AutoConfigurationImportSelector.class)`导入了`AutoConfigurationImportSelector`类。在`AutoConfigurationImportSelector`的`selectImports()`方法中，会从类路径下的`META-INF/spring.factories`文件中加载自动配置类的全限定名。每个自动配置类都使用了`@Conditional`系列注解来指定在满足特定条件时才进行自动装配。Spring 容器会根据这些自动配置类来进行 bean 的装配，从而实现了根据项目依赖自动配置 Spring 应用的功能。
+**@SpringBootApplication 注解**是 Spring Boot 应用的核心注解，它是一个组合注解，其中包含了`@Configuration`、`@EnableAutoConfiguration`和`@ComponentScan`。其中 **@EnableAutoConfiguration 注解** 是实现自动装配的关键。
 
-1. **加载META-INF/spring.factories文件**：
-   - 在Spring Boot应用程序启动时，首先加载`META-INF/spring.factories`文件，获取所有自动配置类的全限定名。该文件位于各个Starter依赖的jar包中，其中定义了自动配置类的全限定名。
+在 Spring Boot 2.7+ 中，自动配置机制发生了变化：
+- 旧版本：从 `META-INF/spring.factories` 文件加载
+- 新版本：从 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 文件加载
+
+**自动装配流程**：
+
+1. **加载自动配置文件**：
+   - Spring Boot 2.7+ 从 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 加载
+   - 旧版本从 `META-INF/spring.factories` 加载
+
 2. **条件评估**：
-   - Spring Boot根据条件注解对自动配置类进行条件评估。只有当条件满足时，相应的自动配置类才会被选中进行自动配置。
-3. **创建和注册Bean**：
-   - 对于被选中的自动配置类，Spring Boot会根据其中的配置信息创建相应的Bean，并将其注册到Spring容器中。
+   - Spring Boot 根据条件注解（@Conditional 系列）对自动配置类进行条件评估
+
+3. **创建和注册 Bean**：
+   - 对于被选中的自动配置类，Spring Boot 会创建相应的 Bean 并注册到容器
+
 4. **应用配置**：
-   - Spring Boot会遍历所有的自动配置类，将满足条件的配置都应用到应用程序中。
+   - 将满足条件的配置应用到应用程序
 
 #### 什么是 DeferredImportSelector
 
@@ -414,29 +426,123 @@ Spring Boot 支持多种配置文件格式，包括 `application.properties`、`
 
 
 
-## Spring Boot 2 [新特性](https://blog.csdn.net/yalishadaa/article/details/79400916)
+## Spring Boot 2 新特性
 
-- **默认connection pool变了**
+Spring Boot 2.x 是建立在 Spring Framework 5.0 之上的重要版本。
 
-默认的连接池已经由Tomcat切换到了HikariCP。
+- **默认连接池变更**：默认的连接池从 Tomcat 切换到了 HikariCP
 
-- **软件版本**
+- **软件版本要求**：
+  - Tomcat 最低版本 8.5
+  - Hibernate 最低版本 5.2
+  - Jetty 最低版本 9.4
 
-要求Tomcat最低版本为8.5、要求Hibernate最低版本为5.2、要求Jetty最低版本为9.4
+- **松绑定改善**：以下属性最终都会被映射为 `spring.jpa.databaseplatform=mysql`
+  - `spring.jpa.database-platform=mysql`
+  - `spring.jpa.databasePlatform=mysql`
+  - `spring.JPA.database_platform=mysql`
 
-- **Spring Framework 5.0**
+## Spring Boot 3.x 新特性
 
-Spring Boot 2.0 是建立在Spring Framework 5.0之上的（最低要求）
+Spring Boot 3.x 于 2022 年发布，是一个重要的里程碑版本。
 
-- **松绑定改善**
+### 核心变化
 
-下面的属性最终都会被映射为 spring.jpa.databaseplatform=mysql
+- **JDK 17+ 最低要求**
+- **Jakarta EE 9+**：所有 `javax.*` 迁移到 `jakarta.*`
+- **GraalVM 原生镜像支持**：使用 Spring Native 可以将 Spring 应用编译为原生可执行文件
+- **Observability**：统一的观测性支持，整合 Micrometer、OpenTelemetry
 
-- spring.jpa.database-platform=mysql
+### 新特性详解
 
-- spring.jpa.databasePlatform=mysql
+#### 1. GraalVM 原生镜像
 
-- spring.JPA.database_platform=mysql
+```xml
+<plugin>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-maven-plugin</artifactId>
+    <configuration>
+        <executable>true</executable>
+    </configuration>
+</plugin>
+```
+
+构建原生镜像：
+```bash
+./mvnw spring-boot:build-image
+```
+
+#### 2. Observability
+
+```yaml
+management:
+  observations:
+    enabled: true
+  tracing:
+    enabled: true
+```
+
+#### 3. 虚拟线程支持
+
+Spring Boot 3.x 原生支持 Java 21 虚拟线程，嵌入式服务器自动使用虚拟线程。
+
+### 迁移注意事项
+
+- 包名从 `javax.*` 改为 `jakarta.*`
+- 需要 JDK 17 或更高版本
+- 移除了一些弃用的 API
+
+## Spring Boot 4.x 新特性（LTS）
+
+Spring Boot 4.x 是最新的 LTS 版本，带来了更多现代化改进。
+
+### 核心变化
+
+- **JDK 21+ 最低要求**
+- **更快的启动速度**：优化的 AOT 处理
+- **更好的虚拟线程支持**：与虚拟线程深度集成
+- **现代化安全配置**：默认启用更严格的安全策略
+
+### 新特性详解
+
+#### 1. 虚拟线程自动配置
+
+当检测到 JDK 21+ 时，自动配置虚拟线程：
+
+```yaml
+spring:
+  threads:
+    virtual:
+      enabled: true
+```
+
+#### 2. 改进的 AOT
+
+更快的 AOT 编译和更好的 GraalVM 支持：
+
+```xml
+<plugin>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-maven-plugin</artifactId>
+    <configuration>
+        <buildless>true</buildless>
+    </configuration>
+</plugin>
+```
+
+#### 3. 简化的安全配置
+
+```java
+@Bean
+SecurityFilterChain securityFilterChain(HttpSecurity http) {
+    http
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/api/public").permitAll()
+            .anyRequest().authenticated()
+        );
+    return http.build();
+}
+```
 
 ## Spring Boot Admin
 
