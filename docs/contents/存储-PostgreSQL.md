@@ -156,50 +156,11 @@ PostgreSQL对JSONB数据类型的GIN和BTREE索引提供了高效的方式来查
 
 因此，在选择索引类型时，需要根据具体的查询需求和性能要求进行权衡。对于物联网（IoT）和大数据应用中的半结构化数据查询，GIN索引通常是一个更好的选择。但对于简单的等值查询和排序操作，BTREE索引可能更为合适。
 
-### GIN索引
-
-GIN索引是PostgreSQL中一种用于处理包含数组、JSON和全文搜索等复杂数据类型的索引结构。它基于倒排索引（Inverted Index）的概念构建。倒排索引主要用于加速对包含大量文本或者复杂数据结构中的元素查找。例如，在一个文档数据库中，倒排索引可以帮助快速找到包含某个特定词汇的所有文档。
-
-#### 数据结构
-
-- **倒排表（Posting List）**
-- GIN索引的核心是倒排表。对于索引的每个键值（例如，在JSON数据中，每个键或者在数组中的每个元素都可以是一个键值），GIN索引维护一个倒排表。倒排表记录了包含该键值的所有行标识符（通常是行的物理存储位置或者主键值）。例如，假设有一个包含文章内容的表，其中有一个列是标签数组（如`['technology', 'startup', 'innovation']`），对于标签`technology`，其倒排表会记录所有包含`technology`标签的文章的行标识符。
-- **索引项（Index Entries）**
-- 索引项是GIN索引中存储数据的基本单位。每个索引项对应一个键值，并且包含指向倒排表的指针。在构建索引时，PostgreSQL会遍历要索引的数据列，提取键值并创建索引项和相应的倒排表。例如，在索引一个JSONB列时，对于JSONB对象中的每个键 - 值对，会创建一个索引项，如果值是一个数组，还会为数组中的每个元素创建索引项。
-
-#### 索引构建过程
-
-- 当在一个表列上创建GIN索引时，PostgreSQL会按照以下步骤进行索引构建：
-
-- **数据扫描**：首先，数据库会扫描要索引的列。对于每一行的数据，根据数据类型提取出需要索引的元素。例如，在索引一个数组类型的列时，会提取数组中的每个元素；在索引JSONB数据时，会提取对象中的键和值，以及数组元素等。
-
-- **索引项创建**：针对提取出的每个元素，创建一个索引项。如果是新出现的元素，会分配新的索引项空间，并记录该元素对应的倒排表位置。如果元素已经存在索引项，则直接获取其对应的索引项。
-
-- **倒排表更新**：对于每个索引项，将当前行的标识符添加到其对应的倒排表中。这样，当查询包含某个元素的行时，可以通过索引项快速找到倒排表，进而获取所有包含该元素的行标识符。
-
-- 例如，假设有一个名为`products`的表，其中有一个`tags`列是`text[]`类型（文本数组），内容如下：
-  
-  | product_id | tags                               |
-  | ---------- | ---------------------------------- |
-  | 1          | {'electronics', 'gadgets'}         |
-  | 2          | {'electronics', 'home appliances'} |
-  | 3          | {'home appliances', 'furniture'}   |
-
-- 当在`tags`列上创建GIN索引时，对于标签`electronics`，其倒排表会记录行标识符`1`和`2`；对于`gadgets`，倒排表记录`1`；对于`home appliances`，倒排表记录`2`和`3`，以此类推。
-
-#### 查询处理
-
-- 当执行一个涉及GIN索引的查询时，例如在一个带有JSONB列的表中查询包含某个特定键值的行，PostgreSQL会执行以下操作：
-- **索引查找**：首先，在GIN索引中查找与查询条件对应的索引项。如果查询条件是一个数组元素或者JSON键值，数据库会定位到该元素或键值对应的索引项。
-- **获取倒排表**：通过索引项找到对应的倒排表，倒排表中包含了满足查询条件的所有行标识符。
-- **行检索**：使用倒排表中的行标识符，从表中检索出实际的行数据。这样就完成了基于GIN索引的查询操作，大大提高了查询效率，尤其是在处理包含大量复杂数据（如数组、JSON）的表时。
-- 例如，在上述`products`表中，如果要查询包含`electronics`标签的产品，数据库会先在GIN索引中找到`electronics`对应的索引项和倒排表，从倒排表中获取行标识符`1`和`2`，然后从`products`表中检索出`product_id`为`1`和`2`的行数据。
-
 ## 基本操作
 
 **登陆PostgreSQL控制台**
 
-```
+```sh
 # psql
 或
 # psql -U postgres
@@ -207,7 +168,7 @@ GIN索引是PostgreSQL中一种用于处理包含数组、JSON和全文搜索等
 
 **设置用户密码**
 
-```
+```sh
 > \password postgres
 ```
 
@@ -215,25 +176,25 @@ GIN索引是PostgreSQL中一种用于处理包含数组、JSON和全文搜索等
 
 **创建数据库用户**
 
-```java
-> CREATE USER dbuser WITH PASSWORD 'password';
+```sql
+CREATE USER dbuser WITH PASSWORD 'password';
 ```
 
 **创建数据库**
 
-```
-> CREATE DATABASE exampledb OWNER dbuser;
+```sql
+CREATE DATABASE exampledb OWNER dbuser;
 ```
 
 **角色赋权**
 
-```
-> GRANT ALL PRIVILEGES ON DATABASE exampledb to dbuser;
+```sql
+GRANT ALL PRIVILEGES ON DATABASE exampledb to dbuser;
 ```
 
 **退出控制台**
 
-```
+```sh
 > \q
 ```
 
@@ -250,3 +211,908 @@ GIN索引是PostgreSQL中一种用于处理包含数组、JSON和全文搜索等
 - \du：列出所有用户。
 - \e：打开文本编辑器。
 - \conninfo：列出当前数据库和连接的信息。
+
+## 数据类型
+
+PostgreSQL 支持丰富的数据类型，比大多数数据库更加灵活。
+
+### 数值类型
+
+| 类型名 | 说明 | 存储空间 |
+|--------|------|----------|
+| `smallint` | 2字节有符号整数 | -32768 到 32767 |
+| `integer` | 4字节有符号整数 | -2147483648 到 2147483647 |
+| `bigint` | 8字节有符号整数 | -9223372036854775808 到 9223372036854775807 |
+| `real` | 4字节浮点数 | 6位十进制精度 |
+| `double precision` | 8字节浮点数 | 15位十进制精度 |
+| `decimal` | 用户指定精度 | 变长 |
+| `numeric` | 用户指定精度 | 变长 |
+
+```sql
+-- 创建包含各种数值类型的表
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    price NUMERIC(10, 2),  -- 10位数字，2位小数
+    quantity INTEGER,
+    discount REAL
+);
+```
+
+### 字符串类型
+
+| 类型名 | 说明 |
+|--------|------|
+| `varchar(n)` | 变长字符串，最长n个字符 |
+| `char(n)` | 定长字符串，不足部分用空格填充 |
+| `text` | 变长无限长度字符串 |
+| `bpchar` | 定长字符类型 |
+
+```sql
+-- PostgreSQL 的 text 类型没有长度限制
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    bio TEXT,
+    status CHAR(1) DEFAULT 'A'  -- A=Active, I=Inactive
+);
+```
+
+### 日期时间类型
+
+| 类型名 | 说明 | 范围 |
+|--------|------|------|
+| `date` | 日期 | 4713 BC 到 5874897 AD |
+| `time` | 时间 | 00:00:00 到 24:00:00 |
+| `timestamp` | 日期和时间 | 4713 BC 到 294276 AD |
+| `timestamptz` | 带时区的日期和时间 | 4713 BC 到 294276 AD |
+| `interval` | 时间间隔 | -178000000 年到 178000000 年 |
+
+```sql
+CREATE TABLE events (
+    id SERIAL PRIMARY KEY,
+    event_name VARCHAR(200),
+    start_date DATE,
+    start_time TIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    duration INTERVAL DEFAULT '1 hour'
+);
+
+-- 日期时间运算
+SELECT created_at + INTERVAL '1 day' AS tomorrow;
+SELECT age(timestamp '2024-01-01');  -- 计算年龄/时间差
+SELECT EXTRACT(YEAR FROM created_at);  -- 提取年份
+SELECT DATE_TRUNC('hour', created_at);  -- 按小时截断
+```
+
+### 布尔类型
+
+```sql
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200),
+    content TEXT,
+    is_published BOOLEAN DEFAULT FALSE,
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+-- 布尔值可以用多种方式表示
+INSERT INTO posts (title, is_published) VALUES
+    ('Draft Post', FALSE),
+    ('Published Post', TRUE),
+    ('Another Draft', 'false'),
+    ('Another Published', 'yes');
+```
+
+### 数组类型
+
+PostgreSQL 原生支持数组类型，无需额外扩展。
+
+```sql
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    skills TEXT[],  -- 字符串数组
+    phone_numbers VARCHAR(20)[],  -- 固定长度数组
+    scores INTEGER[] DEFAULT '{}'
+);
+
+-- 插入数组数据
+INSERT INTO employees (name, skills, scores) VALUES
+    ('张三', ARRAY['Java', 'Python', 'PostgreSQL'], ARRAY[90, 85, 92]),
+    ('李四', '{"Go", "Rust"}', '{80, 75}');
+
+-- 数组查询
+SELECT * FROM employees WHERE skills @> ARRAY['Java'];  -- 包含Java
+SELECT * FROM employees WHERE skills && ARRAY['Python'];  -- 交集
+SELECT unnest(skills) FROM employees;  -- 展开数组
+```
+
+### JSON/JSONB 类型
+
+PostgreSQL 支持两种 JSON 数据类型：`json`（存储原始JSON字符串）和 `jsonb`（二进制格式，支持索引）。
+
+```sql
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(100),
+    items JSONB,  -- 推荐使用 jsonb
+    metadata JSON
+);
+
+-- 插入 JSONB 数据
+INSERT INTO orders (customer_name, items) VALUES
+    ('张三', '[{"product": "iPhone", "qty": 2, "price": 9999}]'),
+    ('李四', '{"shipping": "express", "gift": true}');
+
+-- JSONB 查询
+SELECT items->0->>'product' FROM orders;  -- 提取第一个元素的产品名
+SELECT items @> '[{"product": "iPhone"}]' FROM orders;  -- 包含查询
+SELECT items->>'shipping' FROM orders WHERE items ? 'shipping';  -- 键存在查询
+```
+
+### UUID 类型
+
+```sql
+-- 需要启用 uuid-ossp 扩展
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id INTEGER,
+    token VARCHAR(500),
+    expires_at TIMESTAMP
+);
+
+-- UUID 生成
+SELECT uuid_generate_v1();   -- 基于时间戳
+SELECT uuid_generate_v4();    -- 随机 UUID（最常用）
+```
+
+### GIS 地理信息类型
+
+需要 PostGIS 扩展支持。
+
+```sql
+-- 需要 PostGIS 扩展
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+CREATE TABLE locations (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200),
+    coordinates GEOMETRY(Point, 4326),  -- WGS84 坐标系统
+    area GEOMETRY(Polygon, 4326)
+);
+
+-- 插入地理数据
+INSERT INTO locations (name, coordinates) VALUES
+    ('天安门', ST_SetSRID(ST_MakePoint(116.397, 39.908), 4326)),
+    ('故宫', ST_GeomFromText('POINT(116.397 39.908)', 4326));
+
+-- 空间查询 - 查找附近位置
+SELECT name FROM locations
+WHERE ST_DWithin(
+    coordinates,
+    ST_SetSRID(ST_MakePoint(116.397, 39.908), 4326),
+    1000  -- 1000米范围内
+);
+```
+
+## 常用 SQL 操作
+
+### SELECT 查询
+
+```sql
+-- 基本查询
+SELECT * FROM users;
+
+-- 条件查询
+SELECT * FROM users WHERE age >= 18 AND status = 'active';
+
+-- 排序
+SELECT * FROM products ORDER BY price DESC, name ASC;
+
+-- 分页（PostgreSQL 特有语法）
+SELECT * FROM users LIMIT 10 OFFSET 20;
+
+-- 去重
+SELECT DISTINCT category FROM products;
+
+-- 别名
+SELECT
+    u.id AS user_id,
+    u.name AS user_name,
+    p.title AS post_title
+FROM users u
+JOIN posts p ON u.id = p.user_id;
+
+-- 聚合函数
+SELECT
+    category,
+    COUNT(*) AS total,
+    AVG(price) AS avg_price,
+    MAX(price) AS max_price,
+    MIN(price) AS min_price
+FROM products
+GROUP BY category
+HAVING COUNT(*) > 5
+ORDER BY total DESC;
+
+-- 子查询
+SELECT * FROM users
+WHERE id IN (SELECT user_id FROM orders WHERE total > 1000);
+
+-- 窗口函数
+SELECT
+    name,
+    department,
+    salary,
+    AVG(salary) OVER (PARTITION BY department) AS dept_avg,
+    RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_rank
+FROM employees;
+```
+
+### INSERT 插入
+
+```sql
+-- 单行插入
+INSERT INTO users (name, email, age) VALUES ('张三', 'zhangsan@example.com', 25);
+
+-- 多行插入
+INSERT INTO users (name, email, age) VALUES
+    ('李四', 'lisi@example.com', 30),
+    ('王五', 'wangwu@example.com', 28),
+    ('赵六', 'zhaoliu@example.com', 35);
+
+-- 从查询结果插入
+INSERT INTO users (name, email, age)
+SELECT name, email, age FROM temp_users WHERE status = 'active';
+
+-- 插入或更新（Upsert）
+INSERT INTO users (id, name, email)
+VALUES (1, '张三', 'zhangsan_new@example.com')
+ON CONFLICT (id) DO UPDATE
+    SET name = EXCLUDED.name,
+        email = EXCLUDED.email;
+
+-- 使用 RETURNING
+INSERT INTO products (name, price) VALUES ('新产品', 99.99)
+    RETURNING id, name, created_at;
+```
+
+### UPDATE 更新
+
+```sql
+-- 简单更新
+UPDATE users SET age = 30 WHERE id = 1;
+
+-- 多个字段更新
+UPDATE users SET
+    name = '张三',
+    email = 'zhangsan@example.com',
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = 1;
+
+-- 使用子查询
+UPDATE products SET price = price * 0.9
+WHERE category_id IN (
+    SELECT id FROM categories WHERE name = '电子产品'
+);
+
+-- 使用 RETURNING
+UPDATE users SET status = 'inactive' WHERE last_login < '2024-01-01'
+    RETURNING id, name, email;
+```
+
+### DELETE 删除
+
+```sql
+-- 删除满足条件的行
+DELETE FROM users WHERE id = 1;
+
+-- 删除重复数据（保留ID最小的）
+DELETE FROM users u1
+WHERE EXISTS (
+    SELECT 1 FROM users u2
+    WHERE u1.email = u2.email AND u1.id > u2.id
+);
+
+-- 使用子查询删除
+DELETE FROM products
+WHERE category_id IN (
+    SELECT id FROM categories WHERE is_deleted = TRUE
+);
+
+-- 使用 RETURNING
+DELETE FROM orders WHERE status = 'cancelled'
+    RETURNING id, user_id, total;
+```
+
+### 常用函数
+
+```sql
+-- 字符串函数
+SELECT LENGTH('Hello PostgreSQL');  -- 16
+SELECT UPPER('hello');  -- 'HELLO'
+SELECT LOWER('HELLO');  -- 'hello'
+SELECT TRIM('  hello  ');  -- 'hello'
+SELECT SUBSTRING('Hello', 1, 4);  -- 'Hell'
+SELECT CONCAT('Hello', ' ', 'World');  -- 'Hello World'
+SELECT REPLACE('Hello World', 'World', 'PostgreSQL');  -- 'Hello PostgreSQL'
+
+-- 数值函数
+SELECT ROUND(3.14159, 2);  -- 3.14
+SELECT CEIL(3.14);  -- 4
+SELECT FLOOR(3.14);  -- 3
+SELECT ABS(-100);  -- 100
+SELECT MOD(10, 3);  -- 1
+
+-- 日期函数
+SELECT CURRENT_DATE;  -- 当前日期
+SELECT CURRENT_TIMESTAMP;  -- 当前时间戳
+SELECT NOW();  -- 当前时间戳
+SELECT EXTRACT(YEAR FROM CURRENT_DATE);  -- 当前年份
+SELECT DATE_TRUNC('month', CURRENT_TIMESTAMP);  -- 月初
+SELECT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD');  -- 格式化日期
+SELECT TO_DATE('20240101', 'YYYYMMDD');  -- 字符串转日期
+
+-- 条件表达式
+SELECT
+    CASE
+        WHEN age < 18 THEN '未成年'
+        WHEN age < 35 THEN '青年'
+        WHEN age < 60 THEN '中年'
+        ELSE '老年'
+    END AS age_group,
+    COALESCE(nickname, username, '匿名用户') AS display_name,
+    NULLIF(price, 0) AS price  -- 如果price为0则返回NULL
+FROM users;
+```
+
+## 索引详解
+
+PostgreSQL 支持多种索引类型，每种类型适用于不同的场景。
+
+### BTREE 索引
+
+最常用的索引类型，默认索引。
+
+```sql
+-- 创建 BTREE 索引（默认类型）
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_products_price ON products(price DESC);
+
+-- 多列索引
+CREATE INDEX idx_orders_user_date ON orders(user_id, created_at DESC);
+
+-- 唯一索引
+CREATE UNIQUE INDEX idx_users_username ON users(username);
+
+-- 表达式索引
+CREATE INDEX idx_users_lower_email ON users(LOWER(email));
+CREATE INDEX idx_products_discounted ON products(price * (1 - discount));
+
+-- 部分索引
+CREATE INDEX idx_active_users ON users(email) WHERE status = 'active';
+```
+
+**适用场景**：
+- 等值查询（=、<>）
+- 范围查询（<、>、<=、>=、BETWEEN）
+- 排序操作（ORDER BY）
+- 唯一性约束
+
+### GIN 索引
+
+倒排索引，适用于复杂数据类型。
+
+```sql
+-- 数组索引
+CREATE INDEX idx_products_tags ON products USING GIN(tags);
+
+-- JSONB 索引
+CREATE INDEX idx_orders_items ON orders USING GIN(items jsonb_ops);
+CREATE INDEX idx_orders_items_path ON orders USING GIN(items jsonb_path_ops);
+
+-- 全文搜索索引
+CREATE INDEX idx_articles_content ON articles USING GIN(to_tsvector('english', content));
+```
+
+**适用场景**：
+- 数组类型查询（&&、@>、<@）
+- JSONB 数据查询
+- 全文搜索
+
+### GiST 索引
+
+通用搜索树，适用于几何、地理数据类型。
+
+```sql
+-- 地理空间索引
+CREATE INDEX idx_locations_geom ON locations USING GiST(coordinates);
+
+-- 范围类型索引
+CREATE INDEX idx_reservations_time ON reservations USING GIST(ts_range);
+
+-- 近似搜索
+CREATE INDEX idx_documents_content ON documents USING GiST(content);
+```
+
+**适用场景**：
+- 地理空间数据（PostGIS）
+- 范围类型
+- 近似搜索
+- 模糊匹配
+
+### BRIN 索引
+
+块范围索引，适用于大规模顺序数据。
+
+```sql
+-- 时间序列数据索引
+CREATE INDEX idx_logs_created_at ON logs USING BRIN(created_at);
+
+-- 按块范围分区
+CREATE INDEX idx_sales_date ON sales USING BRIN(sale_date)
+    WITH (pages_per_range = 128);
+```
+
+**适用场景**：
+- 时间序列数据
+- 按插入顺序存储的数据
+- 大表且查询通常基于范围的数据
+
+### Hash 索引
+
+哈希索引，用于等值查询。
+
+```sql
+CREATE INDEX idx_users_phone ON users USING HASH(phone_number);
+```
+
+**适用场景**：
+- 等值查询
+- 不支持范围查询和排序
+
+**注意**：PostgreSQL 16 之前的 Hash 索引不在 WAL 中记录，建议谨慎使用。
+
+### 索引选择建议
+
+| 索引类型 | 适用场景 |
+|----------|----------|
+| BTREE | 默认选择，适用于大多数场景 |
+| GIN | 数组、JSON、全文搜索 |
+| GiST | 地理空间、范围、复杂几何 |
+| BRIN | 大规模顺序数据、时间序列 |
+| Hash | 大数据等值查询（需 WAL） |
+
+## 性能优化
+
+### EXPLAIN 分析
+
+```sql
+-- 分析查询计划
+EXPLAIN SELECT * FROM users WHERE email = 'test@example.com';
+
+-- 分析并显示实际执行时间
+EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+SELECT * FROM orders WHERE user_id = 100;
+
+-- JSON 格式输出
+EXPLAIN (FORMAT JSON) SELECT * FROM products WHERE price > 100;
+```
+
+关键指标：
+- **Seq Scan**：全表扫描，应尽量避免
+- **Index Scan / Index Only Scan**：使用索引
+- **Bitmap Scan**：位图扫描
+- **Nested Loop**：嵌套循环join
+- **Hash Join / Merge Join**：哈希/归并join
+- **cost**：估算成本
+- **rows**：预计返回行数
+- **width**：平均行宽度
+
+### 查询优化技巧
+
+```sql
+-- 1. 选择需要的列而非 SELECT *
+SELECT id, name, email FROM users;
+
+-- 2. 使用 EXPLAIN 分析慢查询
+-- 3. 创建合适的索引
+CREATE INDEX idx_orders_user_status ON orders(user_id, status);
+
+-- 4. 避免在索引列上使用函数
+-- 不好
+SELECT * FROM users WHERE LOWER(email) = 'test@example.com';
+-- 好
+CREATE INDEX idx_users_lower_email ON users(LOWER(email));
+SELECT * FROM users WHERE LOWER(email) = LOWER('test@example.com');
+
+-- 5. 使用 LIMIT 限制结果集
+SELECT * FROM logs ORDER BY created_at DESC LIMIT 100;
+
+-- 6. 批量插入使用 COPY 或 INSERT 多行
+INSERT INTO users (name, email) VALUES
+    ('用户1', 'user1@example.com'),
+    ('用户2', 'user2@example.com'),
+    ('用户3', 'user3@example.com');
+
+-- 7. 合理使用 JOIN
+-- 优先使用 JOIN 而非子查询
+SELECT u.name, o.total
+FROM users u
+INNER JOIN (SELECT user_id, SUM(total) AS total FROM orders GROUP BY user_id) o
+ON u.id = o.user_id;
+```
+
+### 连接池配置
+
+PostgreSQL 默认不包含连接池，通常使用外部工具。
+
+**PgBouncer**：
+```sh
+# 安装
+apt install pgbouncer
+
+# 配置 /etc/pgbouncer/pgbouncer.ini
+[databases]
+mydb = host=127.0.0.1 port=5432 dbname=mydb
+
+[pgbouncer]
+listen_addr = 127.0.0.1
+listen_port = 6432
+pool_mode = transaction
+max_client_conn = 1000
+default_pool_size = 20
+```
+
+**PgBouncer 连接字符串**：
+```sh
+# 客户端连接
+psql -h 127.0.0.1 -p 6432 -U myuser mydb
+```
+
+### 常用配置参数
+
+```sql
+-- 查看当前配置
+SHOW work_mem;
+SHOW shared_buffers;
+SHOW effective_cache_size;
+
+-- 临时修改（会话级别）
+SET work_mem = '256MB';
+
+-- 建议配置（根据服务器内存调整）
+-- postgresql.conf
+shared_buffers = 256MB          # 建议为系统内存的25%
+effective_cache_size = 768MB     # 建议为系统内存的75%
+work_mem = 64MB                  # 每个排序操作使用的内存
+maintenance_work_mem = 128MB     # 维护操作使用的内存
+```
+
+## 备份与恢复
+
+### pg_dump 备份
+
+```sh
+# 备份单个数据库
+pg_dump -U postgres -Fc mydb > mydb.dump
+
+# 备份为纯文本格式
+pg_dump -U postgres -Fp mydb > mydb.sql
+
+# 备份所有数据库
+pg_dumpall -U postgres > all_databases.sql
+
+# 只备份表结构
+pg_dump -U postgres -s mydb > mydb_schema.sql
+
+# 只备份数据
+pg_dump -U postgres -a mydb > mydb_data.sql
+
+# 备份指定表
+pg_dump -U postgres -t users -t orders mydb > tables.dump
+
+# 压缩备份
+pg_dump -U postgres -Fc mydb | gzip > mydb.dump.gz
+```
+
+### pg_restore 恢复
+
+```sh
+# 从压缩备份恢复
+pg_restore -U postgres -d mydb mydb.dump
+
+# 恢复并创建新数据库
+pg_restore -U postgres -C -d postgres mydb.dump
+
+# 只恢复指定表
+pg_restore -U postgres -d mydb -t users mydb.dump
+
+# 恢复时删除已存在的对象
+pg_restore -U postgres -d mydb --clean mydb.dump
+
+# 恢复并行度
+pg_restore -U postgres -d mydb -j 4 mydb.dump
+```
+
+### pg_basebackup 物理备份
+
+```sh
+# 基础备份（需要配置 replication）
+pg_basebackup -h localhost -U replication -D /backup/base -Ft -z -P
+
+# 使用复制槽
+pg_basebackup -h localhost -U replication -D /backup/base -Ft -z -P --slot=backup_slot
+
+# 流复制基础备份
+pg_basebackup -h localhost -U replication -D /backup -Xs -Pw
+```
+
+### 时间点恢复 (PITR)
+
+```sh
+# 1. 配置 WAL 归档
+# postgresql.conf
+archive_mode = on
+archive_command = 'cp %p /archive/%f'
+restore_command = 'cp /archive/%f %p'
+
+# 2. 恢复到指定时间点
+pg_restore -d mydb --target-time="2024-01-01 12:00:00" mydb.dump
+```
+
+## 高可用方案
+
+### 流复制
+
+```sql
+-- 主库：创建复制用户
+CREATE USER replicator WITH REPLICATION PASSWORD 'repl_password';
+
+-- 主库：配置 pg_hba.conf
+host    replication     replicator     10.0.0.0/24         md5
+
+-- 主库：配置 postgresql.conf
+wal_level = replica
+max_wal_senders = 10
+wal_keep_size = 1GB
+```
+
+```sh
+# 从库：使用 pg_basebackup 创建基础备份
+pg_basebackup -h master_host -U replicator -D /var/lib/postgresql/16/main -Pw -Xs -Rs
+
+# 从库：配置 postgresql.conf
+hot_standby = on
+
+# 从库：创建 recovery.conf（PostgreSQL 12+ 为 standby.signal）
+primary_conninfo = 'host=master_host port=5432 user=replicator password=repl_password'
+```
+
+### 逻辑复制
+
+```sql
+-- 主库：发布表
+CREATE PUBLICATION my_publication FOR TABLE users, orders;
+
+-- 主库：创建订阅用户
+CREATE USER subscriber WITH REPLICATION PASSWORD 'sub_password';
+
+-- 从库：创建订阅
+CREATE SUBSCRIPTION my_subscription
+    CONNECTION 'host=master_host port=5432 dbname=mydb user=subscriber password=sub_password'
+    PUBLICATION my_publication;
+```
+
+### Patroni 高可用
+
+Patroni 是一个成熟的 PostgreSQL 高可用解决方案。
+
+```yaml
+# patroni.yml 配置示例
+scope: postgres-cluster
+namespace: /service/
+name: postgresql0
+
+restapi:
+  listen: 0.0.0.0:8008
+  connect_address: 10.0.0.1:8008
+
+postgresql:
+  listen: 0.0.0.0:5432
+  connect_address: 10.0.0.1:5432
+  data_dir: /data/postgresql0
+  parameters:
+    wal_level: replica
+    max_wal_senders: 10
+    max_replication_slots: 10
+    hot_standby: on
+
+consul:
+  host: 10.0.0.5:8500
+  register_service: true
+```
+
+### Citus 分片
+
+Citus 是 PostgreSQL 的分布式扩展，支持水平分片。
+
+```sql
+-- 安装 Citus 扩展
+CREATE EXTENSION citus;
+
+-- 协调节点配置
+SELECT citus_set_coordinator_host(' coordinator_host', 5432);
+
+-- 创建分片表
+CREATE TABLE orders (
+    order_id BIGSERIAL,
+    user_id INT,
+    total DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 分布表（按 user_id 分片）
+SELECT create_distributed_table('orders', 'user_id');
+
+-- 查询分片信息
+SELECT * FROM citus_shards;
+SELECT * FROM citus_tables;
+```
+
+## 常用扩展
+
+PostgreSQL 的扩展系统是其强大功能的重要组成部分。
+
+### PostGIS
+
+地理空间数据库扩展。
+
+```sql
+-- 安装扩展
+CREATE EXTENSION postgis;
+
+-- 创建空间表
+CREATE TABLE locations (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    geom GEOMETRY(Point, 4326)
+);
+
+-- 空间查询
+SELECT name FROM locations
+WHERE ST_DWithin(
+    geom,
+    ST_MakePoint(116.4, 39.9)::geography,
+    5000  -- 5公里范围内
+);
+
+-- 距离计算
+SELECT ST_Distance(
+    ST_MakePoint(116.4, 39.9)::geography,
+    ST_MakePoint(116.5, 40.0)::geography
+);
+```
+
+### pgvector
+
+向量数据库扩展，用于 AI 应用。
+
+```sql
+-- 安装扩展
+CREATE EXTENSION vector;
+
+-- 创建向量表
+CREATE TABLE documents (
+    id SERIAL PRIMARY KEY,
+    content TEXT,
+    embedding vector(1536)  -- OpenAI embeddings 维度
+);
+
+-- 创建向量索引
+CREATE INDEX ON documents USING ivfflat (embedding vector_cosine_ops);
+
+-- 向量相似度搜索
+SELECT id, content, 1 - (embedding <=> $1) AS similarity
+FROM documents
+ORDER BY embedding <=> $1
+LIMIT 5;
+```
+
+### pg_trgm
+
+模糊匹配和相似度搜索。
+
+```sql
+-- 安装扩展
+CREATE EXTENSION pg_trgm;
+
+-- 创建索引
+CREATE INDEX idx_users_name ON users USING GIN (name gin_trgm_ops);
+
+-- 模糊查询
+SELECT * FROM users WHERE name LIKE '%张%';
+SELECT * FROM users WHERE name ~ '张.*';
+
+-- 相似度搜索
+SELECT name, similarity(name, '张三') AS sim
+FROM users
+WHERE similarity(name, '张三') > 0.3
+ORDER BY sim DESC;
+```
+
+### uuid-ossp
+
+UUID 生成扩展。
+
+```sql
+-- 安装扩展
+CREATE EXTENSION uuid-ossp;
+
+-- 生成 UUID
+SELECT uuid_generate_v1();   -- 基于时间戳
+SELECT uuid_generate_v3(uuid_ns_url(), 'http://example.com');  -- MD5
+SELECT uuid_generate_v4();    -- 随机 UUID（最常用）
+SELECT uuid_generate_v5(uuid_ns_url(), 'http://example.com');  -- SHA-1
+
+-- 在表中使用
+CREATE TABLE sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id INT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### hstore
+
+键值存储扩展。
+
+```sql
+-- 安装扩展
+CREATE EXTENSION hstore;
+
+-- 创建表
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    attributes HSTORE
+);
+
+-- 插入数据
+INSERT INTO products (name, attributes) VALUES
+    ('iPhone', 'color=>"black",storage=>"256GB",price=>"9999"');
+
+-- 查询
+SELECT * FROM products WHERE attributes -> 'color' = 'black';
+SELECT * FROM products WHERE attributes ? 'storage';
+SELECT * FROM products WHERE attributes @> 'color=>"black"';
+
+-- 更新
+UPDATE products SET attributes = attributes || 'color=>"white"'::hstore;
+UPDATE products WHERE attributes - 'color' IS NOT NULL;
+```
+
+### pg_stat_statements
+
+查询性能统计。
+
+```sql
+-- 安装扩展
+CREATE EXTENSION pg_stat_statements;
+
+-- 查看查询统计
+SELECT
+    query,
+    calls,
+    total_exec_time,
+    mean_exec_time,
+    rows,
+    100.0 * shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0) AS hit_ratio
+FROM pg_stat_statements
+ORDER BY total_exec_time DESC
+LIMIT 10;
+```
