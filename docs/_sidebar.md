@@ -4,6 +4,9 @@
   - [Shell](contents/计算机基础-Shell.md)
   - [Dos](contents/计算机基础-Dos.md)
 
+- AI
+  - [agent(智能体)](contents/ai/ai-agent.md)
+
 - Java
   - [基础](contents/Java-基础.md)
   - [JVM](contents/Java-JVM.md)
