@@ -514,7 +514,7 @@ Deer Flow = LangGraph + Tools + MCP + Memory + Skills + Sandbox + Subagents
 # 克隆项目
 git clone https://github.com/archersama/deer-flow.git
 
-# 启动服务
+# 启动服务（window环境 使用：Git Bash 控制台执行下面的命令，否则会报错）
 make dev
 
 # 访问 http://localhost:2026
