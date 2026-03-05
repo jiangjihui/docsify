@@ -1,595 +1,62 @@
-## 常用
+# MySQL
 
-### 基本操作
+> MySQL 是最流行的关系型数据库管理系统之一，本文档涵盖 MySQL 的安装配置、基本操作、数据类型、SQL 语法、索引、存储引擎、主从复制、备份恢复及性能优化等内容。
 
-**启动**
+## 目录
 
-```sh
-sudo service mysqld start
-sudo /etc/inint.d/mysqld start
-```
+- [安装配置](#安装配置)
+  - [Linux 安装](#linux-安装)
+  - [Docker 安装](#docker-安装)
+  - [配置优化](#配置优化)
+- [基本操作](#基本操作)
+  - [启动与停止](#启动与停止)
+  - [用户管理](#用户管理)
+  - [数据库管理](#数据库管理)
+- [数据类型](#数据类型)
+  - [数值类型](#数值类型)
+  - [字符串类型](#字符串类型)
+  - [日期时间类型](#日期时间类型)
+  - [JSON 类型](#json-类型)
+- [SQL 操作](#sql-操作)
+  - [SELECT 查询](#select-查询)
+  - [INSERT 插入](#insert-插入)
+  - [UPDATE 更新](#update-更新)
+  - [DELETE 删除](#delete-删除)
+  - [常用函数](#常用函数)
+- [索引](#索引)
+  - [索引类型](#索引类型)
+  - [索引优化](#索引优化)
+- [存储引擎](#存储引擎)
+  - [InnoDB](#innodb)
+  - [MyISAM](#myisam)
+- [MySQL 锁](#mysql-锁)
+- [MVCC](#mvcc)
+- [主从复制](#主从复制)
+- [备份与恢复](#备份与恢复)
+- [性能优化](#性能优化)
+- [MySQL 8.0 新特性](#mysql-80-新特性)
+- [MySQL 常见问题](#mysql-常见问题)
 
-**关闭**
+---
 
-```sh
-sudo service mysqld start
-sudo /etc/inint.d/mysqld start
-```
+## 安装配置
 
-**debian系统**
+### Linux 安装
 
-```sh
-# 启动
-service mysql start
-# 关闭
-service mysql stop
-# 重启
-service mysql restart
-```
-
-### 维护
-
-```sql
--- 查看数据库端口号占用情况
-select * from information_schema.PROCESSLIST;
-
--- 查看所有连接
-show processlist; 
--- 查看所有连接：如果没有FULL关键字， SHOW PROCESSLIST则只显示Info字段中每个语句的前 100 个字符 
-show full processlist; 
-
--- 查看所有连接：全列出
-show full processlist;
-
--- 查询mysql 哪些表正在被锁状态
-show OPEN TABLES where In_use > 0;
-
--- 查看正在锁的事务
-SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCKS;
-
--- 查看等待锁的事务
-SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
-```
+#### CentOS 7 安装 MySQL 5.7
 
 ```sh
-# 杀掉当前所有的MySQL连接
-mysqladmin -uroot -p processlist|awk -F "|" '{print $2}'|xargs -n 1 mysqladmin -uroot -p kill
-```
-
-### 管理用户
-
-**创建**
-
-**CREATE USER** 'username'@'host' IDENTIFIED BY 'password';
-
-```sql
-CREATE USER 'dog'@'localhost' IDENTIFIED BY '123456';
-```
-
-> **说明** username - 你将创建的用户名, host - 指定该用户在哪个主机上可以登陆,如果是本地用户可用localhost, 如果想让该用户可以从任意远程主机登陆,可以使用通配符%. password - 该用户的登陆密码,密码可以为空,如果为空则该用户可以不需要密码登陆服务器. 
-
-**查看所有用户**
-
-```sql
-select user,host from mysql.user;
-```
-
-**设置与更改密码**
-
-**SET PASSWORD FOR '**username**'@'**host**' = PASSWORD('**newpassword**');**
-
-```sql
-SET PASSWORD FOR 'pig'@'%' = PASSWORD("123456");
-```
-
-> **说明** 如果是当前登陆用户用SET PASSWORD = PASSWORD("newpassword");
-
-**查看权限**
-
-```sql
-show grants for 你的用户
-show grants for root@'localhost';
-show grants for root;
-```
-
-**授权**
-
-**GRANT privileges ON** databasename**.**tablename **TO '**username**'@'**host**';**
-
-```sql
-GRANT ALL ON *.* TO 'pig'@'%';
-FLUSH PRIVILEGES;
-```
-
-> **说明** privileges - 用户的操作权限,如SELECT , INSERT , UPDATE 等(详细列表见该文最后面).如果要授予所的权限则使用ALL.;databasename - 数据库名,tablename-表名,如果要授予该用户对所有数据库和表的相应操作权限则可用*表示, 如*.*. 最后记得使用FLUSH PRIVILEGES更新权限表。
-
-**撤销用户权限**
-
-**REVOKE privilege ON** databasename**.**tablename **FROM '**username**'@'**host**';**
-
-```sql
-REVOKE SELECT ON *.* FROM 'pig'@'%';
-```
-
-**删除用户**
-
-```sql
- DROP USER 'root'@'%';
-```
-
-**授权远程连接**
-
-**GRANT ALL PRIVILEGES ON** *******.******* **TO '**username**'@'%' IDENTIFIED BY '**password**' WITH GRANT OPTION;**
-
-```sql
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'root' WITH GRANT OPTION;
-```
-
-**远程登陆**
-
-**mysql -h**[目标IP] **-p**[目标端口] **-u**[数据库用户名] **-p**
-
-```sh
-mysql -h192.168.69.8 -p3306 -uroot -p;
-```
-
-### 管理数据库
-
-**创建数据库**
-
-**create database** <数据库名> **character set utf8;**
-
-```sql
-create database test character set utf8;
-```
-
-> **说明** character set utf8 用以设置该数据库创建表时候的编码格式
-
-**导出数据库**
-
-**mysqldump -u** username **-p** **-R** **--add-drop-table** database **>** path**/**database**.sql**
-
-```sh
-mysqldump -u root -p -R fulva > D:/fulva.sql
-```
-
-> **注意：**默认情况下不会导出数据库的存储过程和函数，如果需要备份存储过程，那就需要用参数 -R 来指定，如果只导出存储过程和函数可用:
-> 
-> mysqldump -uroot -p -hlocalhost -P3306 -n -d -t -R DBName > procedure_name.sql
-> 
-> 其中，-d 表示--no-create-db, -n表示--no-data, -t表示--no-create-info, -R表示导出function和procedure。所以上述代码表示仅仅导出函数和存储过程，不导出表结构和数据。
-
-**导出时忽略指定的表：**
-
-```sh
-mysqldump -uroot -p -R **dbname** --ignore-table=**dbname****.tb1** --ignore-table=**dbname****.tb2** >C:\Users\xqlsr\Desktop\back_20190604.sql
-```
-
-**导入数据库**
-
-```sh
-# 推荐
-mysql -uabsbank -p --default-character-set=utf8mb4 absbank<C:\JJH\absbank.sql
-```
-
-```sql
--- 先登录MySQL，进入MySQL命令行，再执行下面的命令
-source path/database.sql
-```
-
-> **说明：**如果遇到 @@GLOBAL.GTID_PURGED can only be set when @@GLOBAL.GTID_EXECUTED is empty [错误](http://blog.itpub.net/20893244/viewspace-2138125/)可添加 -f 参数强制导入
-
-**复制数据库**
-
-```sql
-CREATE DATABASE `newdb`;
-```
-
-```sh
-mysqldump db1 -u root -p123456 --add-drop-table | mysql newdb -u root -p123456
-```
-
-**跨主机备份**
-
-```sh
-mysqldump -uroot -proot --host=192.168.1.217 --opt msharp| mysql --host=192.168.1.218 -uroot -proot -C msharp;
-```
-
-**添加或删除表字段**
-
-```sql
--- 添加字段
-alter table `code_library` add column Data_Insert_Date varchar(20);
--- 删除字段
-alter table `user_movement_log` drop column Gatewayid
-```
-
-**显示所有表**
-
-```sql
-show tables;
-
-select table_name from information_schema.TABLES where TABLE_SCHEMA='数据库名';
-```
-
-**显示表的所有字段名**
-
-```sql
-select * from information_schema.`COLUMNS` where TABLE_SCHEMA='数据库名' and table_name='表名';
-```
-
-**不锁表数据导出**
-
-```sh
-mysqldump -u mysql_user --lock-tables=false --default-character-set=utf8 -p mysql_db mysql_table --where="ID > 20"  > backup.sql
-```
-
-### 配置
-
-**查看和设置MySQL最大连接数**
-
-```sql
-show variables like "max_connections";
-set GLOBAL max_connections=100;
-```
-
-**大小写区分**
-
-在windows环境的mysql数据表名一般不区分大小写，而在linux下则会区分大小写，如果要在linux下不区分大小写可在/etc/mysql/conf.d/my.cnf（文件不存在则新增）的[mysqld]节点下，加入一行：  
-
-```
-lower_case_table_names=1
-```
-
-重启MySQL即可
-
-[**字符集**](https://www.cnblogs.com/shootercheng/p/5836657.html)
-
-```
--- 显示当前数据库字符集
-use <数据库>;
-show variables like 'character_set_database';
-
--- 创建数据库时指定数据库的字符集
-create database <数据库名> character set utf8;
-
--- 创建数据库时指定数据库的字符集
-alter database <数据库名> character set utf8;
-
--- 创建数据库时指定数据库的字符集
-alter table <表名> character set utf8;
-```
-
-**查看数据库表占用空间**
-
-```sql
-select TABLE_NAME, table_rows, 
-concat(truncate(data_length/1024/1024,2),' MB') as data_size,
-concat(truncate(index_length/1024/1024,2),' MB') as index_size
-from information_schema.tables where TABLE_SCHEMA = 'cfs'
-group by TABLE_NAME order by data_length desc;
-```
-
-**查看所有数据库大小**
-
-```sql
-select concat(round(sum(data_length/1024/1024),2),'MB') as data from information_schema.tables;
-```
-
-**查看数据库存储文件路径**
-
-**show global variables like "**%datadir%**";**
-
-**查看数据库的存储引擎**
-
-**show variables like '**%storage_engine%**';**
-
-### 处理逗号分隔的字符串
-
-```sql
-select * from b_program_publish where find_in_set ('0c52dab',terminals);
-```
-
-在翻这些函数的过程中，你应该已经深深地体会到mysql的设计者对[以逗号分割存储字段](https://blog.csdn.net/rovast/article/details/50519144)方法的肯定，因为有很多方法就是设计用来处理这种问题的。 
-
-### 配置文件
-
-**添加或修改配置**
-
-MySQL的默认配置文件是 /etc/mysql/my.cnf 文件。如果想要自定义配置，建议向 /etc/mysql/conf.d 目录中创建 .cnf 文件。新建的文件可以任意起名，只要保证后缀名是 cnf 即可。新建的文件中的配置项可以覆盖 /etc/mysql/my.cnf 中的配置项
-
-比如修改SQL数据包的大小则在/etc/mysql/conf.d目录下新建my.cnf配置文件，内容如下：
-
-```
-[mysqld]
-
-#SQL数据包发送的大小，如果有BLOB对象建议修改成1G
-max_allowed_packet = 100M
-```
-
-保存之后重启MySQL即可生效。
-
-**查看linux服务器上mysql配置文件路径**
-
-在类NUIX的系统中，配置文件的位置一般在/etc/my.cnf 或者 /etc/MySQL/my.cnf
-
-我们见过有些人尝试修改配置文件但是不生效，因为他们修改的并不是服务器读取的文件。例如Debian下，/etc/mysql/my.cnf才是MySQL读取的配置文件，而不是/etc/my.cnf。
-
-```sh
-which mysqld
-/usr/sbin/mysqld
-
-/usr/sbin/mysqld --verbose --help | grep -A 1 'Default options'
-Default options are read from the following files in the given order:
-/etc/my.cnf /etc/mysql/my.cnf ~/.my.cnf 
-```
-
-### 常见异常
-
-- sql_mode=only_full_group_by异常
-
-执行语句：
-
-```sql
-SET @@global.sql_mode ='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
-```
-
-### 数据库最大连接数设置
-
-```sql
--- 查看最大连接数
-show variables like "max_connections";
-
--- 设置最大连接数为400
-set GLOBAL max_connections=400;
-```
-
-### limit 20000加载很慢怎么[解决](https://mp.weixin.qq.com/s/9TxItfrkh5d1mNFKMvH6LA)
-
-\# 执行时间：4.73s
-
-select * from user where age = 10 limit 100000,10;
-
-\# 执行时间：0.53s
-
-SELECT a.* FROM USER a
-
-INNER JOIN
-
-(SELECT id FROM USER WHERE age = 10 LIMIT 100000,10) b
-
-ON a.id = b.id;
-
-其中需要对where条件增加索引，id因为是主键自带索引。select返回减少回表可以提升查询性能,所以采用查询主键字段后进行关联大幅度提升了查询效率。
-
-### MySQL压缩版的安装
-
-[详细步骤](https://baijiahao.baidu.com/s?id=1630347658327095638&wfr=spider&for=pc)
-
-1 下载压缩包，解压压缩包到指定目录：
-
-https://downloads.mysql.com/archives/community/
-
-2 以管理员打开命令行并进入到解压根目录/bin目录下
-
-创建配置文件my.ini。默认解压文件中没有，我们可以新建完添加解压根目录下。（新建文本文档，并将后缀名改成.ini）然后我们编辑此文件，设置MySQL根目录，以及数据库数据存放的目录。
-
-```
-[mysql]
-# 设置mysql客户端默认字符集
-default-character-set=utf8
-[mysqld]
-#设置3306端口
-port = 3306
-# 设置mysql的安装目录
-basedir=D:\\Program Files\\mysql-5.7.24-winx64
-# 允许最大连接数
-max_connections=200
-# 服务端使用的字符集默认为8比特编码的latin1字符集
-character-set-server=utf8
-# 创建新表时将使用的默认存储引擎
-default-storage-engine=INNODB
-```
-
-3 初始化MySQL数据目录
-
-```
-mysqld --initialize
-```
-
-> 注：如果出现找不到MSVCP140.dll错误，说明没有安装VC++2015运行库，MySQL运行需要这个运行库，可以去微软官网下载，大概实十几M大小。
-
-4 获取初始化数据库随机密码。执行完上一步之后，在data目录下生的文件有一个.err文件，这里面有初始化的密码。我们编辑打开此文件，找到密码。（root@localhost：后面跟的就是随机密码）
-
-5 安装MySQL服务
-
-```
-mysqld --install mysql5.7
-```
-
-6 启动mysql服务
-
-```
-net start mysql8.0
-```
-
-7 用root账号、随机密码登录连接MySQL，输入上面的随机密码（.err文件）成功登录
-
-```
-mysql -u root -p
-```
-
-8 修改随机密码
-
-```sql
-ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
-```
-
-### MySQL备份脚本（Window）
-
-```sh
-::换成默认的gbk（避免获取日期错误）https://www.cnblogs.com/a-fun/p/9391301.html
-chcp 936
-@echo off
-set hour=%time:~0,2%
-if "%time:~0,1%"==" " set hour=0%time:~1,1%
-set now=%Date:~0,4%%Date:~5,2%%Date:~8,2%_%hour%%Time:~3,2%%Time:~6,2%
-echo %now%
-set host=localhost
-set port=3306
-set user=root
-set pass=root
-set dbname=hro
-set backupfile=D:\app\backup\database\%dbname%_%now%.sql
-D:\app\mysql-5.7.28-winx64\bin\mysqldump -h%host% -P%port% -u%user% -p%pass% -c -R --default-character-set=utf8 --single-transaction=TRUE --add-drop-table %dbname% > %backupfile%
-echo delete files before 30 days
-forfiles /p "D:\app\backup\database" /m *.sql /d -30 /c "cmd /c del @file /f"
-```
-
-### Docker备份和导入文件
-
-```sh
-# 备份文件
-docker exec some-mysql sh -c 'exec mysqldump -R -uroot -p"$MYSQL_ROOT_PASSWORD" merck' > /some/path/merck.sql
-
-# 导入文件
-docker exec -i mysql8_db_1 sh -c 'exec mysql -uroot -pmima merck' < /mnt/hdd/docker/mysql8/merck.sql
-```
-
-### MySQL双机热备的实现
-
-**条件：**
-
-1. 主服务器的版本**低于**从服务器版本
-
-2. 主服务器上需要备份的数据库在从服务器的mysql数据库中不能对应不上（即：主服务器有testdb数据库，从服务器也有名称为testdb数据库）
-
-**步骤：**
-
-**主服务器Master配置**
-
-1. 创建好同步连接的帐户
-
-2. 修改mysql配置文件[/etc/mysql/conf.d/my.cnf]
-
-```
-[mysqld]
-server-id = 1　　　　　　　　//唯一id
-log-bin=mysql-bin       //其中这两行是本来就有的，可以不用动，添加下面两行即可.指定日志文件
-binlog-do-db = test　　　　 //记录日志的数据库
-binlog-ignore-db = mysql  //不记录日志的数据库
-```
-
-3. 重启mysql服务
-
-```sh
-service mysql restart     //如果是运行的docker，直接重启docker
-```
-
-4. 查看主服务器状态[记录数据信息，后面需要用到]
-
-```sh
-mysql> show master status\G;
-```
-
-**从服务器Slave配置**
-
-1. 修改mysql配置文件[/etc/mysql/conf.d/my.cnf]
-
-```
-[mysqld]
-server-id = 2
-log-bin=mysql-bin
-replicate-do-db = test
-replicate-ignore-db = mysql,information_schema,performance_schema
-```
-
-2. 重启mysql服务
-
-```sh
-service mysql restart     //如果是运行的docker，直接重启docker
-```
-
-3、指定同步位置
-
-```
-mysql>stop slave;     //先停步slave服务线程，这个是很重要的，如果不这样做会造成以下操作不成功。
-mysql>change master to master_host='59.151.15.36',master_user='replicate',master_password='123456', master_log_file='mysql-bin.000016',master_log_pos=107;
-```
-
-> **注：**master_log_file, master_log_pos由主服务器（Master）查出的状态值中确定。也就是刚刚叫注意的。master_log_file对应File, master_log_pos对应Position。Mysql 5.x以上版本已经不支持在配置文件中指定主服务器相关选项。
-
-```
-mysql>start slave;
-```
-
-4、查看从服务器（Slave）状态
-
-```
-mysql> show slave status\G;
-## 查看下面两项值均为Yes，即表示设置从服务器成功。
-Slave_IO_Running: Yes
-Slave_SQL_Running: Yes
-```
-
-> 参考：https://www.cnblogs.com/fnlingnzb-learner/p/7000898.html
-
-### Linux安装Mysql-5.7版本
-
-```sh
-groupadd mysql      ## 添加一个mysql组
-useradd -r -g mysql mysql    ## 添加一个用户
-# 解压缩下载的包
-tar -xzvf /data/software/mysql-5.7.13-linux-glibc2.5-x86_64.tar.gz
-# 然后 mv 解压后的包  mysql   ##相当于重命名
-chown -R mysql:mysql ./   ##进入mysql包中， 给这个包授权 给mysql
-bin/mysqld --initialize --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data
-## 进入mysql文件名  basedir 为mysql 的路径， datadir 为mysql的 data 包，里面存放着mysql自己的包， 如user
-## 重要：此处需要注意记录生成的临时密码，如上文：YLi>7ecpe;YP
-bin/mysql_ssl_rsa_setup  --datadir=/usr/local/mysql/data           
-## 进入mysql support-files
-cp my-default.cnf /etc/my.cnf             ##注释或者删除掉 my.cnf里一般配置选项 中的socket=...的内容
-cp mysql.server /etc/init.d/mysql
-vim /etc/init.d/mysql             ##修改basedir=自己的路径     修改datadir=自己的路径
-bin/mysqld_safe --user=mysql --disable-partition-engine-check &     ## 启动mysql
-bin/mysql --user=root –p   
-## 输入临时密码
-set password=password('A123456');
-grant all privileges on *.* to root@'%' identified by 'A123456';
-flush privileges;
-use mysql;
-select host,user from user;
-## 远程链接数据库，或者重启。
-```
-
-> 参考：
-> 
-> http://www.cnblogs.com/zfxJava/p/6004188.html
-> 
-> http://blog.csdn.net/xyang81/article/details/51792144
-
-### CentOS7安装MySQL
-
-在CentOS中默认安装有MariaDB，这个是MySQL的分支，但为了需要，还是要在系统中安装[MySQL](https://blog.csdn.net/qq_36582604/article/details/80526287)，而且安装完成之后可以直接覆盖掉MariaDB。
-
-```sh
+# 下载 MySQL  yum 源
 wget -i -c http://dev.mysql.com/get/mysql57-community-release-el7-10.noarch.rpm
 
+# 安装 MySQL  yum 源
 yum -y install mysql57-community-release-el7-10.noarch.rpm
-# 安装MySQL服务器
+
+# 安装 MySQL 服务器
 yum -y install mysql-community-server
 ```
 
-### Red Hat安装MYSQL
-
-> 参考：[Red Hat环境下安装MYSQL（图文）](https://blog.csdn.net/weixin_43931875/article/details/103500815)
-
-首先根据RedHat的版本到mysql官网https://downloads.mysql.com/archives/community/下载安装包：
-
-```sh
-cat /etc/redhat-release
-cat /etc/system-release
-```
+#### CentOS/RHEL 安装 MySQL 8.0
 
 在服务器上创建文件夹：
 
@@ -597,797 +64,326 @@ cat /etc/system-release
 mkdir /mysql
 ```
 
-比如下载到`mysql-8.0.25-1.el7.x86_64.rpm-bundle.tar`，使用`tar`指令进行解压：
+下载 `mysql-8.0.25-1.el7.x86_64.rpm-bundle.tar`，使用 `tar` 指令进行解压：
 
 ```sh
-tar -xf  mysql-8.0.18-1.el7.x86_64.rpm-bundle.tar
+tar -xf mysql-8.0.18-1.el7.x86_64.rpm-bundle.tar
 ```
 
-开始安装：
-由于系统中存在mariadb 包会导致 mysql安装时报错mariadb-libs 被 mysql-community-libs-8.0.11-1.el7.x86_64 取代
-
-需要先卸载mariadb 包：
+安装前先卸载 mariadb：
 
 ```sh
 yum remove mariadb*
 ```
 
-之后开始安装，注意顺序不能乱！
+按顺序安装：
 
 ```sh
 rpm -ivh mysql-community-common-8.0.18-1.el7.x86_64.rpm
-
 rpm -ivh mysql-community-libs-8.0.11-1.el7.x86_64.rpm
-
-rpm -ivh mysql-community-client-8.0.18-1.el7.x86_64.rpm 
-
-rpm -ivh mysql-community-server-8.0.18-1.el7.x86_64.rpm 
+rpm -ivh mysql-community-client-8.0.18-1.el7.x86_64.rpm
+rpm -ivh mysql-community-server-8.0.18-1.el7.x86_64.rpm
 ```
 
-安装完成后初始化mysql数据库：
+初始化数据库：
 
 ```sh
 cd /etc
 mysqld --initialize --user=mysql
 ```
 
-初始密码每个人都不一样，查看初始随机密码：
+查看初始密码：
 
 ```sh
 cat /var/log/mysqld.log
 ```
 
-接下来，登陆mysql
+登录并修改密码：
+
+```sql
+mysql -u root -p
+alter user 'root'@'localhost' identified by '123456';
+```
+
+#### Linux 安装 MySQL 5.7（通用方式）
 
 ```sh
+# 添加 mysql 用户组和用户
+groupadd mysql
+useradd -r -g mysql mysql
+
+# 解压安装包
+tar -xzvf /data/software/mysql-5.7.13-linux-glibc2.5-x86_64.tar.gz
+
+# 重命名
+mv mysql-5.7.13-linux-glibc2.5-x86_64 mysql
+
+# 授权
+chown -R mysql:mysql ./
+
+# 初始化（记录生成的临时密码）
+bin/mysqld --initialize --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data
+
+# 配置 SSL
+bin/mysql_ssl_rsa_setup --datadir=/usr/local/mysql/data
+
+# 复制配置文件
+cp support-files/my-default.cnf /etc/my.cnf
+cp support-files/mysql.server /etc/init.d/mysql
+
+# 修改启动脚本中的路径
+vim /etc/init.d/mysql
+# 修改 basedir 和 datadir
+
+# 启动 MySQL
+bin/mysqld_safe --user=mysql &
+
+# 登录并设置密码
 mysql -u root -p
+set password=password('A123456');
+
+# 授权远程访问
+grant all privileges on *.* to root@'%' identified by 'A123456';
+flush privileges;
 ```
 
-最后一步，修改密码：
+### Docker 安装
+
+```sh
+# 拉取 MySQL 镜像
+docker pull mysql:8.0
+
+# 运行 MySQL 容器
+docker run -d --name mysql \
+  -e MYSQL_ROOT_PASSWORD=root123 \
+  -e MYSQL_DATABASE=testdb \
+  -p 3306:3306 \
+  -v mysql-data:/var/lib/mysql \
+  mysql:8.0
+
+# 进入容器
+docker exec -it mysql mysql -uroot -proot123
+```
+
+### 配置优化
+
+#### 常用配置参数
+
+```properties
+# Buffer Pool 大小（建议设置为可用内存的 80%）
+innodb_buffer_pool_size=2048M
+
+# 重做日志文件大小
+innodb_log_file_size=256M
+
+# 最大连接数
+max_connections=200
+
+# 查询缓存（MySQL 8.0 已移除）
+# query_cache_size=64M
+# query_cache_type=1
+
+# 字符集
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+
+# 日志配置
+slow_query_log=1
+slow_query_log_file=/var/log/mysql/slow.log
+long_query_time=2
+```
+
+#### 查看配置
 
 ```sql
-alter user 'root'@'localhost'identified by '123456';
+-- 查看数据目录
+show global variables like "%datadir%";
+
+-- 查看存储引擎
+show variables like '%storage_engine%';
+
+-- 查看字符集
+show variables like 'character%';
 ```
 
-### 压测工具mysqlslap
+---
 
-安装MySQL时附带了一个压力测试工具[mysqlslap](https://juejin.im/post/5c6b9c09f265da2d8a55a855)（位于bin目录下）
+## 基本操作
 
-**自动生成sql测试**
+### 启动与停止
 
-mysqlslap --auto-generate-sql -uroot -proot
+#### Linux 系统服务方式
 
-**并发测试**
+```sh
+# 启动
+sudo service mysqld start
+sudo /etc/init.d/mysqld start
 
-mysqlslap --auto-generate-sql --concurrency=100 -uroot -proot
+# 停止
+sudo service mysqld stop
+sudo /etc/init.d/mysqld stop
 
-**多轮测试**
+# 重启
+sudo service mysqld restart
+sudo /etc/init.d/mysqld restart
 
-mysqlslap --auto-generate-sql --concurrency=150 --iterations=10 -uroot -proot
-
-存储引擎测试
-
-mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=innodb -uroot -proot
-
-mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=myisam -uroot -proot
-
-### MYSQL的JSON类型
-
-#### json对象的介绍
-
-在mysql未支持json数据类型时，我们通常使用varchar、blob或text的数据类型存储json字符串，对mysql来说，用户插入的数据只是序列化后的一个普通的字符串，不会对JSON文档本身的语法合法性做检查，文档的合法性需要用户自己保证。在使用时需要先将整个json对象从数据库读取出来，在内存中完成解析及相应的计算处理，这种方式增加了数据库的网络开销并降低处理效率。
-
-从 MySQL 5.7.8 开始，MySQL 支持RFC 7159定义的全部json 数据类型，具体的包含四种基本类型（strings, numbers, booleans,and null）和两种结构化类型（objects and arrays）。可以有效地访问 JSON文档中的数据。与将 JSON 格式的字符串存储在字符串列中相比，该数据类型具有以下优势：
-
-- 自动验证存储在 JSON列中的 JSON 文档。无效的文档会产生错误。
-- 优化的存储格式。存储在列中的 JSON 文档被转换为允许快速读取文档元素的内部格式。当读取 JSON 值时，不需要从文本表示中解析该值，使服务器能够直接通过键或数组索引查找子对象或嵌套值，而无需读取文档中它们之前或之后的所有值。
-
-#### json类型的存储结构
-
-mysql为了提供对json对象的支持，提供了一套将json字符串转为结构化二进制对象的存储方式。json会被转为二进制的doc对象存储于磁盘中（在处理JSON时MySQL使用的utf8mb4字符集，utf8mb4是utf8和ascii的超集）。
-
-doc对象包含两个部分，type和value部分。其中type占1字节，可以表示16种类型：大的和小的json object类型、大的和小的 json array类型、literal类型（true、false、null三个值）、number类型（int6、uint16、int32、uint32、int64、uint64、double类型、utf8mb4 string类型和custom data（mysql自定义类型），具体可以参考源码json_binary.cc和json_binary.h进行学习。
-
-下面进行简单介绍：
-
-```
-type ::=  
-0x00 | // small JSON object  
-0x01 | // large JSON object  
-0x02 | // small JSON array  
-0x03 | // large JSON array  
-0x04 | // literal (true/false/null)  
-0x05 | // int16  
-0x06 | // uint16  
-0x07 | // int32  
-0x08 | // uint32  
-0x09 | // int64  
-0x0a | // uint64  
-0x0b | // double  
-0x0c | // utf8mb4 string  
-0x0f // custom data (any MySQL data type)
+# 查看状态
+sudo service mysqld status
 ```
 
-1. value包含 object、array、literal、number、string和custom-data六种类型，与type的16种类型对应。
-2. object表示json对象类型，由6部分组成：
-3. object ::= element-count size key-entry ***value-entry*** key ***value***  
-   其中:  
-   element-count表示对象中包含的成员（key）个数，在array类型中表示数组元素个数。  
-   size表示整个json对象的二进制占用空间大小。小对象用2Bytes空间表示（最大64K），大对象用4Bytes表示（最大4G）  
-   key-entry可以理解为一个用于指向真实key值的数组。本身用于二分查找，加速json字段的定位。  
-   key-entry由两个部分组成：  
-   key-entry ::= key-offset key-length  
-   其中:  
-   key-offset：表示key值存储的偏移量，便于快速定位key的真实值。  
-   key-length：表示key值的长度，用于分割不同key值的边界。长度为2Bytes，这说明，key值的长度最长不能超过64kb.
-4. value-entry与key-enter功能类似，不同之处在于，value-entry可能存储真实的value值。  
-   value-entry由两部分组成：  
-   value-entry ::= type offset-or-inlined-value  
-   其中：  
-   type表示value类型，如上文所示，支持16种基本类型，从而可以表示各种类型的嵌套。
-5. offset-or-inlined-value：有两层含义，如果value值足够小，可以存储于此，那么就存储数据本身，如果数据本身较大，则存储真实值的偏移用于快速定位。  
-   key 表示key值的真实值，类型为：key ::= utf8mb4-data,这里无需指定key值长度，因为key-entry中已经声明了key的存储长度。同时，在同一个json对象中，key值的长度总是一样的。
+#### Debian/Ubuntu 系统
 
-![](assets/2023-08-10-15-49-08-image.png)
+```sh
+# 启动
+service mysql start
 
-举例说明：
+# 停止
+service mysql stop
 
-![](assets/2023-08-10-15-51-31-image.png)
+# 重启
+service mysql restart
 
-![](assets/2023-08-10-15-52-03-image.png)
+# 查看状态
+service mysql status
+```
 
-![](assets/2023-08-10-15-52-42-image.png)
+#### Docker 方式
 
-需要注意的是：
+```sh
+# 启动容器
+docker start mysql
 
-- JSON对象的Key索引（图中橙色部分）都是排序好的，先按长度排序，长度相同的按照code point排序；Value索引（图中黄色部分）根据对应的Key的位置依次排列，最后面真实的数据存储（图中白色部分）也是如此
-- Key和Value的索引对存储了对象内的偏移和大小，单个索引的大小固定，可以通过简单的算术跳转到距离为N的索引
-- 通过MySQL5.7.16源代码可以看到，在序列化JSON文档时，MySQL会动态检测单个对象的大小，如果小于64KB使用两个字节的偏移量，否则使用四个字节的偏移量，以节省空间。同时，动态检查单个对象是否是大对象，会造成对大对象进行两次解析，源代码中也指出这是以后需要优化的点
-- 现在受索引中偏移量和存储大小四个字节大小的限制，单个JSON文档的大小不能超过4G；单个KEY的大小不能超过两个字节，即64K
-- 索引存储对象内的偏移是为了方便移动，如果某个键值被改动，只用修改受影响对象整体的偏移量
-- 索引的大小现在是冗余信息，因为通过相邻偏移可以简单的得到存储大小，主要是为了应对变长JSON对象值更新，如果长度变小，JSON文档整体都不用移动，只需要当前对象修改大小
-- 现在MySQL对于变长大小的值没有预留额外的空间，也就是说如果该值的长度变大，后面的存储都要受到影响
-- 结合JSON的路径表达式可以知道，JSON的搜索操作只用反序列化路径上涉及到的元素，速度非常快，实现了读操作的高性能
-- MySQL对于大型文档的变长键值的更新操作可能会变慢，可能并不适合写密集的需求
+# 停止容器
+docker stop mysql
 
-#### json类型基本操作
+# 重启容器
+docker restart mysql
+```
 
-##### json数据插入
+### 用户管理
 
-son类型数据插入时有两种方式，一种是基于字符串格式插入，另一种是基于json_object()函数，在使用json_object()函数只需按k-v顺序，以,符号隔开顺序插入即可，MYSQL会自动验证 JSON 文档，无效的文档会产生错误。
+#### 创建用户
 
 ```sql
-mysql> CREATE TABLE t1 (jdoc JSON);
-Query OK, 0 rows affected (0.20 sec)
+CREATE USER 'username'@'host' IDENTIFIED BY 'password';
 
-mysql> INSERT INTO t1 VALUES('{"key1": "value1", "key2": "value2"}');
-Query OK, 1 row affected (0.01 sec)
-
-mysql> INSERT INTO t1 VALUES('[1, 2,');
-ERROR 3140 (22032) at line 2: Invalid JSON text:
-"Invalid value." at position 6 in value (or column)  '[1, 2,'.
+-- 示例
+CREATE USER 'dog'@'localhost' IDENTIFIED BY '123456';
+CREATE USER 'admin'@'%' IDENTIFIED BY 'admin123';
 ```
 
-当一个字符串被解析并发现是一个有效的 JSON 文档时，它也会被规范化：具有与文档中先前找到的键重复的键的成员被丢弃（即使值不同）。以下第一个sql中通过 JSON_OBJECT()调用生成的对象值不包括第二个key1元素，因为该键名出现在值的前面；第二个sql中只保留了x第一次出现的值：
+参数说明：
+- `username`：用户名
+- `host`：指定该用户在哪个主机上可以登陆
+  - `localhost`：本地用户
+  - `%`：任意远程主机
+  - `192.168.1.%`：指定网段
+- `password`：密码（可为空，为空则无需密码登录）
+
+#### 设置与修改密码
 
 ```sql
-mysql> SELECT JSON_OBJECT('key1', 1, 'key2', 'abc', 'key1', 'def');
-+------------------------------------------------------+
-| JSON_OBJECT('key1', 1, 'key2', 'abc', 'key1', 'def') |
-+------------------------------------------------------+
-| {"key1": 1, "key2": "abc"}                           |
-+------------------------------------------------------+
+-- 修改指定用户密码
+SET PASSWORD FOR 'username'@'host' = PASSWORD('newpassword');
 
-mysql> INSERT INTO t1 VALUES
-     >     ('{"x": 17, "x": "red"}'),
-     >     ('{"x": 17, "x": "red", "x": [3, 5, 7]}');
+-- 修改当前用户密码
+SET PASSWORD = PASSWORD('newpassword');
 
-mysql> SELECT c1 FROM t1;
-+-----------+
-| c1        |
-+-----------+
-| {"x": 17} |
-| {"x": 17} |
-+-----------+
+-- 示例
+SET PASSWORD FOR 'pig'@'%' = PASSWORD("123456");
 ```
 
-##### json合并
-
-MySQL 5.7支持JSON_MERGE（）的合并算法，多个对象合并时产生一个对象。  可将多个数组合并为一个数组：
+#### 授权
 
 ```sql
-mysql> SELECT JSON_MERGE('[1, 2]', '["a", "b"]', '[true, false]');
-+-----------------------------------------------------+
-| JSON_MERGE('[1, 2]', '["a", "b"]', '[true, false]') |
-+-----------------------------------------------------+
-| [1, 2, "a", "b", true, false]                       |
-+-----------------------------------------------------+
+-- 授予权限
+GRANT privileges ON databasename.tablename TO 'username'@'host';
+
+-- 示例
+GRANT SELECT, INSERT ON testdb.* TO 'user1'@'localhost';
+GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;
 ```
 
-当合并数组与对象时，会将对象转换为新数组进行合并：
+常用权限：`SELECT`、`INSERT`、`UPDATE`、`DELETE`、`CREATE`、`DROP`、`ALTER`、`ALL PRIVILEGES`
+
+#### 撤销权限
 
 ```sql
-mysql> SELECT JSON_MERGE('[10, 20]', '{"a": "x", "b": "y"}');
-+------------------------------------------------+
-| JSON_MERGE('[10, 20]', '{"a": "x", "b": "y"}') |
-+------------------------------------------------+
-| [10, 20, {"a": "x", "b": "y"}]                 |
-+------------------------------------------------+
+REVOKE privilege ON databasename.tablename FROM 'username'@'host';
+
+-- 示例
+REVOKE INSERT ON testdb.* FROM 'user1'@'localhost';
 ```
 
-如果多个对象具有相同的键，则生成的合并对象中该键的值是包含键值的数组：
+#### 删除用户
 
 ```sql
-mysql> SELECT JSON_MERGE('{"a": 1, "b": 2}', '{"c": 3, "a": 4}');
-+----------------------------------------------------+
-| JSON_MERGE('{"a": 1, "b": 2}', '{"c": 3, "a": 4}') |
-+----------------------------------------------------+
-| {"a": [1, 4], "b": 2, "c": 3}                      |
-+----------------------------------------------------+
+DROP USER 'username'@'host';
+
+-- 示例
+DROP USER 'dog'@'localhost';
 ```
 
-MySQL 8.0.3（及更高版本）支持两种合并算法，由函数 JSON_MERGE_PRESERVE()和 JSON_MERGE_PATCH(). 它们在处理重复键的方式上有所不同：JSON_MERGE_PRESERVE()保留重复键的值（与5.7版本的JSON_MERGE（）相同），而 JSON_MERGE_PATCH()丢弃除最后一个值之外的所有值。具体的
-
-- JSON_MERGE_PRESERVE() 函数接受两个或多个 JSON 文档并返回组合结果。如果参数为两个object,相同的key将会把value合并为array(即使value也相同，也会合并为array),不同的key则直接合并。如果其中一个参数为json array，则另一个json object整体作为一个元素，加入array结果。
-- JSON_MERGE_PATCH()函数接受两个或多个 JSON 文档并返回组合结果。如果参数为两个object,相同的key的value将会被后面参数的value覆盖,不同的key则直接合并。如果合并的是数组，将按照“最后一个重复键获胜”逻辑仅保留最后一个参数。
+#### 查看用户
 
 ```sql
-mysql> SELECT JSON_MERGE_PRESERVE('{"a":1,"b":2}', '{"a":3,"c":3}');
-+-------------------------------------------------------+
-| JSON_MERGE_PRESERVE('{"a":1,"b":2}', '{"a":3,"c":3}') |
-+-------------------------------------------------------+
-| {"a": [1, 3], "b": 2, "c": 3}                         |
-+-------------------------------------------------------+
-1 row in set (0.01 sec)
-mysql> SELECT JSON_MERGE_PATCH('{"a":1,"b":2}', '{"a":3,"c":3}');
-+----------------------------------------------------+
-| JSON_MERGE_PATCH('{"a":1,"b":2}', '{"a":3,"c":3}') |
-+----------------------------------------------------+
-| {"a": 3, "b": 2, "c": 3}                           |
-+----------------------------------------------------+
-1 row in set (0.02 sec)
+-- 查看所有用户
+SELECT user, host FROM mysql.user;
 
-mysql> SELECT JSON_MERGE_PRESERVE('["a", 1]', '"a"','{"key": "value"}');
-+-----------------------------------------------------------+
-| JSON_MERGE_PRESERVE('["a", 1]', '"a"','{"key": "value"}') |
-+-----------------------------------------------------------+
-| ["a", 1, "a", {"key": "value"}]                           |
-+-----------------------------------------------------------+
-1 row in set (0.00 sec)
-mysql> SELECT JSON_MERGE_PATCH('["a", 1]', '"a"','{"key": "value"}') ;
-+--------------------------------------------------------+
-| JSON_MERGE_PATCH('["a", 1]', '"a"','{"key": "value"}') |
-+--------------------------------------------------------+
-| {"key": "value"}                                       |
-+--------------------------------------------------------+
-1 row in set (0.01 sec)
+-- 查看用户权限
+SHOW GRANTS FOR 'username'@'host';
 ```
 
-##### json数据查询
+### 数据库管理
 
-MySQL 5.7.7+本身提供了很多原生的函数以及路径表达式来方便用户访问JSON数据。  
-JSON_EXTRACT()函数用于解析json对象，->符号是就一种JSON_EXTRACT()函数的等价模式。例如查询上面t1表中 jdoc字段中key值为x的值
+#### 创建数据库
 
 ```sql
-SELECT jdoc->'$.x' FROM t1;
-SELECT JSON_EXTRACT(jdoc,'$.x') FROM t1;
+-- 创建数据库（指定字符集）
+CREATE DATABASE database_name CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 示例
+CREATE DATABASE mydb CHARACTER SET utf8mb4;
 ```
 
-JSON_EXTRACT返回值会带有” “,如果想获取原本的值可以使用JSON_UNQUOTE
+#### 查看数据库
 
 ```sql
-mysql> SELECT JSON_EXTRACT('{"id": 14, "name": "Aztalan"}', '$.name');
-+---------------------------------------------------------+
-| JSON_EXTRACT('{"id": 14, "name": "Aztalan"}', '$.name') |
-+---------------------------------------------------------+
-| "Aztalan"                                               |
-+---------------------------------------------------------+
+-- 查看所有数据库
+SHOW DATABASES;
 
-mysql> SELECT JSON_UNQUOTE(json_extract('{"id": 14, "name": "Aztalan"}', '$.name'));;
-+-----------------------------------------------------------------------+
-| JSON_UNQUOTE(json_extract('{"id": 14, "name": "Aztalan"}', '$.name')) |
-+-----------------------------------------------------------------------+
-| Aztalan                                                               |
-+-----------------------------------------------------------------------+
+-- 查看数据库创建信息
+SHOW CREATE DATABASE database_name;
 ```
 
-json路径的语法：
-
-```
-pathExpression:
-    scope[(pathLeg)*]
-
-pathLeg:
-    member | arrayLocation | doubleAsterisk
-
-member:
-    period ( keyName | asterisk )
-
-arrayLocation:
-    leftBracket ( nonNegativeInteger | asterisk ) rightBracket
-
-keyName:
-    ESIdentifier | doubleQuotedString
-
-doubleAsterisk:
-    '**'
-
-period:
-    '.'
-
-asterisk:
-    '*'
-
-leftBracket:
-    '['
-
-rightBracket:
-    ']'
-```
-
-以 `json { “a”: [ [ 3, 2 ], [ { “c” : “d” }, 1 ] ], “b”: { “c” : 6 }, “one potato”: 7, “b.c” : 8 }` 为例：
-
-```
-$.a[1] 获取的值为 [ { “c” : “d” }, 1 ] $.b.c 获取的值为 6  
-$.”b.c” 获取的值为 8（因为键名包含不合法的表达式所以需要使用引号）
-
-
-mysql>  select json_extract('{ "a": [ [ 3, 2 ], [ { "c" : "d" }, 1 ] ], "b": { "c" : 6 }, "one potato": 7, "b.c" : 8 }','$**.c');
-+-------------------------------------------------------------------------------------------------------------------+
-| JSON_EXTRACT('{ "a": [ [ 3, 2 ], [ { "c" : "d" }, 1 ] ], "b": { "c" : 6 }, "one potato": 7, "b.c" : 8 }','$**.c') |
-+-------------------------------------------------------------------------------------------------------------------+
-| ["d", 6]                                                                                                          |
-+-------------------------------------------------------------------------------------------------------------------+
-
-$**.c 匹配到了两个路径 :
-$.a[1].c 获取的值是”d”
-$.b.c 获取的值为 6
-```
-
-##### json数据更新
-
-一些函数采用现有的 JSON 文档，以某种方式对其进行修改，然后返回结果修改后的文档。路径表达式指示在文档中进行更改的位置。例如，JSON_SET()、 JSON_INSERT()和 JSON_REPLACE()函数各自采用现有的 JSON 文档，加上一个或多个路径和值对，来描述修改文档和要更新的值。这些函数在处理文档中现有值和不存在值的方式上有所不同。
-具体如下
+#### 删除数据库
 
 ```sql
-mysql> SET @j = '["a", {"b": [true, false]}, [10, 20]]';
+DROP DATABASE database_name;
 ```
 
-JSON_SET()替换存在的路径的值并添加不存在的路径的值：
+#### 选择数据库
 
 ```sql
-mysql> SELECT JSON_SET(@j, '$[1].b[0]', 1, '$[2][2]', 2);
-+--------------------------------------------+
-| JSON_SET(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
-+--------------------------------------------+
-| ["a", {"b": [1, false]}, [10, 20, 2]]      |
-+--------------------------------------------+
+USE database_name;
 ```
 
-在这种情况下，路径$[1].b[0]选择一个现有值 ( true)，该值将替换为路径参数 ( 1) 后面的值。该路径$[2][2]不存在，因此将相应的值 ( 2) 添加到 选择的值中$[2]。  
-JSON_INSERT()添加新值但不替换现有值：
+#### 表管理
 
 ```sql
-mysql> SELECT JSON_INSERT(@j, '$[1].b[0]', 1, '$[2][2]', 2);
-+-----------------------------------------------+
-| JSON_INSERT(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
-+-----------------------------------------------+
-| ["a", {"b": [true, false]}, [10, 20, 2]]      |
-+-----------------------------------------------+
+-- 查看所有表
+SHOW TABLES;
+
+-- 查看表结构
+DESC table_name;
+SHOW CREATE TABLE table_name;
 ```
 
-JSON_REPLACE()替换现有值并忽略新值：
-
-```sql
-mysql> SELECT JSON_REPLACE(@j, '$[1].b[0]', 1, '$[2][2]', 2);
-+------------------------------------------------+
-| JSON_REPLACE(@j, '$[1].b[0]', 1, '$[2][2]', 2) |
-+------------------------------------------------+
-| ["a", {"b": [1, false]}, [10, 20]]             |
-+------------------------------------------------+
-```
-
-JSON_REMOVE()接受一个 JSON 文档和一个或多个路径，这些路径指定要从文档中删除的值。返回值是原始文档减去文档中存在的路径选择的值：
-
-```sql
-mysql> SELECT JSON_REMOVE(@j, '$[2]', '$[1].b[1]', '$[1].b[1]');
-+---------------------------------------------------+
-| JSON_REMOVE(@j, '$[2]', '$[1].b[1]', '$[1].b[1]') |
-+---------------------------------------------------+
-| ["a", {"b": [true]}]                              |
-+---------------------------------------------------+
-
-$[2]匹配[10, 20] 并删除它。
-$[1].b[1]匹配 元素false中 的第一个实例b并将其删除。
-不匹配的第二个实例$[1].b[1]：该元素已被删除，路径不再存在，并且没有效果。
-```
-
-##### json比较与排序
-
-JSON值可以使用=, <, <=, >, >=, <>, !=, <=>等操作符，BETWEEN, IN,GREATEST, LEAST等操作符现在还不支持。JSON值使用的两级排序规则，第一级基于JSON的类型，类型不同的使用每个类型特有的排序规则。
-JSON类型按照优先级从高到低为：
-
-```
-BLOB
-BIT
-OPAQUE
-DATETIME
-TIME
-DATE
-BOOLEAN
-ARRAY
-OBJECT
-STRING
-INTEGER, DOUBLE
-NULL
-```
-
-优先级高的类型大，不用再进行其他的比较操作；如果类型相同，每个类型按自己的规则排序。具体的规则如下：
-
-- BLOB/BIT/OPAQUE: 比较两个值前N个字节，如果前N个字节相同，短的值小
-- DATETIME/TIME/DATE: 按照所表示的时间点排序
-- BOOLEAN: false小于true
-- ARRAY: 两个数组如果长度和在每个位置的值相同时相等，如果不想等，取第一个不相同元素的排序结果，空元素最小。例：[] < [“a”] < [“ab”] < [“ab”, “cd”, “ef”] < [“ab”, “ef”]
-- OBJECT: 如果两个对象有相同的KEY，并且KEY对应的VALUE也都相同，两者相等。否则，两者大小不等，但相对大小未规定。例：{“a”: 1, “b”: 2} = {“b”: 2, “a”: 1}
-- STRING: 取两个STRING较短的那个长度为N，比较两个值utf8mb4编码的前N个字节，较短的小，空值最小。例：”a” < “ab” < “b” < “bc”；此排序等同于使用 collat​​ion 对 SQL 字符串进行排序utf8mb4_bin。因为 utf8mb4_bin是二进制排序规则，所以 JSON 值的比较区分大小写：”A” < “a”
-- INTEGER/DOUBLE: 包括精确值和近似值的比较
-
-#### JSON的索引
-
-现在MySQL不支持对JSON列进行索引，官网文档的说明是：
-
-JSON columns cannot be indexed. You can work around this restriction by creating an index on a generated column that extracts a scalar value from the JSON column.
-
-虽然不支持直接在JSON列上建索引，但MySQL规定，可以首先使用路径表达式对JSON文档中的标量值建立虚拟列，然后在虚拟列上建立索引。这样用户可以使用表达式对自己感兴趣的键值建立索引。举个具体的例子来说明：
-
-```sql
-ALTER TABLE features ADD feature_street VARCHAR(30) AS (JSON_UNQUOTE(feature->"$.properties.STREET"));
-ALTER TABLE features ADD INDEX (feature_street);
-```
-
-两个步骤，可以对feature列中properties键值下的STREET键(feature->”$.properties.STREET”)创建索引。
-
-其中，feature_street列就是新添加的虚拟列。之所以取名虚拟列，是因为与它对应的还有一个存储列(stored column)。它们最大的区别为虚拟列只修改数据库的metadata，并不会存储真实的数据在硬盘上，读取过程也是实时计算的方式；而存储列会把表达式的列存储在硬盘上。两者使用的场景不一样，默认情况下通过表达式生成的列为虚拟列。
-
-这样虚拟列的添加和删除都会非常快，而在虚拟列上建立索引跟传统的建立索引的方式并没有区别，会提高虚拟列读取的性能，减慢整体插入的性能。虚拟列的特性结合JSON的路径表达式，可以方便的为用户提供高效的键值索引功能。
-
-#### 总结
-
-1. JSON类型无须预定义字段，适合拓展信息的存储
-2. 单个JSON文档的大小不能超过4G；单个KEY的大小不能超过两个字节，即64K
-3. JSON类型适合应用于不常更新的静态数据
-4. 对搜索较频繁的数据建议增加虚拟列并建立索引
-
-> [MYSQL中JSON类型介绍 | 京东物流技术团队 - 京东云开发者的独家号 - 开发者头条](https://toutiao.io/posts/mqg9ogj)
-
---- 
-
-## MySQL锁
-
-相对于其他的数据库而言，MySQL的[锁机制](https://blog.csdn.net/mysteryhaohao/article/details/51669741)比较简单，最显著的特点就是不同的存储引擎支持不同的锁机制。根据不同的存储引擎，MySQL中锁的特性可以大致归纳如下：
-
-| **存储引擎** | **行锁** | **表锁** | **页锁** |
-| -------- | ------ | ------ | ------ |
-| MyISAM   |        | √      |        |
-| BDB      |        | √      | √      |
-| InnoDB   | √      | √      |        |
-
-### 表锁
-
-开销小，加锁快；不会出现死锁；锁定力度大，发生锁冲突概率高，并发度最低。
-
-- **执行特定 DDL 操作**：当执行 ALTER TABLE 语句来修改表结构（如添加列、修改列的数据类型、删除列等操作）时，InnoDB 会对整个表施加表锁。
-- **使用 LOCK TABLES 语句**：用户显式地使用 LOCK TABLES 语句对表进行锁定。这种情况通常是在用户明确知道需要对多个表进行操作且需要保证操作的原子性和数据一致性时使用。
-
-### 行锁
-
-开销大，加锁慢；会出现死锁；锁定粒度小，发生锁冲突的概率低，并发度高。
-
-- **基于索引进行数据操作**：当通过索引列对数据进行修改（如 UPDATE、DELETE 操作）或进行有索引条件的 SELECT...FOR UPDATE（用于在事务中对查询结果的行进行锁定）操作时，InnoDB 会对涉及的行施加行锁。
-- **无索引的 UPDATE 或 DELETE 操作（会导致锁升级）**：如果在 UPDATE 或 DELETE 操作中没有使用索引，InnoDB 会对表进行全表扫描来找到要操作的行。在这种情况下，如果操作影响的行数超过一定比例（通常约 50%，但具体值可能因数据库配置而异），InnoDB 可能会将行锁升级为表锁。
-
-### 页锁
-
-开销和加锁速度介于表锁和行锁之间；会出现死锁；锁定粒度介于表锁和行锁之间，并发度一般。
-
-- **数据存储在同一个页且事务操作涉及这些数据时**：InnoDB 存储引擎将数据存储在页（通常为 16KB 大小）中，当多个行的数据存储在同一个页上，且事务对这些行进行操作时，InnoDB 会对该页施加页锁。这种情况通常在事务操作的数据行在物理存储上比较集中时出现。
-
-### 间隙锁
-
-MySQL 默认的事务隔离级别是可重复读（REPEATABLE READ），在这种隔离级别下理论上是不会出现不可重复读，但可能会出现幻读现象。为了解决幻读，在 MySQL 的 InnoDB 存储引擎中，在特定情况下会自动添加间隙锁，具体如下：
-
-**一、可重复读隔离级别下的范围查询**
-
-- **基于索引的范围查询**
-  - 当事务隔离级别为可重复读（REPEATABLE READ）时，在**对有索引的列进行范围查询**时，**InnoDB 会自动添加间隙锁**。例如，执行`SELECT * FROM table WHERE indexed_column > 10 AND indexed_column < 20`这样的查询（其中`indexed_column`是有索引的列），InnoDB 会对`indexed_column`值在`(10, 20)`这个区间内的记录以及区间两端的间隙添加间隙锁。
-
-**二、唯一性索引的临界值查询**
-
-- **临界值情况**
-  - 对于唯一性索引（如主键索引或唯一索引），当进行等值查询且查询的值不存在时，InnoDB 也会自动添加间隙锁。例如，有一个表的主键为`id`，执行`SELECT * FROM table WHERE id = 100`，而表中没有`id = 100`的记录，此时 InnoDB 会对`id`值在`(99, 101)`这个间隙添加间隙锁（假设`99`和`101`是表中与`100`相邻的主键值）。
-
-**三、外键约束相关操作**
-
-- **外键检查**
-  - 当在涉及外键约束的表上进行操作时，InnoDB 也会根据情况自动添加间隙锁。例如，在一个有外键关联的父子表结构中，当对父表进行删除或更新操作时，如果子表中存在与父表关联的记录，InnoDB 会在子表的外键索引上添加间隙锁，以确保外键约束的一致性。
-
-### 死锁
-
-数据库死锁是指两个或多个事务在数据库中互相等待对方释放已经锁定的资源，从而导致这些事务都无法继续执行的现象。
-
-#### 原因
-
-死锁通常由以下几个因素共同作用引起：
-
-1. **互斥条件**：事务需要互斥地访问某些资源，即一个事务锁定资源后，其他事务无法访问该资源。
-2. **占有等待**：事务已经持有某个资源的锁，但仍需要进一步获取其他资源的锁。
-3. **不可抢占**：已经分配给事务的资源不能被抢占，只能在事务完成后释放。
-4. **循环等待**：多个事务之间形成了一个循环等待的状态，每个事务都在等待其他事务释放所需的资源锁。
-
-#### 示例
-
-假设我们有两个事务 `T1` 和 `T2`，以及两个数据项 `A` 和 `B`。
-
-- `T1` 首先获得了 `A` 的锁，并尝试获得 `B` 的锁。
-- `T2` 首先获得了 `B` 的锁，并尝试获得 `A` 的锁。
-
-此时，`T1` 需要等待 `T2` 释放 `B` 的锁，而 `T2` 需要等待 `T1` 释放 `A` 的锁。这就形成了一个死锁状态。
-
-> 比如账户 A 和账户 B，当前账户 A 中有 1000 元，账户 B 中有 2000 元。
-> 
-> 事务 T1从账户 A 取出的钱存入账户 B，先锁定账户 A。
-> 
-> 事务 T2 成功锁定账户 B，把从账户 B 取出的钱存入账户 A。
-> 
-> 此时，T1 在等待 T2 释放账户 B，而 T2 在等待 T1 释放账户 A，形成了一个循环等待的局面，即产生了死锁。
-
-#### 如何避免
-
-避免死锁，可以采用以下几种预防措施：
-
-1. **锁定顺序**：确保所有事务按照相同的顺序请求资源锁。例如，事务总是先锁定 `A`，然后再锁定 `B`。
-2. **一次性锁定**：事务开始时就锁定所有需要的资源，直到事务结束时才释放锁。（悲观锁）
-3. **超时机制**：为事务设置超时时间，如果在规定时间内无法完成，则回滚事务。（乐观锁）
-4. **死锁预防算法**：使用专门的算法来预防死锁，如银行家算法（Banker's Algorithm）。
-
-#### 死锁处理
-
-一旦检测到死锁，数据库管理系统通常采用以下几种方法来处理：
-
-1. **回滚事务**：选择其中一个或多个事务进行回滚，以解除死锁状态。通常选择代价最小的事务进行回滚。
-2. **撤销事务**：撤销部分事务，释放锁，然后重新执行事务。
-3. **等待图重构造**：重新构造等待图，以消除环路。
-
-##### MySQL 中的死锁处理
-
-在 MySQL 的 InnoDB 存储引擎中，死锁的处理主要通过以下机制实现：
-
-1. **自动检测**：InnoDB 会自动检测死锁，并选择一个事务进行回滚以解除死锁。
-2. **日志记录**：当检测到死锁时，InnoDB 会记录相关信息到错误日志中，以便后续分析。
-3. **死锁报告**：死锁发生时，InnoDB 会生成一个详细的死锁报告，展示参与死锁的事务及其锁定的资源。
-
-## MySQL索引
-
-### 索引结构
-
-#### B+树
-
-- B树的特点：
-  
-  - 节点排序，**每个节点可以包含多个子节点**
-  
-  - 一个节点可以存多个元素，多个元素之间有序
-  
-  - **所有键值都存储在树中**
-
-- B+树的特点：
-  
-  - 拥有B树的特点
-  
-  - 叶子节点之间有指针
-  
-  - 非叶子节点上的元素在叶子节点上都冗余了，也就是叶子节点中存储了所有的元素，并且排好顺序
-  
-  - **数据只存储在叶子节点**，**非叶子节点仅存储索引信息**
-
-### 索引类型
-
-主要的索引类型：
-
-**普通索引（INDEX）**
-
-- 这是最基本的索引类型，没有任何限制，主要用于加速对数据的查询。
-  
-  ```sql
-  CREATE INDEX index_name ON table_name (column_name);
-  ```
-
- **唯一索引（UNIQUE INDEX）**
-
-- 确保索引列的值是唯一的，可用于约束数据的唯一性，类似于在列上定义了唯一性约束。
-
-- 适用于需要保证某个字段或者几个字段组合起来的值在整个表中是唯一的情况，比如用户表中的用户名。
-  
-  ```sql
-  CREATE UNIQUE INDEX index_name ON table_name (column_name);
-  ```
-
-**主键索引（PRIMARY KEY）**
-
-- 它是一种特殊的唯一索引，每个表只能有一个主键索引。
-
-- 主键列的值不能为空且唯一，用于唯一标识表中的每一行记录。
-  
-  ```sql
-  ALTER TABLE table_name ADD PRIMARY KEY (column_name);
-  ```
-
-**组合索引（COMPOSITE INDEX）**
-
-- 也称为联合索引，是基于多个列创建的索引。
-
-- 在查询条件涉及多个列并且这些列经常一起使用时，可以提高查询效率。
-
-- 在创建组合索引时，要注意索引列的顺序，应该按照使用的频率和选择性从高到低进行排列。
-  
-  ```sql
-  CREATE INDEX index_name ON table_name (column1, column2,...);
-  ```
-
-**全文索引（FULLTEXT INDEX）**
-
-- 用于在文本数据类型（如 CHAR、VARCHAR、TEXT）的列上进行全文搜索。
-
-- 适用于对大段文本内容进行模糊搜索的场景，比如在文章内容中搜索关键词。
-  
-  ```sql
-  CREATE FULLTEXT INDEX index_name ON table_name (column_name);
-  ```
-
-### explain 的索引连接类型
-
-1. **ALL（全表扫描）**
-   
-   - 含义：表示 MySQL 需要遍历整个表来找到匹配的行，没有使用索引。
-   - 示例场景：如果在查询条件中没有合适的索引可以利用，或者查询条件涉及到对大部分数据的操作，MySQL 可能会选择全表扫描。比如对一个没有索引的大表进行查询，`SELECT * FROM table_name WHERE non_indexed_column = 'value';`可能导致`ALL`类型的执行计划。
-
-2. **index（索引全扫描）**
-   
-   - 含义：MySQL 使用索引来遍历整个表，但只读取索引中的数据，而不是实际的行数据。
-   - 示例场景：当只需要获取索引列的值，而不需要其他列的数据时，可能会出现这种情况。例如，`SELECT indexed_column FROM table_name;`，如果`indexed_column`上有索引，且查询只涉及该列，可能会使用`index`类型的扫描。
-
-3. **range（索引范围扫描）**
-   
-   - 含义：根据索引的范围来查找数据，通常用于`<`、`>`、`BETWEEN`、`IN`等操作符的查询条件。
-   - 示例场景：在一个有索引的列上进行范围查询时，如`SELECT * FROM table_name WHERE indexed_column > 10 AND indexed_column < 20;`，如果`indexed_column`上有索引，就会使用`range`类型的索引范围扫描。
-
-4. **ref（非唯一索引扫描）**
-   
-   - 含义：表示 MySQL 根据索引的等值匹配来查找数据，通常用于连接操作或者基于非唯一索引的等值查询。
-   - 示例场景：当通过一个非唯一索引列进行等值查询时，例如`SELECT * FROM table_name JOIN other_table ON table_name.indexed_column = other_table.column;`，如果`indexed_column`上有非唯一索引，就会使用`ref`类型的索引扫描。
-
-5. **eq_ref（唯一索引扫描）**
-   
-   - 含义：类似于`ref`，但它是基于唯一索引或者主键的等值匹配，能够更精确地定位到一行数据。
-   - 示例场景：在进行连接操作时，如果连接条件是基于唯一索引或者主键的等值匹配，就会使用`eq_ref`类型的索引扫描。比如`SELECT * FROM table_name JOIN other_table ON table_name.primary_key = other_table.column;`，其中`primary_key`是表`table_name`的主键。
-
-6. **const（常量值查询）**
-   
-   - 含义：当 MySQL 能够根据索引直接定位到一行数据，并且这行数据在查询过程中是常量时，就会使用`const`类型。
-   - 示例场景：查询条件是基于主键或者唯一索引的等值查询，并且能够直接定位到唯一的一行数据，例如`SELECT * FROM table_name WHERE primary_key = 1;`，其中`primary_key`是主键。
-
-7. **system（系统表查询）**
-   
-   - 含义：这是一种特殊的情况，当查询的表只有一行数据（系统表或者临时表）时，会使用`system`类型。
-   - 示例场景：在查询某些系统信息或者临时创建的只有一行数据的表时可能会出现这种情况，不过这种情况在实际应用中比较少见。
-
-### 索引优化-MRR
-
-> MRR针对于辅助索引上的范围查询进行优化,收集辅助索引对应主键rowid。进行排序后回表查询，随机IO转顺序IO
-
-#### 介绍
-
-当我们需要对大表(基于辅助索引)进行范围扫描时，会导致产生许多随机/O。而对于普通磁盘来说，随机的性能很差，会遇到瓶颈，在 MySQL 5.6/5.7和MariaDB5.3/5.5/10.0/10.1版本里对这种情况进行了优化，一个新的名词 **Multi Range Read([MRR](https://www.jianshu.com/p/3d9b9b4ea186))**出现了，优化器会先扫描辅助索引，然后收集每行的主键（rowid ），并对主键进行排序（排序结果存储到read_rnd_buffer)，此时就可以用主键顺序访问基表，即用顺序IO代替随机IO。**MRR 在本质上是一种用空间换时间的算法**。
-
-MRR 能够提升性能的核心在于，这条查询语句在索引上做的是一个范围查询（也就是说，这是一个多值查询），可以得到足够多的主键id。这样通过排序以后，再去主键索引查数据，才能体现出“顺序性”的优势。所以MRR优化可用于range，ref，eq_ref类型的查询。
-
-> 注意：MRR 只是针对优化回表查询的速度，当不需要回表访问的时候，MRR就失去意义了（比如覆盖索引）
-
-#### 开启MRR
-
-mysql默认开启MRR优化。但是由优化器决定是否真正使用MRR（mrr=on,mrr_cost_based=on）。
-
-```
--- 查询MRR的开启状态
-SHOW VARIABLES LIKE '%optimizer_switch%'
-```
-
-> mrr=on,mrr_cost_based=on
-
-## MVCC
-
-MVCC(Mutil-Version Concurrency Control)，就是**多版本并发控制**。MVCC 是一种并发控制的方法，一般在数据库管理系统中，实现对数据库的并发访问。
-
-MVCC的过程，本质就是访问版本链，并判断哪个版本可见的过程。
-
-Mysql的大多数事务型存储引擎实现的都不是简单的行级锁。基于提升并发性能的考虑，他们一般都同时实现了MVCC.实现了非阻塞的读操作，写操作也只锁定必要的行。在Mysql的InnoDB引擎中就是指在已提交读(READ COMMITTD)和可重复读(REPEATABLE READ)这两种隔离级别下的事务对于SELECT操作会访问版本链中的记录的过程。
-
-### 行记录
-
-在Mysql中MVCC是在Innodb存储引擎中得到支持的，Innodb为每行记录都实现了三个隐藏字段：
-
-- **6字节的事务ID（DB_TRX_ID ）**
-  
-  最近修改(`修改/插入`)事务ID：记录创建这条记录/**最后一次修改该记录的事务ID**
-
-- **7字节的回滚指针（DB_ROLL_PTR）**
-  
-  回滚指针，指向这条记录的上一个版本（undo log 多版本链）
-
-- **隐藏的ID（DB_ROW_ID）**
-  
-  隐含的自增ID（隐藏主键），如果数据表没有主键，InnoDB会自动以`DB_ROW_ID`产生一个聚簇索引
-
-- deleted_bit
-  
-  实际还有一个删除flag隐藏字段, 既记录被更新或删除并不代表真的删除，而是删除flag变了
-
-每开始一个新的事务，系统版本号都会自动递增。事务开始时刻的系统版本号会作为事务的版本号，用来和查询到的每行记录的版本号进行比较。
-
-这就使得别的事务可以修改这条记录，反正每次修改都会在版本链中记录。SELECT可以去版本链中拿记录，这就实现了读-写，写-读的并发执行，提升了系统的性能。
-
-从前面的分析可以看出，为了实现InnoDB的MVCC机制，更新或者删除操作都只是设置一下老记录的deleted_bit，并不真正将过时的记录删除。
-
-为了节省磁盘空间，InnoDB有专门的purge线程来清理deleted_bit为true的记录。为了不影响MVCC的正常工作，purge线程自己也维护了一个read view（这个read view相当于系统中最老活跃事务的read view）;如果某个记录的deleted_bit为true，并且DB_TRX_ID相对于purge线程的read view可见，那么这条记录一定是可以被安全清除的。
-
-### 当前读和快照读
-
-#### 快照读（Snapshot Read）
-
-快照读是指读取数据时返回的是数据的某个历史版本（快照），而不是当前最新的版本。这种读取方式不会阻塞其他事务的写操作，也不会被其他事务的写操作所阻塞，因此可以提供更高的并发性。
-
-- 快照读是基于 MVCC（多版本并发控制）机制实现的，它读取的是事务开始时刻的数据库的一致性快照。在这个事务中，无论其他事务对数据进行了怎样的修改（提交或未提交），该事务看到的都是自己开始时刻的数据版本。
-- 当事务执行普通的 SELECT 语句时，InnoDB 会根据事务开始的时间点，从数据的多个版本中选择出符合条件的版本数据进行返回。
-
-#### 发生条件
-
-快照读通常发生在以下事务隔离级别中：
-
-1. **READ UNCOMMITTED**：最低的隔离级别，允许读取未提交的数据，不使用快照读。
-2. **READ COMMITTED**：读取已提交的数据，使用快照读。每一次读取前都会生成一个快照。
-3. **REPEATABLE READ**：可重复读，使用快照读。仅在一个事务中，第一次读取前生成一个快照。
-4. **SERIALIZABLE**：最高的隔离级别，使用快照读，但所有读取和更新都加锁，相当于全局序列化执行事务。
-
-#### 特点
-
-- **非阻塞性**：快照读不会阻塞其他事务的写操作，也不会被其他事务的写操作所阻塞。
-- **可重复性**：在同一事务中多次读取同一行数据时，返回的结果是一致的，不会受到其他事务的影响。
-- **不可见性**：快照读可以看到其他事务提交之前的数据版本，但看不到未提交的数据。
-
-### 当前读（Current Read）
-
-#### 定义
-
-当前读是指读取数据时返回的是数据的当前最新版本。这种读取方式通常会阻塞其他事务的写操作，或者被其他事务的写操作所阻塞，因此并发性较低，但可以获得最新的数据版本。
-
-#### 发生条件
-
-当前读通常发生在以下情况下：
-
-1. **带有 `FOR UPDATE` 或 `WITH LOCK` 的 `SELECT` 语句**：这类语句需要锁定数据行，因此会进行当前读。
-2. **`UPDATE` 或 `DELETE` 语句**：这些语句需要修改数据，因此会进行当前读。
-3. **`INSERT` 语句**：在某些情况下，如插入时需要检查唯一索引冲突，也会进行当前读。
-
-#### 特点
-
-- **阻塞性**：当前读会阻塞其他事务的写操作，或者被其他事务的写操作所阻塞。
-- **可见性**：当前读可以看到其他事务提交之前的数据版本，并且可以锁定数据行，防止其他事务修改这些行。
+---
 
 ## 数据类型
 
 ### 数值类型
-
-MySQL 支持多种数值类型，包括整数类型和浮点数类型。
 
 #### 整数类型
 
@@ -1400,7 +396,6 @@ MySQL 支持多种数值类型，包括整数类型和浮点数类型。
 | BIGINT | 8字节 | -9223372036854775808 ~ 9223372036854775807 | 0 ~ 18446744073709551615 |
 
 ```sql
--- 创建带有整数类型的表
 CREATE TABLE user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     age TINYINT UNSIGNED,
@@ -1450,6 +445,8 @@ CREATE TABLE article (
 );
 ```
 
+> **注意**：MySQL 5.0+ 后，VARCHAR 按字符计算长度，而非字节。
+
 ### 日期时间类型
 
 | 类型 | 格式 | 范围 |
@@ -1461,24 +458,12 @@ CREATE TABLE article (
 | YEAR | 'YYYY' | 1901 ~ 2155 |
 
 ```sql
--- 日期时间类型示例
 CREATE TABLE event (
     id INT PRIMARY KEY AUTO_INCREMENT,
     event_date DATE,
     event_time TIME,
     event_datetime DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### 枚举类型
-
-```sql
--- ENUM 类型
-CREATE TABLE user (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    gender ENUM('male', 'female', 'other'),
-    status ENUM('active', 'inactive', 'pending') DEFAULT 'active'
 );
 ```
 
@@ -1505,7 +490,22 @@ SELECT settings->>'$.theme' AS theme FROM config;
 SELECT JSON_EXTRACT(settings, '$.language') FROM config;
 ```
 
-## 常用 SQL 操作
+#### JSON 类型存储结构
+
+MySQL 将 JSON 转为二进制格式（doc 对象）存储，包含：
+- **type**（1字节）：表示 JSON 值的类型
+- **value**：实际数据
+
+类型包括：object、array、literal、number、string 等。
+
+> **注意**：
+> - JSON 对象键按长度和 code point 排序
+> - 单个 JSON 文档大小不能超过 4G
+> - 单个 key 不能超过 64KB
+
+---
+
+## SQL 操作
 
 ### SELECT 查询
 
@@ -1591,8 +591,9 @@ TRUNCATE TABLE users;  -- 不可回滚，自增计数器重置
 
 ### 常用函数
 
+#### 字符串函数
+
 ```sql
--- 字符串函数
 SELECT CONCAT('Hello', ' ', 'World');  -- 连接字符串
 SELECT UPPER('hello');  -- 转大写
 SELECT LOWER('HELLO');  -- 转小写
@@ -1600,15 +601,21 @@ SELECT SUBSTRING('Hello World', 1, 5);  -- 截取字符串
 SELECT TRIM('  hello  ');  -- 去除首尾空格
 SELECT LENGTH('你好');  -- 字节长度
 SELECT CHAR_LENGTH('你好');  -- 字符长度
+```
 
--- 数值函数
+#### 数值函数
+
+```sql
 SELECT ABS(-10);  -- 绝对值
 SELECT CEIL(3.14);  -- 向上取整
 SELECT FLOOR(3.14);  -- 向下取整
 SELECT ROUND(3.14159, 2);  -- 四舍五入
 SELECT MOD(10, 3);  -- 取模
+```
 
--- 日期函数
+#### 日期函数
+
+```sql
 SELECT NOW();  -- 当前日期时间
 SELECT CURDATE();  -- 当前日期
 SELECT CURTIME();  -- 当前时间
@@ -1618,10 +625,15 @@ SELECT MONTH('2024-01-15');  -- 提取月份
 SELECT DAY('2024-01-15');  -- 提取日期
 SELECT DATE_ADD('2024-01-15', INTERVAL 1 DAY);  -- 日期加减
 SELECT DATEDIFF('2024-01-15', '2024-01-01');  -- 日期差
+```
 
--- 条件函数
+#### 条件函数
+
+```sql
 SELECT IF(age > 18, '成年', '未成年') FROM users;
 SELECT IFNULL(NULL, '默认值');  -- NULL值处理
+
+-- CASE 表达式
 SELECT CASE status
     WHEN 'active' THEN '激活'
     WHEN 'inactive' THEN '未激活'
@@ -1629,41 +641,9 @@ SELECT CASE status
 END FROM users;
 ```
 
-## MySQL数据库优化
+---
 
-**拒绝默认设置**
-
-在默认情况下，MySQL 是针对小规模的发布、安装进行调优的，而并非真正的生产环境规模。因此，通常您需要将 MySQL 配置为使用所有可用的内存资源，并且能允许您的应用程序所需的最大连接数。这里有三个有关 MySQL 性能优化的设置，值得去仔细地配置：
-
-```
-innodb_buffer_pool_size=2048M
-```
-
-数据和索引被用作缓存的缓冲池。当您的数据库服务器有着大量的系统内存时，可以用到该设置。
-
-如果只运行 InnoDB 存储引擎，那么通常可以分配 **80％** 左右的内存给该缓冲池。（Innodb的很多性能提升如索引都是依靠这个）
-
-如果要运行非常复杂的查询或者有大量的并发数据库连接，亦或有非常大的数据表的情况，那么就可能需要将此值下调一个等级，以便为其他的调用分配更多的内存。
-
-在设置 InnoDB 缓冲池大小的时候，要确保其设置既不要过大，也不要频繁引起交换（swapping），因为这些绝对会降低数据库性能。有一个简单的检查方法就是在“**Percona 监控和管理**”。
-
-这对Innodb表来说非常重要。Innodb相比MyISAM表对缓冲更为敏感。MyISAM可以在默认的 key_buffer_size 设置下运行的可以，然而Innodb在默认的 innodb_buffer_pool_size 设置下却跟蜗牛似的。由于Innodb把数据和索引都缓存起来，无需留给操作系统太多的内存，因此如果只需要用Innodb的话则可以设置它高达 70-80% 的可用内存。一些应用于 key_buffer 的规则有 — 如果你的数据量不大，并且不会暴增，那么无需把 innodb_buffer_pool_size 设置的太大了
-
-**innodb_log_file_size**
-
-这是指单个 InnoDB 日志文件的大小。默认情况下，InnoDB 使用两个值，这样您就可以通过将其增加一倍，来让 InnoDB 获得循环的重做日志空间，以确保交易的持久性。这同时也优化了对数据库的写入性能。
-
-设置 innodb_log_file_size 的值是很值得推敲的：如果分配了较大的重做空间，那么对于写入密集型的工作负载来说性能会越好。
-
-但是如果您的系统遭受到断电或其他问题导致崩溃的时候，那么其恢复时间则会越长。您可以通过查看未实际使用的重做日志空间大小来判定。
-
-**max_connections**
-
-大型应用程序通常需要比默认数量多得多的连接。不同于其他的变量，如果您没能将该值设置正确，您就会碰到性能方面的问题。也就是说，如果连接的数量不足以满足您的应用需求，那么应用程序将根本无法连接到数据库，在用户看来就像宕机了一样。由此可见，将它设置正确是非常重要的。
-
-幸运的是，MySQL 能够在峰值操作时轻易地获悉所用到的连接数量。通常，您需要确保在应用程序所使用到的最大连接数和可用的最大连接数之间至少有 30％ 的差额。
-
-## 索引详解
+## 索引
 
 ### 索引类型
 
@@ -1727,7 +707,9 @@ CREATE FULLTEXT INDEX idx_content ON article(content);
 SELECT * FROM article WHERE MATCH(content) AGAINST('数据库' IN NATURAL LANGUAGE MODE);
 ```
 
-### 复合索引最左前缀原则
+### 索引优化
+
+#### 复合索引最左前缀原则
 
 复合索引遵循最左前缀原则，即索引左侧的列可以使用索引，但跳过左边的列则无法使用。
 
@@ -1746,7 +728,7 @@ SELECT * FROM user WHERE status = 'active';       -- 不使用索引
 SELECT * FROM user WHERE name = '张三' AND status = 'active';  -- 只使用 name 部分
 ```
 
-### 索引下推 (Index Condition Pushdown)
+#### 索引下推 (Index Condition Pushdown)
 
 索引下推是 MySQL 5.6+ 的优化特性，将部分 WHERE 条件下推到索引层面进行过滤，减少回表次数。
 
@@ -1758,13 +740,419 @@ SELECT * FROM user WHERE name = '张三' AND age > 18;
 -- 优化后：在索引层面直接过滤 age，只回表符合条件的数据
 ```
 
-### 索引失效的场景
+#### 索引失效的场景
 
 - 使用函数或运算：`WHERE YEAR(created_at) = 2024`
-- 类型转换：`WHERE phone = 13800138000` (phone 是 VARCHAR 类型)
+- 类型转换：`WHERE phone = 13800138000`（phone 是 VARCHAR 类型）
 - 模糊查询以通配符开头：`WHERE name LIKE '%张'`
 - 使用 OR 连接非索引列：`WHERE name = '张三' OR age = 25`
 - 字符串不加引号：`WHERE name = 123`
+
+#### 索引长度计算
+
+```
+索引长度 = 字段长度 + 是否为空(+1) + 是否变长(+2)
+```
+
+---
+
+## 存储引擎
+
+### InnoDB
+
+InnoDB 是 MySQL 默认的事务型存储引擎。
+
+#### 特点
+
+- 支持事务、外键、行锁
+- 聚集索引：数据文件与主键索引绑在一起
+- 支持 MVCC（多版本并发控制）
+
+#### 锁算法
+
+- **Record Lock**：单行记录锁
+- **Gap Lock**：间隙锁，锁定一个范围，但不包括记录本身
+- **Next-Key Lock**：Record Lock + Gap Lock 的组合，防止幻读
+
+> **注意**：InnoDB 行锁是通过索引实现的，而非记录本身。只有通过索引条件检索数据时才使用行锁，否则使用表锁。
+
+### MyISAM
+
+#### 特点
+
+- 不支持事务、不支持外键
+- 非聚集索引：索引与数据分离
+- 表级锁：读读并发，读写串行
+- 存储为三个文件：.frm、.MYD、.MYI
+
+#### 适用场景
+
+- 只读数据或小规模数据
+- 可以容忍修复操作
+- 需要全文搜索
+
+### 存储引擎对比
+
+| 特性 | MyISAM | InnoDB |
+|------|--------|--------|
+| 事务支持 | 不支持 | 支持 |
+| 外键支持 | 不支持 | 支持 |
+| 锁粒度 | 表级 | 行级 |
+| 索引类型 | 非聚集 | 聚集 |
+| 空间碎片 | 产生 | 不产生 |
+| 文件格式 | 分离 | 统一 |
+
+---
+
+## MySQL 锁
+
+MySQL 锁机制是保证数据并发访问一致性的重要手段。
+
+### 锁类型
+
+#### 共享锁与排他锁
+
+- **共享锁（S Lock）**：允许事务读取一行数据，多个事务可以同时持有共享锁
+- **排他锁（X Lock）**：允许事务删除或更新一行数据，排他锁与其他锁互斥
+
+```sql
+-- 共享锁
+SELECT * FROM users WHERE id = 1 LOCK IN SHARE MODE;
+
+-- 排他锁
+SELECT * FROM users WHERE id = 1 FOR UPDATE;
+```
+
+#### 意向锁
+
+InnoDB 支持多粒度锁，意向锁是表级锁，表示事务将要对表中的行加锁。
+
+- **意向共享锁（IS）**：事务将要获取行的共享锁
+- **意向排他锁（IX）**：事务将要获取行的排他锁
+
+```sql
+-- 查看意向锁
+SHOW ENGINE INNODB STATUS;
+```
+
+#### 记录锁（Record Lock）
+
+锁定索引记录一行，而非整个记录。
+
+```sql
+-- 当使用唯一索引（等值查询）时，使用记录锁
+SELECT * FROM users WHERE id = 1 FOR UPDATE;
+```
+
+#### 间隙锁（Gap Lock）
+
+锁定索引记录之间的间隙，防止其他事务插入新记录。
+
+```sql
+-- 范围查询时使用间隙锁
+SELECT * FROM users WHERE id > 1 AND id < 10 FOR UPDATE;
+```
+
+#### 临键锁（Next-Key Lock）
+
+记录锁 + 间隙锁的组合，锁定一个范围且包括记录本身。防止幻读。
+
+```sql
+-- 临键锁示例
+SELECT * FROM users WHERE id >= 1 AND id <= 10 FOR UPDATE;
+```
+
+### 锁等待与死锁
+
+```sql
+-- 查看当前锁等待
+SELECT * FROM information_schema.INNODB_LOCKS;
+
+-- 查看事务等待状态
+SELECT * FROM information_schema.INNODB_LOCK_WAITS;
+
+-- 查看当前事务
+SELECT * FROM information_schema.INNODB_TRX;
+
+-- 死锁超时时间
+SHOW VARIABLES LIKE 'innodb_lock_wait_timeout';
+```
+
+### 解决死锁
+
+1. **设置超时时间**：超过指定时间自动回滚
+2. **检测死锁**：InnoDB 自动检测死锁并回滚较小事务
+3. **优化业务逻辑**：合理设计索引，减少锁范围
+
+```sql
+-- 调整死锁检测
+SET GLOBAL innodb_deadlock_detect = 'ON';
+
+-- 调整锁等待超时
+SET GLOBAL innodb_lock_wait_timeout = 50;
+```
+
+---
+
+## MVCC
+
+MVCC（Multi-Version Concurrency Control，多版本并发控制）是 InnoDB 实现的并发控制机制，通过保存数据的多个版本来实现高并发访问。
+
+### 工作原理
+
+InnoDB 为每行数据添加三个隐藏字段：
+- **DB_TRX_ID**：最近修改的事务 ID
+- **DB_ROLL_PTR**：回滚指针，指向 undo log
+- **DB_ROW_ID**：行 ID（仅当表没有主键时由系统生成）
+
+### 事务隔离级别与 MVCC
+
+| 隔离级别 | 读取方式 | 脏读 | 不可重复读 | 幻读 |
+|----------|----------|------|------------|------|
+| READ UNCOMMITTED | 读取最新版本 | 是 | 是 | 是 |
+| READ COMMITTED | 读取最新提交版本 | 否 | 是 | 是 |
+| REPEATABLE READ | 读取事务开始时版本 | 否 | 否 | 是 |
+| SERIALIZABLE | 加锁读取 | 否 | 否 | 否 |
+
+```sql
+-- 查看当前隔离级别
+SELECT @@transaction_isolation;
+
+-- 设置隔离级别
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+```
+
+### Read View
+
+Read View 记录活跃事务列表，用于判断行的可见性：
+
+- **m_ids**：活跃事务 ID 列表
+- **min_trx_id**：最小活跃事务 ID
+- **max_trx_id**：创建 Read View 时最大事务 ID + 1
+- **creator_trx_id**：创建该 Read View 的事务 ID
+
+**可见性判断规则**：
+1. 行的 trx_id < min_trx_id：说明事务已提交，可见
+2. 行的 trx_id >= max_trx_id：说明事务在 Read View 创建后开始，不可见
+3. 行的 trx_id 在 m_ids 中：说明事务未提交，不可见
+4. 行的 trx_id 不在 m_ids 中：说明事务已提交，可见
+
+### 快照读与当前读
+
+- **快照读**：SELECT 语句不加锁，通过 MVCC 读取历史版本
+- **当前读**：SELECT ... FOR UPDATE、INSERT、UPDATE、DELETE 语句，加锁读取最新数据
+
+```sql
+-- 快照读（不加锁）
+SELECT * FROM users WHERE id = 1;
+
+-- 当前读（加锁）
+SELECT * FROM users WHERE id = 1 FOR UPDATE;
+UPDATE users SET name = '张三' WHERE id = 1;
+```
+
+### 总结
+
+MVCC 优势：
+- 读写不冲突，提高并发性能
+- 减少锁的使用，降低死锁概率
+- 保证事务的隔离性
+
+MVCC 局限：
+- 需要额外的存储空间存储 undo log
+- 清理旧版本需要后台进程处理
+
+---
+
+## 主从复制
+
+MySQL 主从复制是一种数据同步机制，将主服务器的数据复制到从服务器。
+
+### 应用场景
+
+- **读写分离**：将读操作分配到从数据库，减轻主数据库负载
+- **数据备份**：从数据库作为主数据库的备份
+- **数据分析**：在从数据库上进行数据分析，避免影响主库
+
+### 工作原理
+
+1. **主服务器记录 Binlog**：执行事务或 SQL 时记录二进制日志
+2. **从服务器拉取并应用**：从服务器 IO 线程拉取 Binlog，SQL 线程应用日志
+
+### 配置主从复制
+
+#### 主服务器配置
+
+```sh
+# my.cnf 配置
+[mysqld]
+server-id = 1
+log_bin = /var/log/mysql/mysql-bin
+binlog_format = ROW
+sync_binlog = 1
+```
+
+```sql
+-- 创建复制用户
+CREATE USER 'repl'@'%' IDENTIFIED BY 'repl_password';
+GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
+
+-- 查看主服务器状态
+SHOW MASTER STATUS;
+```
+
+#### 从服务器配置
+
+```sh
+# my.cnf 配置
+[mysqld]
+server-id = 2
+relay_log = /var/log/mysql/mysql-relay-bin
+read_only = 1
+```
+
+```sql
+-- 配置复制
+CHANGE MASTER TO
+    MASTER_HOST = 'master_host',
+    MASTER_USER = 'repl',
+    MASTER_PASSWORD = 'repl_password',
+    MASTER_LOG_FILE = 'mysql-bin.000001',
+    MASTER_LOG_POS = 123;
+
+-- 启动复制
+START SLAVE;
+
+-- 查看复制状态
+SHOW SLAVE STATUS\G;
+```
+
+### 半同步复制
+
+确保至少一个从服务器收到并持久化了 Binlog 后，主服务器才返回成功。
+
+```sql
+-- 主服务器安装半同步插件
+INSTALL PLUGIN rpl_semi_sync_master SONAME 'semisync_master.so';
+
+-- 从服务器安装半同步插件
+INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';
+
+-- 启用半同步
+SET GLOBAL rpl_semi_sync_master_enabled = 1;
+SET GLOBAL rpl_semi_sync_slave_enabled = 1;
+```
+
+### 组复制 (MGR)
+
+MySQL 5.7.17+ 引入的高可用方案，基于 Paxos 协议实现多主复制。
+
+```sh
+# my.cnf 配置
+[mysqld]
+server-id = 1
+gtid_mode = ON
+enforce_gtid_consistency = ON
+group_replication_group_name = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+group_replication_start_on_boot = OFF
+group_replication_local_address = "127.0.0.1:33061"
+group_replication_group_seeds = "127.0.0.1:33061,127.0.0.1:33062,127.0.0.1:33063"
+group_replication_bootstrap_group = ON
+```
+
+```sql
+-- 创建复制用户
+CREATE USER 'rpl_user'@'%' IDENTIFIED BY 'rpl_password';
+GRANT BACKUP_ADMIN, GROUP_REPLICATION_STREAM, REPLICATION SLAVE ON *.* TO 'rpl_user'@'%';
+
+-- 启动组复制
+START GROUP_REPLICATION;
+```
+
+---
+
+## 备份与恢复
+
+### mysqldump 备份
+
+```sh
+# 备份单个数据库
+mysqldump -u root -p mydb > mydb.sql
+
+# 备份所有数据库
+mysqldump -u root -p --all-databases > all_databases.sql
+
+# 备份指定表
+mysqldump -u root -p mydb users orders > tables.sql
+
+# 备份结构（不含数据）
+mysqldump -u root -p -d mydb > mydb_structure.sql
+
+# 备份数据（不含结构）
+mysqldump -u root -p -t mydb > mydb_data.sql
+
+# 备份远程数据库
+mysqldump -h remote_host -u root -p mydb > mydb.sql
+```
+
+#### 高级选项
+
+```sh
+# 导出事务保持一致性（适合备份）
+mysqldump -u root -p --single-transaction --master-data=2 mydb > mydb.sql
+
+# 压缩备份
+mysqldump -u root -p mydb | gzip > mydb.sql.gz
+
+# 分库备份
+mysqldump -u root -p --databases db1 db2 db3 > databases.sql
+```
+
+### mysqlbinlog 恢复
+
+```sh
+# 基于时间点恢复
+mysqlbinlog --stop-datetime="2024-01-15 10:00:00" mysql-bin.000001 | mysql -u root -p
+
+# 基于位置恢复
+mysqlbinlog --stop-position=1234 mysql-bin.000001 | mysql -u root -p
+
+# 导出指定时间段的 Binlog
+mysqlbinlog --start-datetime="2024-01-15 09:00:00" --stop-datetime="2024-01-15 10:00:00" mysql-bin.000001 > binlog.sql
+```
+
+### xtrabackup 备份
+
+Percona Xtrabackup 是高性能的 InnoDB 备份工具，支持热备份。
+
+```sh
+# 完全备份
+xtrabackup --backup --target-dir=/backup/full --user=root --password=root
+
+# 增量备份
+xtrabackup --backup --target-dir=/backup/inc1 --incremental-basedir=/backup/full --user=root --password=root
+
+# 准备备份（恢复前准备）
+xtrabackup --prepare --target-dir=/backup/full
+
+# 恢复
+xtrabackup --copy-back --target-dir=/backup/full --user=root --password=root
+```
+
+### 数据恢复
+
+```sql
+-- 恢复整个数据库
+mysql -u root -p mydb < mydb.sql
+
+-- 恢复压缩的备份
+gunzip < mydb.sql.gz | mysql -u root -p mydb
+
+-- 恢复指定表
+mysql -u root -p mydb -e "SOURCE table_backup.sql"
+```
+
+---
 
 ## 性能优化
 
@@ -1807,7 +1195,7 @@ SHOW VARIABLES LIKE 'long_query_time';
 SET GLOBAL slow_query_log = 'ON';
 SET GLOBAL long_query_time = 1;  -- 设置阈值为1秒
 
--- 查看慢查询日志
+-- 查看慢查询数量
 SHOW GLOBAL STATUS LIKE 'Slow_queries';
 ```
 
@@ -1854,460 +1242,25 @@ SELECT * FROM users WHERE id IN (SELECT user_id FROM orders);
 SELECT u.* FROM users u INNER JOIN orders o ON u.id = o.user_id;
 ```
 
-## 存储引擎
+### 压测工具 mysqlslap
 
-### MySQL存储引擎区别
-
-> [区别](http://www.cnblogs.com/y-rong/p/8110596.html)
-
-**MyISAM**：ISAM是Indexed Sequential Access Method (有索引的顺序访问方法) 的缩写，设计简单，数据以紧密格式存储。对于只读数据，或者表比较小、可以容忍修复操作，则依然可以使用它。。
-
-- 不支持事务，不支持外键。
-- MyISAM是非聚集索引，也是使用B+Tree作为索引结构，索引和数据文件是分离的，索引保存的是数据文件的指针。主键索引和辅助索引是独立的。
-
-[**InnoDB**](https://rsy.me/posts/mysql-innodb-preliminary/?hmsr=toutiao.io&utm_medium=toutiao.io&utm_source=toutiao.io)：是 MySQL 默认的事务型存储引擎，**只有在需要它不支持的特性时，才考虑使用其它存储引擎**。
-
-- 支持事务、外键、行锁。
-- InnoDB是聚集索引，使用B+Tree作为索引结构，数据文件是和（主键）索引绑在一起的（表数据文件本身就是按B+Tree组织的一个索引结构），必须要有主键，通过主键索引效率很高。但是辅助索引需要两次查询，先查询到主键，然后再通过主键查询到数据。因此，主键不应该过大，因为主键太大，其他索引也都会很大。
-
-| [**差异**](https://juejin.im/post/5c6b9c09f265da2d8a55a855) | **MyISAM**                      | **Innodb**           |
-| --------------------------------------------------------- | ------------------------------- | -------------------- |
-| **文件格式**                                                  | 数据和索引是分别存储的，数据.MYD，索引.MYI       | 数据和索引是集中存储的，.ibd     |
-| **文件能否移动**                                                | 能，一张表就对应.frm、MYD、MYI3个文件        | 否，因为关联的还有data下的其它文件  |
-| **记录存储顺序**                                                | 按记录插入顺序保存                       | 按主键大小有序插入            |
-| **空间碎片（删除记录并flush table 表名之后，表文件大小不变）**                   | 产生。定时整理：使用命令optimize table 表名实现 | 不产生                  |
-| **事务**                                                    | 不支持                             | 支持                   |
-| **外键**                                                    | 不支持                             | 支持                   |
-| **锁支持（锁是避免资源争用的一个机制，MySQL锁对用户几乎是透明的）**                    | 表级锁定                            | 行级锁定、表级锁定，锁定力度小并发能力高 |
-
-### MySQL不同引擎的优化
-
-> [优化](https://www.zhihu.com/question/19719997/answer/81930332)
-
-**myisam**
-
-读的效果好，写的效率差，这和它数据存储格式，索引的指针和锁的策略有关的，它的数据是顺序存储的（innodb数据存储方式是聚簇索引），他的索引btree上的节点是一个指向数据物理位置的指针，所以查找起来很快，（innodb索引节点存的则是数据的主键，所以需要根据主键二次查找）；myisam锁是表锁，只有读读之间是并发的，写写之间和读写之间（读和插入之间是可以并发的，去设置concurrent_insert参数，定期执行表优化操作，更新操作就没有办法了）是串行的，所以写起来慢，并且默认的写优先级比读优先级高，高到写操作来了后，可以马上插入到读操作前面去，如果批量写，会导致读请求饿死，所以要设置读写优先级或设置多少写操作后执行读操作的策略;myisam不要使用查询时间太长的sql，如果策略使用不当，也会导致写饿死，所以尽量去拆分查询效率低的sql
-
-**innodb**
-
-一般都是行锁，这个一般指的是sql用到索引的时候，**行锁是加在索引上的**，**不是加在数据记录上的**，如果sql没有用到索引，仍然会锁定表,mysql的读写之间是可以并发的，普通的select是不需要锁的，当查询的记录遇到锁时，用的是一致性的非锁定快照读，也就是根据数据库隔离级别策略，会去读被锁定行的快照，其它更新或加锁读语句用的是当前读，读取原始行；因为普通读与写不冲突，所以innodb不会出现读写饿死的情况，又因为在使用索引的时候用的是行锁，锁的粒度小，竞争相同锁的情况就少，就增加了并发处理，所以并发读写的效率还是很优秀的，问题在于索引查询后的根据主键的二次查找导致效率低。
-
-> 备注：InnoDB行锁是通过给索引上的索引项加锁来实现的，这一点MySQL与Oracle不同，后者是通过在数据块中对相应数据行加锁来实现的。InnoDB这种行锁实现特点意味着：只有通过索引条件检索数据，InnoDB才使用行级锁，否则，InnoDB将使用表锁！在实际应用中，要特别注意InnoDB行锁的这一特性，不然的话，可能导致大量的锁冲突，从而影响并发性能。
-
-因为 InnoDB 的数据文件本身要按主键聚集，所以 InnoDB 要求表必须有主键，如果没有显式指定，则 MySQL 系统会自动选择一个可以唯一标识数据记录的列作为主键，如果不存在这种列，则 MySQL 自动为 InnoDB 表生成一个隐含字段作为主键，这个字段长度为6个字节，类型为长整形。
-
-InnoDB 的辅助索引 data 域存储相应记录主键的值而不是地址。换句话说，InnoDB 的所有辅助索引都引用主键作为 data 域。聚集索引这种实现方式使得按主键的搜索十分高效，但是辅助索引搜索需要检索两遍索引：首先检索辅助索引获得主键，然后用主键到主索引中检索获得记录。
-
-## InnoDB
-
-### InnoDB存储引擎的[锁算法](https://mp.weixin.qq.com/s/JUdSHpa1n6qt4w-lgL6rKQ)
-
-Mysql默认的事务隔离级别是**可重复读(Repeatable Read)**，即保证在同一个事务中多次读取同样数据的结果是一样的。
-
-- 在不通过索引条件查询时，InnoDB会锁定表中的所有记录。所以，如果考虑性能，WHERE语句中的条件查询的字段都应该加上索引。
-- InnoDB通过**索引**来**实现行锁**，而不是通过锁住记录。因此，当操作的两条不同记录拥有相同的索引时，也会因为行锁被锁而发生等待。
-- 由于InnoDB的索引机制，数据库操作使用了主键索引，InnoDB会锁住主键索引；使用非主键索引时，InnoDB会先锁住非主键索引，再锁定主键索引。
-- 当查询的索引是唯一索引(不存在两个数据行具有完全相同的键值)时，InnoDB存储引擎会将Next-Key     Lock降级为Record Lock，即只锁住索引本身，而不是范围。
-- InnoDB对于辅助索引有特殊的处理，不仅会锁住辅助索引值所在的范围，还会将其下一键值加上Gap     LOCK。
-- InnoDB使用Next-Key Lock机制来避免Phantom     Problem（幻读问题）。
-
-> Record Lock: 单个记录上的锁
-> 
-> Gap Lock: 间隙锁，锁定一个范围，但不包括记录本上
-> 
-> Next-Key Lock: Gap Lock+Record Lock，锁定一个范围，并且锁定记录本身
-
-### 写缓冲
-
-在MySQL5.5之前，叫插入缓冲(insert buffer)，只针对insert做了优化；现在对delete和update也有效，叫做写缓冲(change buffer)。
-
-它是一种应用在**非唯一普通索引页**(即二级索引且属性不是unique)，不在缓冲池中，对页进行了写操作，并不会立刻将磁盘页加载到缓冲池，而仅仅记录缓冲变更(buffer changes)，等未来数据被读取时，再将数据合并(merge)恢复到缓冲池中的技术。写缓冲的目的是**降低写操作的磁盘IO**，提升数据库性能。
-
-如果索引设置了唯一(unique)属性，在进行修改操作时，InnoDB必须进行唯一性检查。也就是说，索引页即使不在缓冲池，磁盘上的页读取无法避免(否则怎么校验是否唯一？)
-
-### undo log
-
-undo log是用于事务撤销回退使用的日志，在数据库事务开始之前，MySQL会先记录更新前的数据到undo log日志文件里面，当事务回滚或者数据库崩溃的时候，可以利用undolog来进行后退。
-
-- **存储位置**
-  
-  Undo log 存储在 InnoDB 存储引擎的表空间中，与数据页一起管理。它占用一定的存储空间，并且随着事务的执行不断生成新的 undo log 记录。
-
-- **管理机制**
-  
-  InnoDB 引擎通过一个称为回滚段（Rollback Segment）的结构来管理 undo log。每个回滚段包含多个 undo log 页，事务在执行过程中生成的 undo log 会被分配到相应的回滚段中。当事务提交时，InnoDB 并不会立即删除 undo log，而是根据一定的规则进行保留，以满足 MVCC 的需求。例如，为了保证在事务的隔离级别允许的时间范围内，其他事务能够看到正确的数据版本，undo log 需要保留一段时间。后台会通过线程 purge thread 进行回收处理。
-
-### redo log
-
-InnoDB 记录了对数据文件的物理更改，并保证总是[日志先行](https://www.cnblogs.com/hoxis/p/10070256.html)。
-
-也就是所谓的 WAL（Write-Ahead Logging），即在持久化数据文件前，保证之前的 redo 日志已经写到磁盘。
-
-MySQL 的每一次更新并没有每次都写入磁盘，InnoDB 引擎会先将记录写到 redo log 里，并更新到内存中，然后再适当的时候，再把这个记录更新到磁盘。
-
-- 产生 & 释放：在事务开始之后就产生 redo log，redo log 的落盘并不是随着事务的提交才写入的，而是在事务的执行过程中，便开始写入 redo log 文件中。当对应事务的脏页写入到磁盘之后，redo log 的使命也就完成了，重做日志占用的空间就可以重用（被覆盖）
-
-- 缓存区：redo log 有一个缓存区Innodb_log_buffer，默认大小为 8M，Innodb 存储引擎先将重做日志写入 innodb_log_buffer 中。
-
-然后会通过以下三种方式将 innodb 日志缓冲区的日志刷新到磁盘：
-
-1. Master Thread 每秒一次执行刷新 Innodb_log_buffer 到重做日志文件；
-
-2. 每个事务提交时会将重做日志刷新到重做日志文件；
-
-3. 当 redo log 缓存可用空间少于一半时，重做日志缓存被刷新到重做日志文件；
-
-有了 redo log，InnoDB 就可以保证即使数据库发生异常重启，之前提交的记录都不会丢失，这个能力称为 crash-safe。
-
-### bin log
-
-MySQL 整体可以分为 Server 层和引擎层。其实，**redo log** 是属于引擎层的 **InnoDB** **所特有**的日志，而 Server 层也有自己的日志，即 binlog（归档日志）。
-
-#### 与redo log区别
-
-- redo log 是 InnoDB 引擎特有的，binlog 是 MySQL 的 Server 层实现，所有引擎都可以使用；
-
-- **内容不同**：redo log 是物理日志，记录的是在数据页上做了什么修改，是正在执行中的 dml 以及 ddl 语句；而 binlog 是逻辑日志，记录的是语句的原始逻辑，已经提交完毕之后的 dml 以及 ddl sql 语句，如「给 ID=2 的这一行的 c 字段加 1」；
-
-- **写方式不同**：redo log 是**循环写**的，空间固定；binlog 是可以一直**追加写**的，一个文件写到一定大小后，会继续写下一个，之前写的文件不会被覆盖；
-
-- **作用不同**：redo log 主要用来保证事务安全，作为异常 down 机或者介质故障后的数据恢复使用，binlog 主要用来做主从复制和即时点恢复时使用；
-
-- 另外，两者日志产生的时间，可以释放的时间，在可释放的情况下清理机制，都是完全不同的。
-
-> 注意：记录 Binlog 是在 InnoDB 引擎 Prepare（即 Redo Log 写入磁盘）之后，这点至关重要。另外需要注意的一点就是，SQL 语句产生的 Redo 日志会一直刷新到磁盘（master thread 每秒 fsync redo log），而 Binlog 是事务 commit 时才刷新到磁盘，如果 binlog 太大则 commit 时会慢。
-
-**与redo log比较**
-
-redo log记录的东西是偏向于物理性质的，如：“对什么数据，做了什么修改”。bin log是偏向于逻辑性质的，类似于：“对 students 表中的 id 为 1 的记录做了更新操作” 两者的主要特点总结如下:
-
-| 性质   | redo Log                                             | bin Log                                                     |
-| ---- | ---------------------------------------------------- | ----------------------------------------------------------- |
-| 文件大小 | redo log 的大小是固定的（配置中也可以设置，一般默认的就足够了）                 | bin log 可通过配置参数max_bin log_size设置每个bin log文件的大小（但是一般不建议修改）。 |
-| 实现方式 | redo log是InnoDB引擎层实现的（也就是说是 Innodb  存储引起过独有的）        | bin log是  MySQL  层实现的，所有引擎都可以使用 bin log日志                   |
-| 记录方式 | redo log 采用循环写的方式记录，当写到结尾时，会回到开头循环写日志。               | bin log 通过追加的方式记录，当文件大小大于给定值后，后续的日志会记录到新的文件上                |
-| 使用场景 | redo log适用于崩溃恢复(crash-safe)（这一点其实非常类似与 Redis 的持久化特征） | bin log 适用于主从复制和数据恢复                                        |
-
-#### bin log 的记录模式
-
-- **STATMENT**
-  
-  **基于 SQL 语句的复制**(statement-based replication, SBR)，每一条会修改数据的 SQL 语句会记录到 bin log 中。（MySQL默认的模式）
-  
-  【优点】：不需要记录每一行的变化，减少了 bin log 日志量，节约了 IO , 从而提高了性能
-  
-  【缺点】：在某些情况下会导致主从数据不一致，比如执行sysdate()、slepp()等
-
-- **ROW**
-  
-  **基于行的复制**(row-based replication, RBR)，不记录每条SQL语句的上下文信息，仅需记录哪条数据被修改了。
-  
-  【优点】：不会出现某些特定情况下的存储过程、或 function、或 trigger 的调用和触发无法被正确复制的问题
-  
-  【缺点】：会产生大量的日志，尤其是 alter table 的时候会让日志暴涨
-
-- **MIXED**
-  
-  基于 STATMENT 和 ROW 两种模式的**混合复制**( mixed-based replication, MBR )，一般的复制使用 STATEMENT 模式保存 bin log ，对于 STATEMENT 模式无法复制的操作使用 ROW 模式保存 bin log。
-  
-  > 那既然bin log也是日志文件，那它是在什么记录数据的呢？
-  > 
-  > 其实 MySQL 在提交事务的时候，不仅仅会将 redo log buffer 中的数据写入到redo log 文件中，同时也会将本次修改的数据记录到 bin log文件中，同时会将本次修改的bin log文件名和修改的内容在bin log中的位置记录到redo log中，最后还会在redo log最后写入 commit 标记，这样就表示本次事务被成功的提交了。
-
-### MySQL页
-
-InnoDB不能以单行基础上工作。InnoDB总是在页上操作。一旦页被加载，它就会扫描页以寻找所请求的行/记录。
-
-#### 基础结构
-
-[**Page**](https://segmentfault.com/a/1190000008545713)是Innodb存储的最基本结构，每个数据页的大小为`16kb`，每个Page使用一个32位（一位表示的就是0或1）的int值来表示，正好对应Innodb最大64TB的存储容量(16kb * 2^32=64tib)。
-
-Page分为几种类型：
-
-- `数据页（B-Tree Node）`
-
-- `Undo页（Undo Log Page）`
-
-- `系统页（System Page）`
-
-- `事务数据页（Transaction System Page）`
-
-page头部保存了两个指针，分别指向前一个Page和后一个Page，头部还有Page的类型信息和用来唯一标识Page的编号。根据这个指针分布可以想象到Page链接起来就是一个**双向链表**。
-
-#### 行溢出
-
-InnoDB 存储引擎在存储数据时，会尽量将一行数据存储在一个数据页中。但如果某一行数据包含了大量的文本、二进制等大数据类型（如 TEXT、BLOB 等），就可能导致这一行数据无法完全存储在一个页中。当一行数据的大小超过了一个数据页（通常是 **16KB**）所能容纳的大小时，就会发生行溢出。
-
-#### 原因
-
-1. **单个行数据过大**：当单个数据行的大小超过 16KB 时，会导致行溢出。
-2. **变长字段存储过多数据**：如 `VARCHAR`、`BLOB`、`TEXT` 等字段存储了大量数据，可能导致行溢出。
-3. **索引列过长**：当索引列（尤其是复合索引）的数据量过大时，也可能导致行溢出。
-
-##### 处理机制
-
-- **使用溢出页**
-  
-  - 当发生行溢出时，InnoDB 会将超出的数据存储到溢出页（Overflow Page）中。这些溢出页与原始数据页通过指针进行关联。
-  - 例如，对于一个包含了 TEXT 类型字段的表，当该字段中的数据量较大时，InnoDB 会将 TEXT 数据分割，部分数据存储在原始数据页中（通常存储前 768 字节左右的数据），剩余的数据存储在一个或多个溢出页中。
-
-- **数据的读取和更新**
-  
-  - 当查询包含行溢出的数据时，InnoDB 会根据指针从原始数据页和溢出页中读取数据，并将它们组合在一起返回给用户。
-  - 在更新数据时，如果更新后的行仍然溢出，InnoDB 会相应地调整溢出页中的数据；如果更新后的行不再溢出，InnoDB 会将溢出页中的数据合并回原始数据页中。
-
-#### 页主体结构
-
-在Page的主体部分，主要关注数据和索引的存储，他们都位于`User Records`部分，User Records占据Page的大部分空间，User Records由一条条的Record组成，每条记录代表索引树上的一个节点（非叶子节点和叶子节点）；在一个单链表的内部，单链表的头尾由两条记录来表示，字符串形式的“ Infimum”代表开头，“Supremum”表示结尾；System Record 和 User Record是两个平行的段；
-Innodb中存在四种不同的Record，分别是：
-
-1. 主键索引树非叶子节点
-2. 主键索引树叶子节点
-3. 辅助键索引树非叶子节点
-4. 辅助键索引树叶子节点
-
-这四种节点Record格式上有差异，但是内部都存储着Next指针指向下一个Record
-
-#### User Record
-
-User Record在Page内以单链表的形式存在，最初数据是按照插入的先后顺序排列的，但是随着新数据的插入和旧数据的删除，数据物理顺序发生改变，但是他们依然保持着逻辑上的先后顺序。同一页内数据顺续不一定一致，但不同页之间的数据顺续是一致的。
-
-![clipboard.png](../_images/bVJ1hN3578239192.jpg)
-
-把User Record组织形式和若干Page组织起来，就得到了稍微完整的形式：
-
-![clipboard.png](../_images/bVJ1hP.jpg)
-
-#### 如何定位一个Record
-
-1. 通过根节点开始遍历一个索引的B+树，通过各层非叶子节点达到底层的叶子节点的数据页（Page），这个Page内部存放的都是叶子节点
-2. 在Page内部从“Infimum”节点开始遍历单链表（遍历一般会被优化），如果找到键则返回。如果遍历到了“Supremum”，说明当前Page里没有合适的键，这时借助Page页内部的next page指针，跳转到下一个page继续从“Infmum”开始逐个查找
-
-![clipboard.png](../_images/bVJ1hS.jpg)
-
-Page和B+树之间并没有一一对应的关系，Page只是作为一个Record的保存容器，它存在的目的是便于对磁盘空间进行批量管理。
-
-### 索引长度
-
-索引的长度决定不仅决定了索引占用的数据空间大小，也会影响查找数据的 IO 次数。
-
-在同等数据量下，索引长度过长会导致单个数据页存放的索引条目数减少，索引高度增加，磁盘 IO 增加，并且索引占用空间增大。所以应该在满足要求的前提下，尽量减少索引长度。
-
-**索引长度 = 字段长度 + 是否为空(+1) + 是否变长(+2)**
-
-## 主从复制
-
-MySQL 的主从复制（Master-Slave Replication）是一种常见的数据同步机制，它允许从一个或多个主服务器（Master）将数据复制到一个或多个从服务器（Slave）。主从复制不仅可以用于数据冗余和备份，还可以用于负载均衡和读写分离，从而提高系统的可用性和性能。
-
-### 应用场景
-
-- **读写分离**：将读操作分配到从数据库上，减轻主数据库的负载，提高系统的整体性能和响应速度。
-- **数据备份**：从数据库可以作为主数据库的一个备份，当主数据库出现故障时，可以快速切换到从数据库继续提供服务。
-- **数据分析和报表生成**：在从数据库上进行数据分析和报表生成等操作，避免对主数据库的性能产生影响。
-
-### 工作原理
-
-1. **主服务器记录二进制日志（Binlog）**：每当在主服务器上执行一个事务或 SQL 语句时，MySQL 会记录一个二进制日志（Binlog）条目。这些条目包含了 SQL 语句的执行信息。
-2. **从服务器拉取 Binlog 并应用**：从服务器定期拉取主服务器的 Binlog，并在本地应用这些 Binlog 条目，从而使数据保持一致。
-
-### 主从复制配置
-
-#### 主服务器配置
+MySQL 自带的压力测试工具。
 
 ```sh
-# my.cnf 配置
-[mysqld]
-server-id = 1
-log_bin = /var/log/mysql/mysql-bin
-binlog_format = ROW
-sync_binlog = 1
+# 自动生成 SQL 测试
+mysqlslap --auto-generate-sql -uroot -proot
 
-# 创建复制用户
-CREATE USER 'repl'@'%' IDENTIFIED BY 'repl_password';
-GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
+# 并发测试
+mysqlslap --auto-generate-sql --concurrency=100 -uroot -proot
 
-# 查看主服务器状态
-SHOW MASTER STATUS;
+# 多轮测试
+mysqlslap --auto-generate-sql --concurrency=150 --iterations=10 -uroot -proot
+
+# 存储引擎测试
+mysqlslap --auto-generate-sql --concurrency=150 --iterations=3 --engine=innodb -uroot -proot
 ```
 
-#### 从服务器配置
-
-```sh
-# my.cnf 配置
-[mysqld]
-server-id = 2
-relay_log = /var/log/mysql/mysql-relay-bin
-read_only = 1
-
-# 配置复制
-CHANGE MASTER TO
-    MASTER_HOST = 'master_host',
-    MASTER_USER = 'repl',
-    MASTER_PASSWORD = 'repl_password',
-    MASTER_LOG_FILE = 'mysql-bin.000001',
-    MASTER_LOG_POS = 123;
-
-# 启动复制
-START SLAVE;
-
-# 查看复制状态
-SHOW SLAVE STATUS\G;
-```
-
-### 半同步复制
-
-半同步复制（Semi-Synchronous Replication）确保至少一个从服务器收到并持久化了主服务器的 Binlog 后，主服务器才返回成功。
-
-```sql
--- 主服务器安装半同步插件
-INSTALL PLUGIN rpl_semi_sync_master SONAME 'semisync_master.so';
-
--- 从服务器安装半同步插件
-INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';
-
--- 启用半同步
-SET GLOBAL rpl_semi_sync_master_enabled = 1;
-SET GLOBAL rpl_semi_sync_slave_enabled = 1;
-
--- 重启复制
-STOP SLAVE;
-START SLAVE;
-```
-
-### 组复制 (MySQL Group Replication)
-
-组复制是 MySQL 5.7.17+ 引入的高可用方案，基于 Paxos 协议实现多主复制。
-
-```sh
-# my.cnf 配置
-[mysqld]
-server-id = 1
-gtid_mode = ON
-enforce_gtid_consistency = ON
-group_replication_group_name = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-group_replication_start_on_boot = OFF
-group_replication_local_address = "127.0.0.1:33061"
-group_replication_group_seeds = "127.0.0.1:33061,127.0.0.1:33062,127.0.0.1:33063"
-group_replication_bootstrap_group = ON
-
-# 创建复制用户
-CREATE USER 'rpl_user'@'%' IDENTIFIED BY 'rpl_password';
-GRANT BACKUP_ADMIN, GROUP_REPLICATION_STREAM, REPLICATION SLAVE ON *.* TO 'rpl_user'@'%';
-
-# 启动组复制
-START GROUP_REPLICATION;
-```
-
-### 读写分离
-
-读写分离通过将读操作分配到从服务器，写操作发送到主服务器来分担负载。
-
-```sql
--- 查看所有从服务器
-SHOW SLAVE HOSTS;
-```
-
-常见的读写分离实现方式：
-- 应用层手动切换：写操作走主库，读操作走从库
-- 中间件：使用 ProxySQL、MyCAT、ShardingSphere 等中间件
-- 框架支持：Spring 的 AbstractRoutingDataSource
-
-## 备份与恢复
-
-### mysqldump 备份
-
-```sh
-# 备份单个数据库
-mysqldump -u root -p mydb > mydb.sql
-
-# 备份所有数据库
-mysqldump -u root -p --all-databases > all_databases.sql
-
-# 备份指定表
-mysqldump -u root -p mydb users orders > tables.sql
-
-# 备份结构（不含数据）
-mysqldump -u root -p -d mydb > mydb_structure.sql
-
-# 备份数据（不含结构）
-mysqldump -u root -p -t mydb > mydb_data.sql
-
-# 备份远程数据库
-mysqldump -h remote_host -u root -p mydb > mydb.sql
-```
-
-### mysqldump 高级选项
-
-```sh
-# 导出事务保持一致性（适合备份）
-mysqldump -u root -p --single-transaction --master-data=2 mydb > mydb.sql
-
-# 压缩备份
-mysqldump -u root -p mydb | gzip > mydb.sql.gz
-
-# 分库备份
-mysqldump -u root -p --databases db1 db2 db3 > databases.sql
-```
-
-### mysqlbinlog 恢复
-
-```sh
-# 基于时间点恢复
-mysqlbinlog --stop-datetime="2024-01-15 10:00:00" mysql-bin.000001 | mysql -u root -p
-
-# 基于位置恢复
-mysqlbinlog --stop-position=1234 mysql-bin.000001 | mysql -u root -p
-
-# 导出指定时间段的 Binlog
-mysqlbinlog --start-datetime="2024-01-15 09:00:00" --stop-datetime="2024-01-15 10:00:00" mysql-bin.000001 > binlog.sql
-```
-
-### xtrabackup 备份
-
-Percona Xtrabackup 是一个高性能的 InnoDB 备份工具，支持热备份。
-
-```sh
-# 完全备份
-xtrabackup --backup --target-dir=/backup/full --user=root --password=root
-
-# 增量备份
-xtrabackup --backup --target-dir=/backup/inc1 --incremental-basedir=/backup/full --user=root --password=root
-
-# 准备备份（恢复前准备）
-xtrabackup --prepare --target-dir=/backup/full
-
-# 恢复
-xtrabackup --copy-back --target-dir=/backup/full --user=root --password=root
-```
-
-### 数据恢复
-
-```sql
--- 恢复整个数据库
-mysql -u root -p mydb < mydb.sql
-
--- 恢复压缩的备份
-gunzip < mydb.sql.gz | mysql -u root -p mydb
-
--- 恢复指定表
-mysql -u root -p mydb -e "SOURCE table_backup.sql"
-```
-
-## ID自增问题
-
-一张表，里面有ID自增主键，当insert了17条记录之后，删除了第15,16,17条记录，再把Mysql重启，再insert一条记录，这条记录的ID是18还是15？
-
-（1）如果表的类型是MyISAM，那么是18.
-
-因为MyISAM表会吧自增主键的最大ID记录到数据文件里，重启MysQL自增主键的最大ID也不会丢失。
-
-（2）如果表的类型是InnoDB，那么是15.
-
-InnoDB表只是把自增主键的最大ID记录到内存中，所以重启数据库或者是对表进行OPTIMIZE操作，都会导致最大ID丢失。
-
-## 字符数还是字节数
-
-对于MySql中的varchar长度究竟是字节还是字符是这样的：在version4之前，按字节；version5（MySQL 5.0+）之后，按字符。
+---
 
 ## MySQL 8.0 新特性
 
@@ -2327,17 +1280,6 @@ FROM employees;
 SELECT name, salary,
     SUM(salary) OVER (ORDER BY salary) as cumulative_sum,
     AVG(salary) OVER (ORDER BY salary ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as running_avg
-FROM employees;
-
--- 首尾值
-SELECT name, hire_date, salary,
-    FIRST_VALUE(salary) OVER (ORDER BY hire_date) as first_salary,
-    LAST_VALUE(salary) OVER (ORDER BY hire_date) as last_salary
-FROM employees;
-
--- 移动平均
-SELECT name, salary,
-    AVG(salary) OVER (ORDER BY hire_date ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) as moving_avg_3
 FROM employees;
 ```
 
@@ -2359,45 +1301,6 @@ WITH RECURSIVE cte AS (
     SELECT n + 1 FROM cte WHERE n < 10
 )
 SELECT * FROM cte;
-
--- 递归 CTE（生成组织结构）
-WITH RECURSIVE org AS (
-    SELECT id, name, manager_id, 1 as level
-    FROM employees WHERE manager_id IS NULL
-    UNION ALL
-    SELECT e.id, e.name, e.manager_id, o.level + 1
-    FROM employees e
-    INNER JOIN org o ON e.manager_id = o.id
-)
-SELECT * FROM org;
-```
-
-### JSON 增强
-
-MySQL 8.0 对 JSON 功能进行了多项增强。
-
-```sql
--- JSON_TABLE - 将 JSON 转换为关系表
-SELECT jt.*
-FROM mytable,
-JSON_TABLE(data, '$.items[*]' COLUMNS (
-    id INT PATH '$.id',
-    name VARCHAR(100) PATH '$.name',
-    value DECIMAL(10,2) PATH '$.value'
-)) AS jt;
-
--- JSON_VALUE - 提取 JSON 值
-SELECT JSON_VALUE(data, '$.user.name') AS name FROM orders;
-
--- JSON聚合函数
-SELECT department,
-    JSON_ARRAYAGG(name) as names,
-    JSON_OBJECTAGG('id', id) as ids
-FROM employees
-GROUP BY department;
-
--- JSON 路径性能优化
-CREATE INDEX idx_data ON orders((CAST(data->>'$.orderId' AS UNSIGNED)));
 ```
 
 ### 角色管理
@@ -2419,12 +1322,6 @@ GRANT 'app_read' TO 'user1'@'localhost';
 
 -- 用户激活角色
 SET DEFAULT ROLE 'app_read' TO 'user1'@'localhost';
-
--- 查看角色权限
-SHOW GRANTS FOR 'app_read';
-
--- 角色可以嵌套
-GRANT 'app_write' TO 'app_admin';
 ```
 
 ### 不可见索引
@@ -2438,9 +1335,6 @@ CREATE INDEX idx_name ON users(name) INVISIBLE;
 -- 修改索引可见性
 ALTER TABLE users ALTER INDEX idx_name VISIBLE;
 ALTER TABLE users ALTER INDEX idx_name INVISIBLE;
-
--- 查看索引（包括不可见）
-SHOW INDEX FROM users;
 ```
 
 ### 降序索引
@@ -2450,202 +1344,41 @@ MySQL 8.0 支持创建降序索引，优化 ORDER BY DESC 查询。
 ```sql
 -- 创建降序索引
 CREATE INDEX idx_created_at ON posts(created_at DESC);
-
--- 复合降序索引
-CREATE INDEX idx_status_created ON posts(status ASC, created_at DESC);
 ```
 
-### 改进的性能模式
+### 查询缓存移除
 
-MySQL 8.0 对 performance_schema 进行了重大改进，增加了更多的监控点。
-
-```sql
--- 查看正在执行的语句
-SELECT * FROM performance_schema.events_statements_history;
-
--- 查看等待事件
-SELECT * FROM performance_schema.events_waits_history;
-
--- 查看内存使用
-SELECT * FROM memory_summary_by_account_by_event_name;
-```
-
-### 默认字符集改为 utf8mb4
-
-MySQL 8.0 默认字符集从 latin1 改为 utf8mb4，默认排序规则为 utf8mb4_0900_ai_ci。
-
-```sql
--- 查看字符集配置
-SHOW VARIABLES LIKE 'character%';
-SHOW VARIABLES LIKE 'collation%';
-```
-
-## MySQL 查询缓存
-
-> **注意**：MySQL 8.0 已移除查询缓存功能。在 MySQL 8.0 及更高版本中，查询缓存相关变量（如 `query_cache_type`、`query_cache_size`）已被移除。如果需要缓存功能，建议使用应用层缓存（如 Redis、Memcached）或 ProxySQL 等中间件的查询缓存功能。
-
-### MySQL 查询缓存介绍
-
-为了提高完全相同的查询语句的响应速度，MySQL Server 会对查询语句进行 Hash 计算得到一个 Hash 值。MySQL Server 不会对 SQL 做任何处理，SQL 必须完全一致 Hash 值才会一样。得到 Hash 值之后，通过该 Hash 值到查询缓存中匹配该查询的结果。
-
-- 如果匹配（命中），则将查询的结果集直接返回给客户端，不必再解析、执行查询。
-- 如果没有匹配（未命中），则将 Hash 值和结果集保存在查询缓存中，以便以后使用。
-
-也就是说，**一个查询语句（select）到了 MySQL Server 之后，会先到查询缓存看看，如果曾经执行过的话，就直接返回结果集给客户端。**
-
-### 缓存规则
-
-- 查询缓存会将查询语句和结果集保存到内存（一般是 key-value 的形式，key 是查询语句，value 是查询的结果集），下次再查直接从内存中取。
-- 缓存的结果是通过 sessions 共享的，所以一个 client 查询的缓存结果，另一个 client 也可以使用。
-- SQL 必须完全一致才会导致查询缓存命中（大小写、空格、使用的数据库、协议版本、字符集等必须一致）。检查查询缓存时，MySQL Server 不会对 SQL 做任何处理，它精确的使用客户端传来的查询。
-- 不缓存查询中的子查询结果集，仅缓存查询最终结果集。
-- 不确定的函数将永远不会被缓存, 比如 `now()`、`curdate()`、`last_insert_id()`、`rand()` 等。
-- 不缓存产生告警（Warnings）的查询。
-- 太大的结果集不会被缓存 (< query_cache_limit)。
-- 如果查询中包含任何用户自定义函数、存储函数、用户变量、临时表、MySQL 库中的系统表，其查询结果也不会被缓存。
-- 缓存建立之后，MySQL 的查询缓存系统会跟踪查询中涉及的每张表，如果这些表（数据或结构）发生变化，那么和这张表相关的所有缓存数据都将失效。
-- MySQL 缓存在分库分表环境下是不起作用的。
-- 不缓存使用 `SQL_NO_CACHE` 的查询。
-
-### MySQL 查询缓存对性能的影响
-
-在 MySQL Server 中打开查询缓存对数据库的读和写都会带来额外的消耗:
-
-- 读查询开始之前必须检查是否命中缓存。
-- 如果读查询可以缓存，那么执行完查询操作后，会查询结果和查询语句写入缓存。
-- 当向某个表写入数据的时候，必须将这个表**所有的缓存设置为失效**，如果缓存空间很大，则消耗也会很大，可能使系统僵死一段时间，因为这个操作是靠全局锁操作来保护的。
-- 对 InnoDB 表，当修改一个表时，设置了缓存失效，但是多版本特性会暂时将这修改对其他事务屏蔽，在这个事务提交之前，所有查询都无法使用缓存，直到这个事务被提交，所以长时间的事务，会大大降低查询缓存的命中。
-
-### 总结
-
-MySQL 中的查询缓存虽然能够提升数据库的查询性能，但是查询同时也带来了额外的开销，每次查询后都要做一次缓存操作，失效后还要销毁。
-
-查询缓存是一个适用较少情况的缓存机制。如果你的应用对数据库的更新很少，那么查询缓存将会作用显著。比较典型的如博客系统，一般博客更新相对较慢，数据表相对稳定不变，这时候查询缓存的作用会比较明显。
-
-简单总结一下查询缓存的适用场景：
-
-- 表数据修改不频繁、数据较静态。
-- 查询（Select）重复度高。
-- 查询结果集小于 1 MB。
-
-对于一个更新频繁的系统来说，查询缓存缓存的作用是很微小的，在某些情况下开启查询缓存会带来性能的下降。
-
-简单总结一下查询缓存不适用的场景：
-
-- 表中的数据、表结构或者索引变动频繁
-- 重复的查询很少
-- 查询的结果集很大
+> **注意**：MySQL 8.0 已移除查询缓存功能。如果需要缓存功能，建议使用应用层缓存（Redis、Memcached）或 ProxySQL 等中间件。
 
 ---
 
-> 内容来源： [MySQL查询缓存详解 | JavaGuide(Java面试 + 学习指南)](https://javaguide.cn/database/mysql/mysql-query-cache.html)
+## MySQL 常见问题
 
-## Buffer Pool
+### ID 自增问题
 
-在 MySQL 中，Buffer Pool 主要指的是 InnoDB 存储引擎使用的缓存机制。Buffer Pool 的作用是在内存中缓存 InnoDB 表的数据页和索引页，以提高数据访问的速度。Buffer Pool 是 InnoDB 缓存策略的关键组成部分，它可以显著提升查询性能，尤其是在频繁访问相同数据的情况下。
+问：一表有 ID 自增主键，insert 17 条后删除 15-17 条，重启 MySQL，再 insert 一条，ID 是 18 还是 15？
 
-### 作用
+答：
+- **MyISAM 表**：ID 是 18（自增主键最大 ID 记录在数据文件，重启不丢失）
+- **InnoDB 表**：ID 是 15（自增主键最大 ID 只记录在内存，重启或 OPTIMIZE 后丢失）
 
-1. **提高读写性能**：
-   
-   - **读操作**：当数据页首次被读入时，InnoDB 会将其放入 Buffer Pool。随后的读取操作可以直接从 Buffer Pool 中读取，而不需要再次访问磁盘。
-   - **写操作**：当数据页被修改时，更改首先保存在 Buffer Pool 中，随后在合适的时机（如定期检查点）写入磁盘。
+### Buffer Pool
 
-2. **减少磁盘 I/O**：
-   
-   - 通过缓存数据页和索引页，Buffer Pool 减少了磁盘 I/O 的次数，从而提高了整体性能。
+Buffer Pool 是 InnoDB 的内存缓存机制，缓存数据页和索引页。
 
-3. **支持事务**：
-   
-   - Buffer Pool 还支持 InnoDB 的事务特性，如回滚段（rollback segment）和重做日志（redo log），确保数据的一致性和持久性。
+**作用**：
+- 读操作：数据首次读取时放入 Buffer Pool，后续直接从内存读取
+- 写操作：修改先保存在 Buffer Pool，定期刷新到磁盘
 
-### 流程
+### 双写缓冲区 (Doublewrite Buffer)
 
-1. 首先执行器根据 MySQL 的执行计划来查询数据，先是从**缓存池中查询**数据，如果没有就会去数据库中查询，如果查询到了就将其放到缓存池中。
+解决部分写入问题，确保数据页的完整性。
 
-2. 在数据被缓存到缓存池的同时，会**写入 undo log** 日志文件。
+**工作原理**：
+1. 刷新数据页时，先复制到双写缓冲区
+2. 双写缓冲区刷盘完成后，再写入数据文件
+3. 如果刷盘过程中断，可从双写缓冲区恢复
 
-3. **更新**的动作是在 **BufferPool** 中完成的，同时会将更新后的数据添加到 redo log buffer 中。
+---
 
-4. 完成以后就可以提交事务，在提交的同时会做以下三件事：
-   
-   - 将redo log buffer中的数据刷入到 redo log 文件中
-   
-   - 将本次操作记录写入到 bin log文件中
-   
-   - 将 bin log 文件名字和更新内容在 bin log 中的位置记录到redo log中，同时在 redo log 最后添加 commit 标记
-
-### Buffer Pool 的管理
-
-1. **LRU 列表**：
-   
-   - Buffer Pool 使用最近最少使用（Least Recently Used，LRU）算法来管理数据页。当 Buffer Pool 的空间不足时，LRU 列表尾部的数据页可能会被替换掉。
-
-2. **老化机制**：
-   
-   - 数据页在 Buffer Pool 中的老化（aging）过程通过改变数据页的访问频率来控制，以确保经常访问的数据页不会被轻易替换掉。
-
-3. **脏页管理**：
-   
-   - 当数据页被修改时，会标记为脏页（dirty page）。InnoDB 会在适当的时候将脏页写回到磁盘上，以确保数据的一致性。
-   - 脏页的写入操作可以通过调整参数 `innodb_flush_log_at_trx_commit` 来控制。
-
-### 与查询缓存的区别
-
-**一、存储内容**
-
-- **Buffer Pool** 存储的是从磁盘加载的数据页，包括索引页和数据页，是**物理**存储层面的**数据**在内存中的**缓存**。
-- **查询缓存** 存储的是已经执行过的查询语句的结果集，是基于**逻辑查询**层面的**缓存**。
-
-**二、目的与作用**
-
-- **Buffer Pool** 主要目的是减少磁盘 I/O 操作，提高数据库读写性能。无论是数据的读取还是写入，都可以通过在内存中的数据页操作来加速。
-- **查询缓存** 主要是为了避免重复执行相同的查询语句，当遇到相同的查询时，直接从缓存中获取结果，提高查询效率。
-
-**三、数据更新影响**
-
-- **Buffer Pool** 当数据被修改时，Buffer Pool 中的数据页会相应更新，并且脏页会在适当的时候写回磁盘，数据页在内存中的缓存仍然有效。
-- **查询缓存** 只要相关表的数据发生修改（如执行 INSERT、UPDATE、DELETE 操作），与之相关的查询缓存就会失效，需要重新执行查询并缓存结果。
-
-**四、缓存的管理方式**
-
-- **Buffer Pool** 通常基于 LRU（Least Recently Used）算法管理，当 Buffer Pool 空间不足时，会淘汰最近最少使用的数据页，为新的数据页腾出空间。
-- **查询缓存** 根据查询语句的哈希值来管理缓存，当有新的查询时，通过计算哈希值来判断缓存中是否存在对应的结果。当缓存空间不足时，会根据一定规则淘汰一些缓存结果。
-
-#### 总结
-
-查询缓存 管理复杂，缓存命中率低，在 MySQL 8.0 及以后版本中，查询缓存已被弃用。可以考虑使用其他机制，如使用索引、优化查询语句等来提高查询性能。
-
-## 双写缓冲区
-
-双写缓冲区是 InnoDB 存储引擎中的一个内存区域，大小为 2MB。它位于**系统表空间**中，由连续的 128 个页（每页 16KB）组成。系统表空间也被称为共享表空间。共享表空间是一个或多个磁盘文件，它存储了 InnoDB 存储引擎的数据字典、双写缓冲区、撤销日志（undo logs）等信息。在数据库的运行过程中，共享表空间为双写缓冲区提供了物理存储位置，确保双写缓冲区中的数据能够在系统故障后用于数据恢复。
-
-### 产生原因
-
-- **部分页写入问题**：在计算机系统中，由于数据库文件存储在磁盘上，而磁盘的写入操作可能在某些情况下（如突然断电、系统崩溃等）不能保证原子性。例如，一个页（16KB）的数据正在写入磁盘时，可能只写入了部分数据，就发生了系统故障，这会导致该页的数据损坏。导致出现**写失效**的问题。
-- **数据一致性保障需求**：InnoDB 存储引擎是以页为单位进行数据读写操作的，页是数据存储的基本单位。为了确保数据页在写入磁盘过程中的完整性，避免出现部分页写入导致的数据损坏问题，引入了双写缓冲区机制。
-
-### 工作原理
-
-- **数据写入过程**
-  
-  - **先写入缓冲区**：当 InnoDB 需要将数据页写入磁盘时，首先会将数据页写入双写缓冲区。写入双写缓冲区是顺序写入操作，这比直接写入磁盘的随机写入要快。
-  - **同步到磁盘**：在数据成功写入双写缓冲区后，InnoDB 才会将数据页从双写缓冲区写入磁盘上的数据文件中对应的位置。
-
-- **故障恢复机制**
-  
-  - 如果在将数据页从双写缓冲区写入磁盘的过程中发生了系统故障或其他异常情况，导致部分页写入失败。
-  - 当系统重新启动后，InnoDB 会在恢复过程中检查双写缓冲区中的页，如果发现某个页的副本在双写缓冲区中是完整的，而磁盘上对应的页是损坏的（通过检查页的校验和等方式），InnoDB 会使用双写缓冲区中的页副本重新写入磁盘，从而恢复数据的完整性。
-
-### 作用
-
-- **提高可靠性**：即使在写入过程中发生系统崩溃，由于数据页是作为一个整体写入磁盘的，因此不会出现部分写入的情况，从而保证了数据的一致性。
-- **简化恢复过程**：如果系统崩溃后重启，InnoDB 可以更容易地检测到哪些数据页已经被完全写入磁盘，哪些还没有写入，从而简化恢复过程。
-
-## 答疑
-
-### mysql索引为什么选择B+树而不是跳表
-
-随着数据量的增加，跳表的层级可能会不断增加，导致空间占用也会相应增加。存放同样量级的数据，跳表的高度要比B+树高很多，这样的话，IO次数会更多，Redis基于内存访问，多一些IO影响不大，但是MySQL主要基于磁盘IO，磁盘IO次数变多对MySQL的影响比较大。 
-
-> [【mysql索引为什么选择B+树而不是跳表？】 ](https://www.bilibili.com/video/BV1Zu4y1z7NV/?share_source=copy_web&vd_source=39a1f87397f666a25bf9c520e0219a9e)
+> 更多内容请参考 [MySQL 官方文档](https://dev.mysql.com/doc/)
