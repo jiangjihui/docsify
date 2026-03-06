@@ -477,15 +477,6 @@ Agent 执行代码可能存在风险：
 
 ---
 
-## 相关资源
-
-- [LangGraph 文档](https://langchain-ai.github.io/langgraph/)
-- [MCP 规范](https://modelcontextprotocol.io)
-- [LangChain 文档](https://python.langchain.com)
-- [AutoGen 文档](https://microsoft.github.io/autogen)
-
----
-
 ## 一个完整的 Agent 平台示例：Deer Flow
 
 前面介绍了各种概念，如何把它们组合成一个完整的 Agent 平台？
