@@ -533,3 +533,352 @@ deer-flow/
 通过研究 Deer Flow 的源码，可以深入理解本笔记中的各个概念是如何在实际项目中落地的。
 
 ---
+
+## 从零构建 Agent：12 个进阶机制
+
+本节参考 [learn-claude-code](https://github.com/anthropics/learn-claude-code) 项目，展示构建一个完整 Agent 系统的12个进阶机制。从最基础的循环开始，逐步叠加功能，最终形成一个完整的多智能体协作系统。
+
+### s01: Agent Loop（智能体循环）
+
+> *"一个工具 + 一个循环 = 一个智能体"*
+
+Agent Loop 是整个系统的基础，将 LLM 与工具连接起来形成闭环：
+
+```
++--------+      +-------+      +---------+
+|  User  | ---> |  LLM  | ---> |  Tool   |
+| prompt |      |       |      | execute |
++--------+      +---+---+      +----+----+
+                    ^                |
+                    |   tool_result  |
+                    +----------------+
+                    (loop until stop_reason != "tool_use")
+```
+
+**核心代码（约30行）：**
+
+```python
+def agent_loop(query):
+    messages = [{"role": "user", "content": query}]
+    while True:
+        response = client.messages.create(
+            model=MODEL, system=SYSTEM, messages=messages,
+            tools=TOOLS, max_tokens=8000,
+        )
+        messages.append({"role": "assistant", "content": response.content})
+
+        if response.stop_reason != "tool_use":
+            return  # 结束
+
+        # 执行工具调用
+        results = []
+        for block in response.content:
+            if block.type == "tool_use":
+                output = run_tool(block.name, block.input)
+                results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": output,
+                })
+        messages.append({"role": "user", "content": results})
+```
+
+---
+
+### s02: Tool Use（工具扩展）
+
+> *"加一个工具，只加一个 handler"*
+
+通过 dispatch map 模式，加工具不需要修改循环逻辑：
+
+```
++--------+      +-------+      +------------------+
+|  User  | ---> |  LLM  | ---> | Tool Dispatch    |
+| prompt |      |       |      | {                |
++--------+      +---+---+      |   bash: run_bash |
+                    ^           |   read: run_read |
+                    |           |   write: run_wr  |
+                    +-----------+   edit: run_edit |
+                    tool_result | }                |
+                                +------------------+
+```
+
+**路径沙箱：**
+
+```python
+def safe_path(p: str) -> Path:
+    path = (WORKDIR / p).resolve()
+    if not path.is_relative_to(WORKDIR):
+        raise ValueError(f"Path escapes workspace: {p}")
+    return path
+```
+
+---
+
+### s03: TodoWrite（任务规划）
+
+> *"先列步骤再动手，完成率翻倍"*
+
+多步任务需要规划机制，防止丢失进度：
+
+```
+              +-----------+-----------+
+              | TodoManager state     |
+              | [ ] task A            |
+              | [>] task B  <- doing  |
+              | [x] task C            |
+              +-----------------------+
+                          |
+              if rounds_since_todo >= 3:
+                inject <reminder> into tool_result
+```
+
+**nag reminder：** 模型连续3轮以上不调用 `todo` 时注入提醒。
+
+---
+
+### s04: Subagents（子智能体）
+
+> *"大任务拆小，每个小任务干净的上下文"*
+
+子智能体用独立 messages[]，不污染主对话：
+
+```
+Parent agent                     Subagent
++------------------+             +------------------+
+| messages=[...]   |             | messages=[]      | <-- fresh
+|                  |  dispatch   |                  |
+| tool: task       | ----------> | while tool_use:  |
+|   prompt="..."   |             |   call tools     |
+|                  |  summary    |   append results |
+|   result = "..." | <---------- | return last text |
++------------------+             +------------------+
+```
+
+---
+
+### s05: Skills（技能加载）
+
+> *"用到什么知识，临时加载什么知识"*
+
+两层注入机制，按需加载：
+
+```
+System prompt (Layer 1 -- always present):
++--------------------------------------+
+| Skills available:                    |
+|   - git: Git workflow helpers        |  ~100 tokens/skill
+|   - test: Testing best practices     |
++--------------------------------------+
+
+When model calls load_skill("git"):
++--------------------------------------+
+| tool_result (Layer 2 -- on demand):  |
+| <skill name="git">                   |
+|   Full git workflow instructions...  |  ~2000 tokens
+| </skill>                             |
++--------------------------------------+
+```
+
+---
+
+### s06: Context Compact（上下文压缩）
+
+> *"上下文总会满，要有办法腾地方"*
+
+三层压缩策略：
+
+```
+[Layer 1: micro_compact]        (silent, every turn)
+  Replace tool_result > 3 turns old
+  with "[Previous: used {tool_name}]"
+
+[Check: tokens > 50000?]
+   no              yes
+   |               |
+   v        [Layer 2: auto_compact]
+   |         Save transcript to .transcripts/
+   |         LLM summarizes conversation.
+   |               |
+   |               v
+   |        [Layer 3: compact tool]
+   |          Model calls compact explicitly.
+   +-------> Same summarization as auto_compact
+```
+
+---
+
+### s07: Task System（任务系统）
+
+> *"大目标要拆成小任务，排好序，记在磁盘上"*
+
+持久化任务图（DAG），支持依赖管理：
+
+```
+.tasks/
+  task_1.json  {"id":1, "status":"completed"}
+  task_2.json  {"id":2, "blockedBy":[1], "status":"pending"}
+  task_3.json  {"id":3, "blockedBy":[1], "status":"pending"}
+  task_4.json  {"id":4, "blockedBy":[2,3], "status":"pending"}
+
+任务图 (DAG):
+                 +----------+
+            +--> | task 2   | --+
+            |    | pending  |   |
++----------+     +----------+    +--> +----------+
+| task 1   |                          | task 4   |
+| completed| --> +----------+    +--> | blocked  |
++----------+     | task 3   | --+     +----------+
+                 | pending  |
+                 +----------+
+
+状态: pending -> in_progress -> completed
+```
+
+---
+
+### s08: Background Tasks（后台任务）
+
+> *"慢操作丢后台，agent 继续想下一步"*
+
+守护线程执行慢命令，完成后注入通知：
+
+```
+Main thread                Background thread
++-----------------+        +-----------------+
+| agent loop      |        | subprocess runs |
+| ...             |        | ...             |
+| [LLM call] <---+------- | enqueue(result) |
+|  ^drain queue   |        +-----------------+
++-----------------+
+
+Timeline:
+Agent --[spawn A]--[spawn B]--[other work]----
+             |          |
+             v          v
+          [A runs]   [B runs]      (parallel)
+             |          |
+             +-- results injected before next LLM call --+
+```
+
+---
+
+### s09: Agent Teams（智能体团队）
+
+> *"任务太大一个人干不完，要能分给队友"*
+
+持久化队友 + JSONL 邮箱通信：
+
+```
+Teammate lifecycle:
+  spawn -> WORKING -> IDLE -> WORKING -> ... -> SHUTDOWN
+
+Communication:
+  .team/
+    config.json           <- team roster + statuses
+    inbox/
+      alice.jsonl         <- append-only, drain-on-read
+      bob.jsonl
+
+              +--------+    send("alice","bob","...")    +--------+
+              | alice  | -----------------------------> |  bob   |
+              | loop   |    bob.jsonl << {json_line}    |  loop  |
+              +--------+                                +--------+
+                   ^
+                   |        BUS.read_inbox("alice")
+                   +---- alice.jsonl -> read + drain ---------+
+```
+
+---
+
+### s10: Team Protocols（团队协议）
+
+> *"队友之间要有统一的沟通规矩"*
+
+request-response 模式驱动所有协商：
+
+```
+Shutdown Protocol            Plan Approval Protocol
+==================           ======================
+
+Lead             Teammate    Teammate           Lead
+  |                 |           |                 |
+  |--shutdown_req-->|           |--plan_req------>|
+  | {req_id:"abc"}  |           | {req_id:"xyz"}  |
+  |                 |           |                 |
+  |<--shutdown_resp-|           |<--plan_resp-----|
+  | {req_id:"abc",  |           | {req_id:"xyz",  |
+  |  approve:true}  |           |  approve:true}  |
+
+FSM:
+  [pending] --approve--> [approved]
+  [pending] --reject---> [rejected]
+```
+
+---
+
+### s11: Autonomous Agents（自治智能体）
+
+> *"队友自己看看板，有活就认领"*
+
+自组织机制，队友自己扫描任务看板：
+
+```
+Teammate lifecycle with idle cycle:
+
++-------+   tool_use     +-------+
+| WORK  | <------------- |  LLM  |
++-------+                +-------+
+    |
+    | stop_reason != tool_use (or idle tool called)
+    v
++--------+
+|  IDLE  |  poll every 5s for up to 60s
++---+----+
+    |
+    +---> check inbox --> message? ----------> WORK
+    |
+    +---> scan .tasks/ --> unclaimed? -------> claim -> WORK
+    |
+    +---> 60s timeout ----------------------> SHUTDOWN
+
+Identity re-injection after compression:
+  if len(messages) <= 3:
+    messages.insert(0, identity_block)
+```
+
+---
+
+### s12: Worktree 任务隔离
+
+> *"各干各的目录，互不干扰"*
+
+git worktree 隔离，每个任务独立目录：
+
+```
+Control plane (.tasks/)             Execution plane (.worktrees/)
++------------------+                +------------------------+
+| task_1.json      |                | auth-refactor/         |
+|   status: in_progress  <------>   branch: wt/auth-refactor
+|   worktree: "auth-refactor"   |   task_id: 1             |
++------------------+                +------------------------+
+| task_2.json      |                | ui-login/              |
+|   status: pending    <------>     branch: wt/ui-login
+|   worktree: "ui-login"       |   task_id: 2             |
++------------------+                +------------------------+
+
+State machines:
+  Task:     pending -> in_progress -> completed
+  Worktree: absent  -> active      -> removed | kept
+```
+
+**事件流：** 每个生命周期步骤写入 `.worktrees/events.jsonl`
+
+---
+
+## 相关资源
+
+- [learn-claude-code 项目](https://github.com/anthropics/learn-claude-code) - 12个 Agent 进阶机制的完整实现
+- [LangGraph 文档](https://langchain-ai.github.io/langgraph/)
+- [MCP 规范](https://modelcontextprotocol.io)
+
