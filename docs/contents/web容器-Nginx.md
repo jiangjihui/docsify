@@ -1,462 +1,708 @@
-## **Nginx安装**
+# Nginx
 
-[**CentOS**](https://blog.csdn.net/oldguncm/article/details/78855000)**安装Ngnix**
+Nginx ("engine x") 是一个高性能的 HTTP 和反向代理服务器，也是一个 IMAP/POP3/SMTP 代理服务器。
 
-```shell
-# 要添加CentOS 7 EPEL仓库：
+## 概述
+
+### Nginx简介
+
+Nginx具有以下特点：
+
+- **热部署** - master管理进程与worker工作进程分离，支持在不停止服务的情况下升级、重载配置
+- **高并发** - 理论上支持高达10万并发连接，取决于内存配置
+- **低内存消耗** - 10000个非活跃HTTP Keep-Alive连接仅消耗2.5M内存
+- **响应快** - 单次请求响应快，高峰期性能优于其他Web服务器
+- **高可靠性** - 核心框架代码优秀，模块稳定，宕机概率极低
+
+### 核心功能
+
+1. **反向代理** - 代理内部服务器，保护内网安全
+2. **正向代理** - 代理客户端访问外部资源
+3. **负载均衡** - 分发请求到多个后端服务器
+4. **HTTP服务器** - 支持静态资源和动静分离
+
+---
+
+## 安装部署
+
+### CentOS/Yum安装
+
+```bash
+# 安装EPEL仓库
 sudo yum install epel-release
-# 安装：
+
+# 安装Nginx
 sudo yum install nginx
-# 启动：
+
+# 启动服务
 sudo systemctl start nginx
-# 关闭：
+
+# 停止服务
 sudo systemctl stop nginx
-# 开机启动：
+
+# 开机自启
 sudo systemctl enable nginx
+
+# 查看状态
+sudo systemctl status nginx
 ```
 
-> **Tips**：这样的安装方式默认安装到：/etc/nginx目录下（配置文件也在这里面）
+### Ubuntu/Apt安装
 
- 
-
-[**Ubuntu**](https://www.cnblogs.com/EasonJim/p/7806879.html)**安装Ngnix**
-
-```shell
+```bash
 sudo apt-get install nginx
 
-# 主程序路径
-/usr/sbin/nginx
-# 存放配置文件路径
-/etc/nginx
-# 存放静态文件路径
-/usr/share/nginx
-# 存放日志路径
-/var/log/nginx
+# 相关路径
+/usr/sbin/nginx        # 主程序
+/etc/nginx             # 配置文件
+/usr/share/nginx       # 静态文件
+/var/log/nginx         # 日志文件
 ```
 
- 
+### 编译安装
 
- 
+```bash
+# 安装依赖
+yum install -y gcc-c++ pcre pcre-devel zlib zlib-devel openssl openssl-devel
 
-## **Nginx命令**
+# 下载并解压
+cd /usr/local/
+mkdir nginx && cd nginx
+wget -c https://nginx.org/download/nginx-1.24.0.tar.gz
+tar -zxvf nginx-1.24.0.tar.gz
+cd nginx-1.24.0
 
-```shell
+# 编译安装
+./configure --with-http_ssl_module
+make && make install
+
+# 启动Nginx
+/usr/local/nginx/sbin/nginx
+
+# 测试
+curl localhost
+```
+
+### 目录结构
+
+```
+/etc/nginx/
+├── nginx.conf          # 主配置文件
+├── conf.d/             # 子配置文件目录
+├── sites-enabled/     # 启用的站点
+├── sites-available/    # 可用的站点
+├── modules/            # 模块目录
+└── mime.types          # MIME类型映射
+```
+
+---
+
+## 基础命令
+
+```bash
 # 启动Nginx
 nginx
 
-#重启nginx
-service nginx restart
+# 停止Nginx（快速停止）
+nginx -s stop
 
-# 重新载入配置文件
+# 优雅停止（处理完当前请求）
+nginx -s quit
+
+# 重新加载配置
 nginx -s reload
 
-# 重启 Nginx
-nginx -s reopen 
+# 重新打开日志文件
+nginx -s reopen
 
-# 停止 Nginx
-nginx -s stop
+# 测试配置文件
+nginx -t
+
+# 指定配置文件
+nginx -c /etc/nginx/nginx.conf
+
+# 查看版本信息
+nginx -v
+nginx -V  # 详细版本信息
 ```
 
- 
+---
 
+## 进程模型
 
+### Master-Worker模式
 
-## **Nginx简介**
+Nginx启动后会有一个master进程和多个worker进程：
 
-Nginx (“engine x”) 是一个高性能的 HTTP 和 反向代理 服务器 ，也是一个 IMAP/POP3/SMTP 代理 服务器 。 具有如下特点：
+**Master进程**
+- 接收外界信号，向worker进程发送信号
+- 监控worker进程运行状态
+- 负责配置重载、热部署、日志切换
 
-**热部署**
+```bash
+# 优雅重启
+kill -HUP `cat /var/run/nginx.pid`
+nginx -s reload
 
-在master管理进程与worker工作进程的分离设计，使的Nginx具有热部署的功能，那么在7×24小时不间断服务的前提下，升级Nginx的可执行文件。也可以在不停止服务的情况下修改配置文件，更换日志文件等功能。
+# 优雅停止
+nginx -s quit
+```
 
-**高并发**
+**Worker进程**
+- 处理具体的网络事件
+- 多个worker进程平等竞争请求
+- 个数通常设置为CPU核心数
 
-一些大公司、网站都需要面对高并发请求，如果有一个能够在峰值顶住10万以上并发请求的Server，肯定会得到大家的青睐。理论上，Nginx支持的并发连接上限取决于你的内存，10万远未封顶。
+### 工作原理
 
-**低内存消耗**
+```
+         请求
+           │
+           ▼
+    ┌─────────────┐
+    │ Master进程  │  (管理进程，不处理请求)
+    └──────┬──────┘
+           │ fork
+           ▼
+    ┌─────────────┐
+    │ Worker进程1 │ ──┐
+    └─────────────┘   │
+    ┌─────────────┐   │ accept_mutex
+    │ Worker进程2 │ ──┼──► 竞争处理请求
+    └─────────────┘   │
+    ┌─────────────┐   │
+    │ Worker进程n │ ──┘
+    └─────────────┘
+```
 
-在一般的情况下，10000个非活跃的HTTP Keep-Alive 连接在Nginx中仅消耗2.5M的内存，这也是Nginx支持高并发连接的基础。
+### 异步非阻塞
 
-**响应快**
+Nginx采用异步非阻塞方式处理请求，一个worker可以同时处理成千上万个请求：
 
-在正常的情况下，单次请求会得到更快的响应。在高峰期，Nginx可以比其他的Web服务器更快的响应请求。
+- **阻塞调用** - 等待事件完成，CPU空闲
+- **非阻塞调用** - 立即返回，事件未准备好时稍后重试
 
-**高可靠性**
+Nginx通过epoll等事件机制实现高效的事件处理，相比Apache的进程/线程模型更节省资源。
 
-高可靠性来自其核心框架代码的优秀设计、模块设计的简单性；并且这些模块都非常的稳定。宕机的概率微乎其微。
+---
 
- 
-
- 
-
-## **Nginx能做什么**
-
-1. 反向代理
-2. 正向代理
-3. 负载均衡
-4. HTTP服务器(包含动静分离)
-
- 
-
- 
-
-## 正向代理[**和**](https://www.cnblogs.com/taostaryu/p/10547132.html)反向代理
+## 正反向代理
 
 ### 正向代理
 
-正向代理类似一个跳板机，代理访问外部资源
+正向代理代理客户端，替客户端访问外部资源。
 
-比如我们国内访问谷歌，直接访问访问不到，我们可以通过一个正向代理服务器，请求发到代理服务器，代理服务器能够访问谷歌，这样由代理去谷歌取到返回数据，再返回给我们，这样我们就能访问谷歌了
+**典型场景：**
+- 访问无法直接访问的资源（如翻墙）
+- 加速访问（缓存代理）
+- 上网认证
+- 上网行为管理
 
-**正向代理的用途：**
+```nginx
+server {
+    listen 8080;
+    resolver 8.8.8.8;
 
-- 访问原来无法访问的资源，如google
-- 可以做缓存，加速访问资源
-- 对客户端访问授权，上网进行认证
-- 代理可以记录用户访问记录（上网行为管理），对外隐藏用户信息
-
-
+    location / {
+        proxy_pass $scheme://$host$request_uri;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
 
 ### 反向代理
 
-反向代理（Reverse Proxy）实际运行方式是指以代理服务器来接受internet上的连接请求，然后将请求转发给内部网络上的服务器，并将从服务器上得到的结果返回给internet上请求连接的客户端，此时代理服务器对外就表现为一个服务器
-
-**反向代理的作用**
-
-- 保证内网的安全，阻止web攻击，大型网站，通常将反向代理作为公网访问地址，Web服务器是内网
-- 负载均衡，通过反向代理服务器来优化网站的负载
-
-
-
-### 总结
-
-- 正向代理即是客户端代理, 代理**客户端**, 服务端不知道实际发起请求的客户端
-
-- 反向代理即是服务端代理, 代理**服务端**, 客户端不知道实际提供服务的服务端
-
-
- 
-
- 
-
-## **负载均衡**
-
-负载均衡也是Nginx常用的一个功能，负载均衡其意思就是分摊到多个操作单元上进行执行，例如Web服务器、FTP服务器、企业关键应用服务器和其它关键任务服务器等，从而共同完成工作任务。简单而言就是当有2台或以上服务器时，根据规则随机的将请求分发到指定的服务器上处理，负载均衡配置一般都需要同时配置反向代理，通过反向代理跳转到负载均衡。而Nginx目前支持自带3种负载均衡策略，还有2种常用的第三方策略。
-
-**RR**
-
-按照轮询（默认）方式进行负载，每个请求按时间顺序逐一分配到不同的后端服务器，如果后端服务器down掉，能自动剔除。虽然这种方式简便、成本低廉。但缺点是：可靠性低和负载分配不均衡。
-
-**权重** 
-
-指定轮询几率，weight和访问比率成正比，用于后端服务器性能不均的情况。
-
-upstream test{ **server** localhost:8080 weight=9; **server** localhost:8081 weight=1; }
-
-**ip_hash**
-
-上面的2种方式都有一个问题，那就是下一个请求来的时候请求可能分发到另外一个服务器，当我们的程序不是无状态的时候（采用了session保存数据），这时候就有一个很大的很问题了，比如把登录信息保存到了session中，那么跳转到另外一台服务器的时候就需要重新登录了，所以很多时候我们需要一个客户只访问一个服务器，那么就需要用iphash了，iphash的每个请求按访问ip的hash结果分配，这样每个访客固定访问一个后端服务器，可以解决session的问题。
-
-**fair**(第三方) 
-
-按后端服务器的响应时间来分配请求，响应时间短的优先分配。
-
-**url_hash**(第三方) 
-
-按访问url的hash结果来分配请求，使每个url定向到同一个后端服务器，后端服务器为缓存时比较有效。 在upstream中加入hash语句，server语句中不能写入weight等其他的参数，hash_method是使用的hash算法。
-
- 
-
- 
-
-## **nginx**[**进程模型**](https://blog.csdn.net/wy757510722/article/details/75267431)
-
-在工作方式上，Nginx分为单工作进程和多工作进程两种模式。
-
-单工作进程模式：除主进程外，还有一个工作进程，工作进程是单线程的；
-
-多工作进程模式：每个工作进程包含多个线程。Nginx默认为单工作进程模式。
-
-Nginx在启动后，会有一个master进程和多个worker进程。
-
-**master进程**
-
-主要用来管理worker进程，包含：接收来自外界的信号，向各worker进程发送信号，监控worker进程的运行状态，当worker进程退出后(异常情况下)，会自动重新启动新的worker进程。
-
-master进程充当整个进程组与用户的交互接口，同时对进程进行监护。它不需要处理网络事件，不负责业务的执行，只会通过管理worker进程来实现重启服务、平滑升级、更换日志文件、配置文件实时生效等功能。
-
-​    我们要控制nginx，只需要通过kill向master进程发送信号就行了。比如kill -HUP pid，则是告诉nginx，从容地重启nginx，我们一般用这个信号来重启nginx，或重新加载配置，因为是从容地重启，因此服务是不中断的。master进程在接收到HUP信号后是怎么做的呢？
-
-​    首先master进程在接到信号后，会先重新加载配置文件，然后再启动新的worker进程，并向所有老的worker进程发送信号，告诉他们可以光荣退休了。新的worker在启动后，就开始接收新的请求，而老的worker在收到来自master的信号后，就不再接收新的请求，并且在当前进程中的所有未处理完的请求处理完成后，再退出。
-
-​    当然，直接给master进程发送信号，这是比较老的操作方式，nginx在0.8版本之后，引入了一系列命令行参数，来方便我们管理。比如，./nginx -s reload，就是来重启nginx，./nginx -s stop，就是来停止nginx的运行。
-
-​    如何做到的呢？我们还是拿reload来说，我们看到，执行命令时，我们是启动一个新的nginx进程，而新的nginx进程在解析到reload参数后，就知道我们的目的是控制nginx来重新加载配置文件了，它会向master进程发送信号，然后接下来的动作，就和我们直接向master进程发送信号一样了。
-
-**worker进程**
-
-而基本的网络事件，则是放在worker进程中来处理了。多个worker进程之间是对等的，他们同等竞争来自客户端的请求，各进程互相之间是独立的。一个请求，只可能在一个worker进程中处理，一个worker进程，不可能处理其它进程的请求。worker进程的个数是可以设置的，一般我们会设置与机器cpu核数一致，这里面的原因与nginx的进程模型以及事件处理模型是分不开的。
-
-worker进程之间是平等的，每个进程，处理请求的机会也是一样的。当我们提供80端口的http服务时，一个连接请求过来，每个进程都有可能处理这个连接，怎么做到的呢？首先，每个worker进程都是从master进程fork过来，在master进程里面，先建立好需要listen的socket（listenfd）之后，然后再fork出多个worker进程。
-
-所有worker进程的listenfd会在新连接到来时变得可读，为保证只有一个进程处理该连接，所有worker进程在注册listenfd读事件前抢accept_mutex，抢到**互斥锁**的那个进程注册listenfd读事件，在读事件里调用accept接受该连接。当一个worker进程在accept这个连接之后，就开始读取请求，解析请求，处理请求，产生数据后，再返回给客户端，最后才断开连接，这样一个完整的请求就是这样的了。
-
-**多进程IO模型好处**
-
-首先，对于每个worker进程来说，独立的进程，不需要加锁，所以省掉了锁带来的开销，同时在编程以及问题查找时，也会方便很多。
-
-其次，采用独立的进程，可以让互相之间不会影响，一个进程退出后，其它进程还在工作，服务不会中断，master进程则很快启动新的worker进程。当然，worker进程的异常退出，肯定是程序有bug了，异常退出，会导致当前worker上的所有请求失败，不过不会影响到所有请求，所以降低了风险。
-
- 
-
- 
-
-## **nginx多进程事件模型：异步非阻塞**
-
-虽然nginx采用多worker的方式来处理请求，每个worker里面只有一个主线程，那能够处理的并发数很有限啊，多少个worker就能处理多少个并发，何来高并发呢？非也，这就是nginx的高明之处，nginx采用了异步非阻塞的方式来处理请求，也就是说，nginx是可以同时处理成千上万个请求的。
-
-一个worker进程可以同时处理的请求数只受限于内存大小，而且在架构设计上，不同的worker进程之间处理并发请求时几乎没有同步锁的限制，worker进程通常不会进入睡眠状态，因此，当Nginx上的进程数与CPU核心数相等时（最好每一个worker进程都绑定特定的CPU核心），进程间切换的代价是最小的。
-
-而apache的常用工作方式（apache也有异步非阻塞版本，但因其与自带某些模块冲突，所以不常用），每个进程在一个时刻只处理一个请求，因此，当并发数上到几千时，就同时有几千的进程在处理请求了。这对操作系统来说，是个不小的挑战，进程带来的内存占用非常大，进程的上下文切换带来的cpu开销很大，自然性能就上不去了，而这些开销完全是没有意义的。
-
-**实现原理**
-
-​    我们先回到原点，看看一个请求的完整过程:首先，请求过来，要建立连接，然后再接收数据，接收数据后，再发送数据。
-
-​    具体到系统底层，就是读写事件，而当读写事件没有准备好时，必然不可操作，如果不用非阻塞的方式来调用，那就得阻塞调用了，事件没有准备好，那就只能等了，等事件准备好了，你再继续吧。阻塞调用会进入内核等待，cpu就会让出去给别人用了，对单线程的worker来说，显然不合适，当网络事件越多时，大家都在等待呢，cpu空闲下来没人用，cpu利用率自然上不去了，更别谈高并发了。
-
-​    好吧，你说加进程数，这跟apache的线程模型有什么区别，注意，别增加无谓的上下文切换。所以，在nginx里面，最忌讳阻塞的系统调用了。不要阻塞，那就非阻塞喽。非阻塞就是，事件没有准备好，马上返回EAGAIN，告诉你，事件还没准备好呢，你慌什么，过会再来吧。
-
-​    好吧，你过一会，再来检查一下事件，直到事件准备好了为止，在这期间，你就可以先去做其它事情，然后再来看看事件好了没。虽然不阻塞了，但你得不时地过来检查一下事件的状态，你可以做更多的事情了，但带来的开销也是不小的。
-
-
-
-## **综合比较**
-
- ![image](../_images/2a73de44-6df8-46d1-ac0e-03e772d04c14.png)
-
-
-
-## **nginx配置nodejs反向代理**
-
-nginx安装完成之后，[配置](https://blog.csdn.net/tujiaw/article/details/58238352)文件一般在这些目录中/usr/local/nginx/conf, /etc/nginx, or /usr/local/etc/nginx
-
-打开配置文件nginx.conf，在http下增加：
-
-```
-upstream nodejs { server 127.0.0.1:3000; #你所在服务器中nodejs程序监听的端口 keepalive 64; }
-```
-
- 在http配置中有个include /etc/nginx/sites-enabled/*;打开sites-enabled下面的**default文件**，在server下配置：
+反向代理代理服务端，客户端不知道实际提供服务的服务器。
+
+**作用：**
+- 保护内网安全
+- 负载均衡
+- 隐藏真实服务器
 
 ```nginx
-listen 80 default_server;
-listen [::]:80 default_server;
-server_name [www.sanjiadian.net](http://www.sanjiadian.net) sanjiadian.net;
-
-location / {
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header Host $http_host;
-    proxy_set_header X-Nginx-Proxy true;
-    proxy_set_header Connection "";
-    proxy_pass http://nodejs;
+upstream backend {
+    server 127.0.0.1:8080;
+    server 127.0.0.1:8081;
 }
-```
 
- 
+server {
+    listen 80;
+    server_name example.com;
 
- 
-
-## **Nginx开启Gzip**
-
-在nginx.conf中的http下加入以下内容：
-
-```nginx
-gzip on;
-gzip_min_length 1k;
-gzip_buffers 4 16k;
-#gzip_http_version 1.0;
-gzip_comp_level 9;
-gzip_types text/plain application/javascript application/x-javascript text/css application/xml text/javascript application/x-httpd-php image/jpeg image/gif image/png;
-gzip_vary off;
-gzip_disable "MSIE [1-6]\.";
-```
-
- 
-
- 
-
-## **Nginx端口转发TCP**
-
-/etc/nginx/nginx.conf配置文件加入（注意：[不要在http块中加入，加在最外层即可](https://blog.51cto.com/moerjinrong/2287680)）：
-
-```nginx
-# TCP端口转发
-stream{
-    upstream natmongodb{
-        hash $remote_addr consistent;
-        # 目标IP端口
-        server 192.168.1.103:27017 max_fails=3 fail_timeout=10s;  
-    }
-    server{
-        # 本机端口
-        listen 10009;
-        proxy_connect_timeout 20s;
-        proxy_timeout 5m;
-        proxy_pass natmongodb;
+    location / {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 }
 ```
 
- 
+### 正反向代理对比
 
- 
+| 特性 | 正向代理 | 反向代理 |
+|------|----------|----------|
+| 代理对象 | 客户端 | 服务端 |
+| 客户端感知 | 感知不到代理存在 | 认为是真实服务器 |
+| 典型用途 | 翻墙、加速 | 负载均衡、安全防护 |
 
-## **Nginx访问频率限制**
+---
 
-接口调用频率限制（CC攻击）可通过如下Nginx[配置实现](https://www.cnblogs.com/zhen-rh/p/7424942.html)：
+## 负载均衡
 
+Nginx支持多种负载均衡策略：
+
+### 轮询（Round Robin）
+
+默认方式，每个请求按时间顺序分配到不同服务器：
+
+```nginx
+upstream backend {
+    server 127.0.0.1:8080;
+    server 127.0.0.1:8081;
+}
 ```
+
+### 权重（Weight）
+
+指定轮询权重，用于服务器性能不均的情况：
+
+```nginx
+upstream backend {
+    server 127.0.0.1:8080 weight=9;
+    server 127.0.0.1:8081 weight=1;
+}
+```
+
+### IP哈希（IP Hash）
+
+同一客户端固定访问同一服务器，解决session问题：
+
+```nginx
+upstream backend {
+    ip_hash;
+    server 127.0.0.1:8080;
+    server 127.0.0.1:8081;
+}
+```
+
+### 最少连接（Least Connections）
+
+连接数最少的服务器优先分配：
+
+```nginx
+upstream backend {
+    least_conn;
+    server 127.0.0.1:8080;
+    server 127.0.0.1:8081;
+}
+```
+
+### 第三方策略
+
+**fair** - 按响应时间分配：
+```nginx
+upstream backend {
+    server 127.0.0.1:8080;
+    server 127.0.0.1:8081;
+    fair;
+}
+```
+
+**url_hash** - 按URL哈希分配，适合缓存场景：
+```nginx
+upstream backend {
+    hash $request_uri;
+    server 127.0.0.1:8080;
+    server 127.0.0.1:8081;
+}
+```
+
+### 后端服务器状态
+
+```nginx
+upstream backend {
+    server 127.0.0.1:8080 max_fails=3 fail_timeout=10s;
+    server 127.0.0.1:8081 down;  # 暂时下线
+    server 127.0.0.1:8082 backup;  # 备用服务器
+}
+```
+
+| 参数 | 说明 |
+|------|------|
+| max_fails | 失败次数，超过则视为不可用 |
+| fail_timeout | 失败超时时间 |
+| down | 标记为永久下线 |
+| backup | 备用服务器，其他都失败时启用 |
+
+---
+
+## 静态资源与动静分离
+
+### 静态资源服务
+
+```nginx
+server {
+    listen 80;
+    server_name static.example.com;
+    root /usr/share/nginx/html;
+
+    location / {
+        index index.html index.htm;
+    }
+
+    # 静态资源缓存
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+}
+```
+
+### 动静分离
+
+将静态资源和动态请求分离到不同服务器：
+
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+    root /usr/share/nginx/html;
+
+    # 静态资源直接返回
+    location /static/ {
+        alias /usr/share/nginx/static/;
+    }
+
+    # 图片资源缓存
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+        alias /usr/share/nginx/images/;
+        expires 7d;
+    }
+
+    # 动态请求代理到后端
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Vue/React History模式路由
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+---
+
+## 缓存与压缩
+
+### Gzip压缩
+
+```nginx
 http {
-    limit_req_zone $binary_remote_addr zone=req_perip:50m rate=10r/s;
-    ...
+    gzip on;
+    gzip_min_length 1k;
+    gzip_buffers 4 16k;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    gzip_vary on;
+    gzip_disable "MSIE [1-6]\.";
+
+    # 缓存配置
+    proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=cache_zone:10m inactive=60m max_size=1g;
+
     server {
-        ...
-        location /api/ {
-                limit_req zone=req_perip burst=50 nodelay;
-                limit_req_status 503;
+        # 使用缓存
+        location / {
+            proxy_cache cache_zone;
+            proxy_cache_valid 200 60m;
+            proxy_cache_key $scheme$host$request_uri;
+            add_header X-Cache-Status $upstream_cache_status;
+            proxy_pass http://backend;
         }
     }
 }
 ```
 
- 
+### 代理缓存配置
 
- 
+```nginx
+# 缓存配置
+proxy_cache_path /tmp/nginx_cache levels=1:2 keys_zone=api_cache:100m max_size=1g inactive=60m use_temp_path=off;
 
-## SSL(Https)配置
+server {
+    location /api/ {
+        proxy_cache api_cache;
+        proxy_cache_valid 200 304 10m;
+        proxy_cache_valid any 1m;
+        proxy_cache_key $scheme$host$request_uri;
+        proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+        add_header X-Cache-Status $upstream_cache_status;
 
-[**Nginx 1.14**](https://blog.52itstyle.vip/archives/4219/)配置SSL即Https需要nginx启用了https模块；nginx更详细的配置[参考](https://help.aliyun.com/document_detail/98728.html?spm=a2c4g.11186623.2.12.c0076b441E8wxG#concept-n45-21x-yfb)：
+        proxy_pass http://backend;
+    }
+}
+```
+
+---
+
+## 访问限流
+
+### 请求频率限制
+
+```nginx
+http {
+    # 限制每个IP每秒10个请求
+    limit_req_zone $binary_remote_addr zone=req_perip:50m rate=10r/s;
+
+    server {
+        location /api/ {
+            # 允许突发50个请求
+            limit_req zone=req_perip burst=50 nodelay;
+            limit_req_status 503;
+            limit_conn_status 503;
+
+            proxy_pass http://backend;
+        }
+    }
+}
+```
+
+### 连接数限制
+
+```nginx
+http {
+    # 限制每个IP最多10个连接
+    limit_conn_zone $binary_remote_addr zone=conn_perip:10m;
+
+    server {
+        location / {
+            limit_conn conn_perip 10;
+            proxy_pass http://backend;
+        }
+    }
+}
+```
+
+---
+
+## SSL/Https配置
+
+### 基础SSL配置
 
 ```nginx
 server {
-    listen       80 default_server;
-    listen       443 ssl http2 default_server;
-    listen       [::]:80 default_server;
-    server_name  _;
-    root         /usr/share/nginx/html;
-    client_max_body_size 20M;
+    listen 80;
+    listen 443 ssl http2;
+    server_name example.com;
 
-    #SSL-START SSL相关配置，请勿删除或修改下一行带注释的404规则
-    #error_page 404/404.html;
-    #HTTP_TO_HTTPS_START
-    if ($server_port !~ 443){
-        rewrite ^(/.*)$ https://$host$1 permanent;
-    }
-    #HTTP_TO_HTTPS_END
-    ssl_certificate    /etc/nginx/ssl/fullchain.pem;
-    ssl_certificate_key    /etc/nginx/ssl/privkey.pem;
-    ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+    # SSL证书
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+
+    # SSL协议和加密套件
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
     ssl_prefer_server_ciphers on;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-    error_page 497  https://$host$request_uri;
 
-    #SSL-END
+    # 会话缓存
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    # HSTS（可选）
+    add_header Strict-Transport-Security "max-age=31536000" always;
 }
 ```
 
-
-
-## Nginx多项目配置
-
-有时候我们会在同一个系统中存在好几个项目，比如手机端和pc端，这时候就需要对不同的项目使用不同的路由去区分，下面是针对一个主项目和一个子项目（subpage）的配置：
+### HTTP重定向到HTTPS
 
 ```nginx
 server {
-    listen       8081 default_server;
-    listen       [::]:8081 default_server;
-    server_name  _;
-    root         /usr/share/nginx/html;
-    # Load configuration files for the default server block.
+    listen 80;
+    server_name example.com;
+    return 301 https://$server_name$request_uri;
+}
 
-    # 主项目路径
+server {
+    listen 443 ssl http2;
+    server_name example.com;
+
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+
+    # 其他配置...
+}
+```
+
+### SSL证书参数
+
+| 参数 | 说明 |
+|------|------|
+| ssl_certificate | 证书文件（包含公钥） |
+| ssl_certificate_key | 私钥文件 |
+| ssl_protocols | 支持的SSL/TLS版本 |
+| ssl_ciphers | 加密套件 |
+| ssl_session_cache | 会话缓存 |
+
+---
+
+## 多项目与端口转发
+
+### 多项目配置
+
+```nginx
+server {
+    listen 8081;
+    server_name _;
+
+    # 主项目
     location / {
-        index  index.html;
-        # vue路由模式：history
-        try_files $uri $uri/ /index.html; 
+        root /usr/share/nginx/html/main;
+        index index.html;
+        try_files $uri $uri/ /index.html;
     }
-    # 子项目路径
-    location /subpage {
-        alias /usr/share/nginx/subpage;
-        # vue路由模式：history
-        try_files $uri $uri/ /subpage/index.html;
-        index  index.html index.htm;
+
+    # 子项目
+    location /admin {
+        alias /usr/share/nginx/html/admin;
+        try_files $uri $uri/ /admin/index.html;
+    }
+
+    # API代理
+    location /api {
+        proxy_pass http://backend;
     }
 }
 ```
 
+### TCP端口转发
 
+```nginx
+# stream模块需要在nginx.conf最外层（不是http块内）
+stream {
+    # MongoDB转发
+    upstream mongodb {
+        hash $remote_addr;
+        server 192.168.1.103:27017 max_fails=3 fail_timeout=10s;
+    }
 
+    server {
+        listen 10009;
+        proxy_connect_timeout 20s;
+        proxy_timeout 5m;
+        proxy_pass mongodb;
+    }
 
+    # MySQL转发
+    upstream mysql_backend {
+        server 192.168.1.104:3306;
+    }
 
-## CentOS安装Nginx
+    server {
+        listen 13306;
+        proxy_pass mysql_backend;
+    }
+}
+```
 
-centos7下[安装](https://zhuanlan.zhihu.com/p/144143399)nginx
+### WebSocket支持
 
-1. 编译nginx
+```nginx
+location /ws/ {
+    proxy_pass http://backend;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_read_timeout 3600s;
+}
+```
 
-   ```bash
-   # 安装依赖
-   yum install -y gcc-c++
-   yum install -y pcre pcre-devel
-   yum install -y zlib zlib-devel
-   yum install -y openssl openssl-devel
-   
-   # 下载nginx安装包
-   cd /usr/local/
-   mkdir nginx
-   cd nginx
-   wget -c https://nginx.org/download/nginx-1.20.1.tar.gz
-   tar -zxvf nginx-1.20.1.tar.gz
-   cd nginx-1.20.1
-   
-   # 编译nginx
-   ./configure --with-http_ssl_module
-   make
-   make install
-   
-   # 启动nginx
-   cd /usr/local/nginx/sbin/
-   ./nginx
-   
-   # 测试nginx是否启动成功
-   curl localhost
-   ```
+---
 
-2. 添加nginx到环境变量
+## 常见配置示例
 
-   ```bash
-   # 编辑/etc/profile
-   vim /etc/profile
-   
-   # 在最后一行添加配置，:wq保存
-   PATH=$PATH:/usr/local/nginx/sbin
-   export PATH
-   
-   # 使配置立即生效
-   source /etc/profile
-   ```
+### Vue/React History模式
 
-   
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+    root /usr/share/nginx/html/dist;
+    index index.html;
 
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
 
+    # 静态资源
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
 
+    # API代理
+    location /api/ {
+        proxy_pass http://backend/api/;
+        proxy_set_header Host $host;
+    }
+}
+```
 
+### 图片防盗链
 
+```nginx
+server {
+    listen 80;
+    server_name example.com;
 
+    location ~* \.(jpg|jpeg|png|gif)$ {
+        valid_referers none blocked example.com *.example.com;
+        if ($invalid_referer) {
+            return 403;
+        }
+    }
+}
+```
 
+### 限制IP访问
 
+```nginx
+location /admin/ {
+    allow 192.168.1.0/24;
+    allow 10.0.0.0/8;
+    deny all;
 
+    proxy_pass http://backend;
+}
+```
+
+### 请求超时配置
+
+```nginx
+location /api/ {
+    proxy_connect_timeout 30s;
+    proxy_send_timeout 30s;
+    proxy_read_timeout 30s;
+    proxy_pass http://backend;
+}
+```
+
+### 日志配置
+
+```nginx
+http {
+    # 访问日志
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log /var/log/nginx/access.log main;
+
+    # 错误日志
+    error_log /var/log/nginx/error.log warn;
+}
+```
