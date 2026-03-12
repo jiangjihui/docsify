@@ -801,6 +801,57 @@ public class UserController {
 }
 ```
 
+### RESTful vs 非 RESTful
+
+这两种方式本质上是**路径参数（Path Parameter）**与**查询参数（Query Parameter）**的区别。
+
+**RESTful 风格（路径参数）：**
+
+```
+GET    /api/users/{id}     # 获取单个用户
+PUT    /api/users/{id}     # 更新用户
+DELETE /api/users/{id}     # 删除用户
+```
+
+**非 RESTful 风格（查询参数）：**
+
+```
+GET    /api/getUser?id=1   # 获取单个用户
+POST   /api/updateUser     # 更新用户
+POST   /api/deleteUser     # 删除用户
+```
+
+**核心区别对比：**
+
+| 对比维度 | 路径参数 `/api/users/{id}` | 查询参数 `/api/users?id=xxx` |
+| :--- | :--- | :--- |
+| **语义清晰度** | URL 直接表达"定位唯一资源"，层次分明 | 更像"在列表中查询"，偏向过滤 |
+| **缓存友好性** | URL 是资源唯一标识，CDN/浏览器易缓存 | 需额外配置，部分旧策略可能忽略 |
+| **URL 可读性** | 简洁直观，一眼看出目标资源 | 参数多时 URL 变长 |
+| **扩展性** | 天然支持嵌套资源（如 `/users/{id}/orders`） | 资源关系不直观 |
+| **特殊字符** | 需编码处理 | 更灵活，框架自动处理 |
+
+**使用场景：**
+
+| 场景 | 方式 | 说明 |
+|------|------|------|
+| 获取/更新/删除单个资源 | 路径参数 | `GET /api/users/123` |
+| 分页/过滤/排序 | 查询参数 | `GET /api/users?page=1&size=10` |
+| 搜索 | 查询参数 | `GET /api/users?keyword=zhang` |
+| 嵌套资源 | 路径参数 | `GET /api/users/123/orders` |
+
+**最佳实践：**
+
+```
+GET /api/users/123/orders?status=paid&page=1
+       └─ 路径参数 ─┘   └──── 查询参数 ──────┘
+       (定位资源)        (过滤/分页)
+```
+
+> **总结：** 路径参数用于"定位"资源，查询参数用于"筛选"资源。推荐以 RESTful 路径参数为主，配合查询参数处理过滤/分页。
+
+---
+
 ### 统一返回结果
 
 ```java
