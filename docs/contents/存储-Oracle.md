@@ -1,425 +1,872 @@
-## **下载安装**
+# Oracle 数据库
 
-下载地址： http://www.oracle.com/technetwork/database/enterprise-edition/downloads/index.html
+## 概述
 
-Linux 安装 Oracle http://www.cnblogs.com/asimple41/p/3986018.html
+### 什么是 Oracle
 
- 
+Oracle 数据库是 Oracle（甲骨文）公司推出的关系型数据库管理系统（RDBMS），是全球最流行的企业级数据库之一。Oracle 以其高可用性、高性能、强安全性和丰富的企业级功能著称，广泛应用于金融、电信、政府、制造等行业的大型核心系统中。
 
- 
+**Oracle 的核心特点：**
+- 高可用性：支持 RAC（Real Application Clusters）集群
+- 高性能：支持分区表、并行查询、 Hint 优化
+- 强安全性：细粒度访问控制、透明数据加密
+- 可扩展性：支持超大并发连接和海量数据存储
+- 跨平台：支持 Windows、Linux、Unix 等主流操作系统
 
-## **导出/导入数据库**
+### Oracle 版本演进
 
-**普通导入导出**：
+| 版本 | 发布年份 | 主要特性 |
+|------|----------|----------|
+| Oracle 8 | 1997 | 对象关系特性、分区表 |
+| Oracle 9i | 2001 | 真正应用集群（RAC）、Data Guard |
+| Oracle 10g | 2003 | Grid 网格计算、自动管理 |
+| Oracle 11g | 2007 | 主动数据库、实时应用测试 |
+| Oracle 12c | 2013 | 云架构、PDB（可插拔数据库） |
+| Oracle 18c | 2018 | 多模数据库、In-Memory 列式存储 |
+| Oracle 19c | 2019 | 长期支持版、零停机迁移 |
+| Oracle 21c | 2021 | JSON 数据类型原生支持、Blockchain 表 |
+| Oracle 23c | 2023 | JSON-Relational  duality、SQL 域 |
 
-以oracle用户登录系统：su - oracle
+> **说明**：Oracle 12c 引入的 PDB（Pluggable Database，可插拔数据库）架构允许在一个 CDB（Container Database）中创建多个 PDB，大幅提升了资源利用率和运维效率。
 
-exp 用户名/密码 file=文件路径 log=日志路径
+### 与 MySQL/PostgreSQL 对比
 
-imp 用户名/密码@网络服务名 file=xxx.dmp full=y;
+| 特性 | Oracle | MySQL | PostgreSQL |
+|------|--------|-------|------------|
+| 许可证 | 商业付费 | GPL 开源 | MIT 开源 |
+| 存储过程 | PL/SQL | 存储过程 | PL/pgSQL |
+| 并发控制 | 行级锁 + 多版本 | 行级锁 + Undo | MVCC |
+| 分区表 | 支持 | 支持 | 支持（有限） |
+| 集群 | RAC | MySQL Cluster | Citus |
+| 最大单库容量 | 无限 | 256TB | 无限 |
+| 适用场景 | 企业级核心系统 | Web 应用 | 复杂查询场景 |
 
-示例：exp testdb/testdb file=/tmp/expfile.dmp log=/tmp/dblog.log
+---
 
+## 核心概念
 
+### 实例与数据库
 
-**数据棒**导入导出：
+Oracle 中有两个重要概念容易混淆：**实例（Instance）** 和 **数据库（Database）**。
 
-expdp **testdb/testdb** dumpfile=**acct_loan**.dmpd tables=**acct_loan**
+- **实例**：一组内存结构（SGA）+ 后台进程，负责操作数据库
+- **数据库**：物理文件（数据文件、控制文件、归档日志等）的集合
 
-impdp **absimp/absimp** dumpfile=**acct_loan**.dmpd remap_schema=**testdb**:**absimp**
-
-> 例子：重建用户导入数据
-
-```shell
-# 导出数据
-expdp testdb/testdb dumpfile=testdb_20170811100600.dmpd
-
-# 查看导出文件目录
-select * from dba_directories;
-
-# 删除用户及所属表数据
-drop user mydb cascade;
-
-# 查看用户会话
-select sid,serial# from v$session where username='mydb';
-
-# 删除用户会话
-alter system kill session 'SID,SERIAL#';
-
-# 创建用户
-create user mydb identified by mydb;
-
-# 赋予权限
-grant dba to mydb;
-
-# 为新用户导入数据
-impdp mydb/mydb dumpfile=testdb_20170811100600.dmpd remap_schema=testdb:mydb
-
-```
-
-
-
-
-
-## **基础命令**
-
-**查看所有用户**
+在单机环境下，实例与数据库通常是一对一关系；在 RAC 集群中，一个数据库可以对应多个实例。
 
 ```sql
-select * from all_users;
+-- 查看当前实例名
+SELECT instance_name FROM v$instance;
+
+-- 查看数据库名
+SELECT name FROM v$database;
 ```
 
+### 内存结构
 
+Oracle 的内存结构分为两大区域：
 
-**查看当前实例名**
+#### SGA（System Global Area）
+
+SGA 是 Oracle 最重要的内存区域，所有后台进程和服务器进程共享。
+
+| 组件 | 说明 |
+|------|------|
+| Buffer Cache | 数据块缓存，存储从磁盘读取的数据块 |
+| Shared Pool | 库缓存（SQL 语句）+ 数据字典缓存 |
+| Redo Log Buffer | 重做日志缓存，记录数据库变更 |
+| Java Pool | Java 代码和数据缓存 |
+| Large Pool | 大型内存分配（如 RMAN、并行查询） |
 
 ```sql
-select instance_name from v$instance;
-echo $ORACLE_SID;
-set ORACLE_SID=xxxx
+-- 查看 SGA 配置
+SHOW SGA;
+
+-- 查看各组件大小
+SELECT * FROM v$sgastat;
 ```
 
- 
+#### PGA（Program Global Area）
 
-**查询默认dump路径**
+PGA 是服务器进程或后台进程的私有内存区域，每个进程独立拥有。
+
+| 组件 | 说明 |
+|------|------|
+| Sort Area | 排序操作使用的内存 |
+| Hash Area | 哈希连接使用的内存 |
+| Bitmap Merge Area | 位图合并使用的内存 |
 
 ```sql
-select * from dba_directories where directory_name='DATA_PUMP_DIR';
+-- 查看 PGA 配置
+SHOW PARAMETER pga;
+
+-- 查看当前 PGA 使用情况
+SELECT * FROM v$pgastat;
 ```
 
+### 表空间
 
-
-**查看各客户连接数目**
-
-```
-SELECT username,COUNT(*) from v$session GROUP BY USERNAME;
-```
-
-
-
-**创建索引**
+表空间（Tablespace）是 Oracle 逻辑存储结构的核心概念，可以看作是一个"房间"，数据文件则是"房间里的箱子"。
 
 ```
-# 单一索引
-Create Index <Index-Name> On <Table_Name>(Column_Name);
-
-# 复合索引:在emp表的deptno、job列建立索引
-Create Index i_deptno_job on emp(deptno,job);
+数据库 → 表空间 → 数据文件 → 段（表/索引） → 区（Extent） → 数据块
 ```
 
-
-
-**重启数据库**
-
-```
->lsnrctl stop 关闭监听
->sqlplus "/as sysdba"
->shutdown immediate 关闭数据库
->exit
->lsnrctl start 打开监听
->sqlplus "/as sysdba"
->startup 打开数据库
-```
-
-
-
-**查看游标数**
+**查看表空间：**
 
 ```sql
-show parameter open_cursors;
+-- 查看所有表空间
+SELECT tablespace_name, status, contents FROM dba_tablespaces;
+
+-- 查看表空间使用情况
+SELECT tablespace_name,
+       ROUND(bytes / 1024 / 1024, 2) AS size_mb,
+       ROUND((bytes - free_bytes) / 1024 / 1024, 2) AS used_mb,
+       ROUND(free_bytes / 1024 / 1024, 2) AS free_mb
+FROM (SELECT tablespace_name, bytes,
+             LEAD(bytes) OVER (ORDER BY tablespace_name) AS free_bytes
+      FROM (SELECT tablespace_name, SUM(bytes) AS bytes
+            FROM dba_data_files GROUP BY tablespace_name));
 ```
 
-> **注意：**需要在服务器上使用sqlplus / as sysdba登录数据库查询，不能使用第三方工具运行。
+**创建表空间：**
 
+```sql
+-- 创建永久表空间
+CREATE TABLESPACE mydata
+LOGGING
+DATAFILE '/u01/app/oracle/oradata/mydb/mydata01.dbf'
+SIZE 100M
+AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED
+EXTENT MANAGEMENT LOCAL;
 
-
-
-
-## 函数
-
-### 字符串函数
-
-| [函数](https://blog.csdn.net/qq_35868412/article/details/79102613) | 返回    | 描述                           | 例子                                              |
-| :----------------------------------------------------------- | :------ | :----------------------------- | :------------------------------------------------ |
-| to_char(timestamp, text)                                     | text    | 把 timestamp 转换成 string     | to_char(table.createTime,'yyyy-MM-dd hh24:mi:ss') |
-| to_char(int, text)                                           | text    | 把 int4/int8 转换成 string     | to_char(125, '999')                               |
-| to_char(float, text)                                         | text    | 把 float4/float8 转换成 string | to_char(125.8, '999D9')                           |
-| to_char(numeric, text)                                       | text    | 把 numeric 转换成 string       | to_char(numeric '-125.8', '999D99S')              |
-| to_date(text, text)                                          | date    | 把 string 转换成 date          | to_date('05 Dec 2000', 'DD Mon YYYY')             |
-| to_timestamp(text, text)                                     | date    | 把 string 转换成 timestamp     | to_timestamp('05 Dec 2000', 'DD Mon YYYY')        |
-| to_number(text, text)                                        | numeric | 把 string 转换成 numeric       | to_number('12,454.8-', '99G999D9S')               |
-
-
-
-
-
-## 控制台乱码设置
-
+-- 创建临时表空间
+CREATE TEMPORARY TABLESPACE mytemp
+TEMPFILE '/u01/app/oracle/oradata/mydb/mytemp01.dbf'
+SIZE 50M
+AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED;
 ```
-# 常用中文字符集
+
+### 用户与模式
+
+Oracle 中**用户（User）**和**模式（Schema）**通常是一一对应的关系。用户创建后会自动创建一个同名的模式，模式包含该用户拥有的所有对象（表、视图、存储过程等）。
+
+```sql
+-- 创建用户
+CREATE USER myuser IDENTIFIED BY password
+DEFAULT TABLESPACE mydata
+TEMPORARY TABLESPACE mytemp;
+
+-- 赋予权限
+GRANT CONNECT, RESOURCE TO myuser;
+GRANT CREATE ANY DIRECTORY TO myuser;
+
+-- 查看所有用户
+SELECT username, created, account_status FROM all_users;
+
+-- 查看用户对象
+SELECT object_name, object_type FROM all_objects WHERE owner = 'MYUSER';
+```
+
+### 权限管理
+
+Oracle 的权限分为**系统权限**和**对象权限**。
+
+```sql
+-- 系统权限
+GRANT CREATE SESSION TO myuser;        -- 连接数据库
+GRANT CREATE TABLE TO myuser;           -- 创建表
+GRANT CREATE VIEW TO myuser;            -- 创建视图
+GRANT CREATE PROCEDURE TO myuser;       -- 创建存储过程
+GRANT dba TO myuser;                    -- 管理员权限
+
+-- 对象权限
+GRANT SELECT ON scott.emp TO myuser;    -- 查询权限
+GRANT INSERT, UPDATE ON scott.emp TO myuser;
+GRANT ALL ON scott.emp TO myuser;       -- 所有权限
+
+-- 角色
+GRANT CONNECT, RESOURCE TO myuser;     -- 常用角色组合
+```
+
+---
+
+## 安装与配置
+
+### 下载安装
+
+**官方下载地址：**
+- Oracle Database: https://www.oracle.com/database/technologies/downloads/
+
+**Linux 安装参考：**
+- Oracle 官方安装指南：https://docs.oracle.com/en/database/oracle/oracle-database/
+
+> **注意**：Oracle 安装过程复杂，生产环境建议使用 Docker 或 Oracle Cloud 等云服务简化部署。
+
+### 环境变量
+
+```bash
+# Linux 环境变量配置
+export ORACLE_SID=orcl              # 数据库实例名
+export ORACLE_HOME=/u01/app/oracle/product/19.0.0/dbhome_1
+export PATH=$ORACLE_HOME/bin:$PATH
+export TNS_ADMIN=$ORACLE_HOME/network/admin
+export NLS_LANG=SIMPLIFIED CHINESE_CHINA.AL32UTF8
+```
+
+| 环境变量 | 说明 |
+|----------|------|
+| ORACLE_SID | 数据库实例标识符 |
+| ORACLE_HOME | Oracle 软件安装目录 |
+| TNS_ADMIN | TNS 配置文件目录 |
+| NLS_LANG | 客户端字符集 |
+
+### 客户端工具
+
+#### SQL*Plus
+
+SQL*Plus 是 Oracle 自带的命令行客户端。
+
+```bash
+# 登录方式
+sqlplus / as sysdba          # 本地 sys 用户
+sqlplus username/password   # 用户名密码登录
+sqlplus username/password@host:port/service_name  # 远程登录
+```
+
+#### SQL Developer
+
+Oracle 官方提供的图形化数据库工具，支持 Windows、Linux、Mac。
+
+**下载地址：** https://www.oracle.com/database/sqldeveloper/
+
+### 字符集配置
+
+字符集不匹配会导致中文乱码���是最常见的问题之一。
+
+```bash
+# Windows 设置中文字符集
 set NLS_LANG=SIMPLIFIED CHINESE_CHINA.ZHS16GBK
+set NLS_LANG=SIMPLIFIED CHINESE_CHINA.AL32UTF8
 
-# 常用unicode字符集
-set NLS_LANG=american_america.AL32UTF8
-
-# 查看字符集
-select * from v$nls_parameters where parameter='NLS_CHARACTERSET';
+# Linux 设置中文字符集
+export NLS_LANG=SIMPLIFIED CHINESE_CHINA.AL32UTF8
 ```
 
-
-
-## 表空间
-
-把oracle数据库看作一个实在房间，表空间可以看作这个房间的空间，是可以自由分配，在这空间里面可以堆放多个箱子（箱子可以看作数据库文件），箱子里面再装物件（物件看作表）。用户指定表空间也就是你希望把属于这个用户的表放在那个房间（表空间）里面。
-
-查看所有表空间的情况
-
 ```sql
-select * from dba_tablespaces;
+-- 查看数据库字符集
+SELECT parameter, value FROM nls_database_parameters
+WHERE parameter = 'NLS_CHARACTERSET';
+
+-- 查看会话字符集
+SELECT * FROM nls_session_parameters
+WHERE parameter = 'NLS_LANG';
 ```
 
-创建表空间
+---
 
-```sql
-create tablespace HRPM0
-datafile '/oradata/misdb/HRPM0.DBF' size 5m  autoextend   on next  10m maxsize unlimited;
+## 数据库管理
+
+### 启动与关闭
+
+```bash
+# 1. 关闭监听器
+lsnrctl stop
+
+# 2. 以 sysdba 登录
+sqlplus / as sysdba
+
+# 3. 关闭数据库
+SQL> shutdown immediate;      -- 正常关闭
+SQL> shutdown abort;        -- 强制关闭（紧急情况）
+
+# 4. 启动数据库
+SQL> startup;                -- 启动到 OPEN 状态
+SQL> startup mount;         -- 启动到 MOUNT 状态（用于维护）
+SQL> alter database open;   -- 打开数据库
+
+# 5. 启动监听器
+lsnrctl start
 ```
 
-删除表空间
+**关闭选项说明：**
+
+| 选项 | 说明 |
+|------|------|
+| shutdown normal | 等待所有连接断开后关闭（可能长时间阻塞） |
+| shutdown transactional | 等待事务完成后关闭 |
+| shutdown immediate | 回滚未提交事务，立即关闭（常用） |
+| shutdown abort | 强制关闭，不做任何处理（紧急情况使用） |
+
+### 常用查询
 
 ```sql
-DROP TABLESPACE data01 INCLUDING CONTENTS AND DATAFILES;
+-- 查看所有用户
+SELECT username, created, account_status FROM all_users;
+
+-- 查看当前连接数
+SELECT username, COUNT(*) AS connection_count
+FROM v$session
+GROUP BY username;
+
+-- 查看游标数配置
+SHOW PARAMETER open_cursors;
+
+-- 查看数据文件
+SELECT file_name, tablespace_name, bytes / 1024 / 1024 AS size_mb
+FROM dba_data_files;
+
+-- 查看表空间下的表
+SELECT table_name, owner
+FROM all_tables
+WHERE tablespace_name = 'MY_DATA';
 ```
 
-修改表空间大小
+### 表空间管理
 
 ```sql
-alter database datafile '/path/NADDate05.dbf' resize 100M
+-- 修改表空间大小
+ALTER DATABASE DATAFILE '/u01/app/oracle/oradata/mydb/data01.dbf' RESIZE 500M;
+
+-- 增加数据文件
+ALTER TABLESPACE mydata
+ADD DATAFILE '/u01/app/oracle/oradata/mydb/mydata02.dbf' SIZE 100M
+AUTOEXTEND ON NEXT 10M MAXSIZE 1G;
+
+-- 删除表空间
+DROP TABLESPACE mydata INCLUDING CONTENTS AND DATAFILES;
+
+-- 设置表空间只读
+ALTER TABLESPACE mydata READ ONLY;
+
+-- 设置表空间读写
+ALTER TABLESPACE mydata READ WRITE;
 ```
 
-[查看](http://blog.itpub.net/29485627/viewspace-1280367/)该表空间下所有的表
+---
 
-```sql
-select table_name from dba_tables where tablespace_name='MY_01';
+## 数据迁移
+
+### 传统导入导出（exp/imp）
+
+传统的 exp/imp 工具适用于小数据量迁移，现在已被数据泵取代。
+
+```bash
+# 导出
+exp username/password file=/tmp/expfile.dmp log=/tmp/exp.log
+
+# 导入
+imp username/password@service_name file=/tmp/expfile.dmp full=y
 ```
 
+> **注意**：exp/imp 效率较低，建议使用 expdp/impdp（数据泵）。
 
+### 数据泵（expdp/impdp）
 
- 
+数据泵是 Oracle 10g 引入的高效导入导出工具。
 
-## [**表分区**](http://blog.itpub.net/14190034/viewspace-606278/)
+**基本语法：**
 
-当表中的数据量不断增大，查询数据的速度就会变慢，应用程序的性能就会下降，这时就应该考虑对表进行分区。表进行分区后，逻辑上表仍然是一张完整的表，只是将表中的数据在物理上存放到多个表空间(物理文件上)，这样查询数据时，不至于每次都扫描整张表。 
+```bash
+# 导出
+expdp username/password directory=DATA_PUMP_DIR dumpfile=exp.dmp schemas=scott
 
-> **注意：**在创建表进行分区时，表空间必须先存在，而且建议将不同的分区放入不同的表空间中。 
-
-**一、范围分区**
-
-这种类型的分区是使用列的一组值，通常将该列成为分区键。
-
-> **示例1：**假设有一个CUSTOMER表，表中有数据200000行，我们将此表通过CUSTOMER_ID进行分区，每个分区存储100000行，我们将每个分区保存到单独的表空间中，这样数据文件就可以跨越多个物理磁盘。下面是创建表和分区的代码，如下： 
-
-```sql
-CREATE TABLE CUSTOMER 
-( 
-  CUSTOMER_ID NUMBER NOT NULL PRIMARY KEY, 
-  FIRST_NAME VARCHAR2(30) NOT NULL, 
-  STATUS CHAR(1) 
-) 
-PARTITION BY RANGE (CUSTOMER_ID) 
-( 
-  PARTITION CUS_PART1 VALUES LESS THAN (100000) TABLESPACE CUS_TS01, 
-  PARTITION CUS_PART2 VALUES LESS THAN (200000) TABLESPACE CUS_TS02 
-) 
+# 导入
+impdp username/password directory=DATA_PUMP_DIR dumpfile=exp.dmp full=y
 ```
 
-> **示例2：**假设有ORDER_ACTIVITIES表，每6个月对订单进行清理，我们可以按月份对表进行分区，分区代码如下：
+**常用参数：**
+
+| 参数 | 说明 |
+|------|------|
+| directory | 导出目录对象（必须先创建） |
+| dumpfile | 导出文件名称 |
+| schemas | 导出的用户 |
+| tables | 导出的表 |
+| full | 全量导出 |
+| include | 包含的对象类型 |
+| exclude | 排除的对象类型 |
+| remap_schema | 映射用户 |
+| remap_tablespace | 映射表空间 |
+
+**完整示例：**
 
 ```sql
-CREATE TABLE ORDER_ACTIVITIES 
-( 
-  ORDER_ID NUMBER(7) NOT NULL, 
-  ORDER_DATE DATE, 
-  PAID CHAR(1) 
-) 
-PARTITION BY RANGE (ORDER_DATE) 
-( 
-  PARTITION ORD_ACT_PART01 VALUES LESS THAN (TO_DATE('01-MAY-2003','DD-MON-YYYY')) TABLESPACE ORD_TS01, 
-  PARTITION ORD_ACT_PART02 VALUES LESS THAN (TO_DATE('01-JUN-2003','DD-MON-YYYY')) TABLESPACE ORD_TS02, 
-  PARTITION ORD_ACT_PART02 VALUES LESS THAN (TO_DATE('01-JUL-2003','DD-MON-YYYY')) TABLESPACE ORD_TS03 
+-- 1. 创建目录
+CREATE DIRECTORY dp_dir AS '/u01/backup';
+GRANT READ, WRITE ON DIRECTORY dp_dir TO scott;
+
+-- 2. 导出数据
+expdp scott/tiger directory=dp_dir dumpfile=scott_20240301.dmp schemas=scott
+
+-- 3. 导入到新用户
+-- 先创建新用户
+CREATE USER mydb IDENTIFIED BY mydb;
+GRANT CONNECT, RESOURCE TO mydb;
+
+-- 导入（用户映射）
+impdp mydb/mydb directory=dp_dir dumpfile=scott_20240301.dmp remap_schema=scott:mydb
+```
+
+### 常见错误处理
+
+#### ORA-39001: 参数值无效
+
+```
+ORA-39001: 参数值无效
+ORA-39000: 转储文件说明错误
+ORA-39088: 文件名不能包含路径说明
+```
+
+**解决**：确保 dumpfile 不包含路径，使用 directory 参数指定目录。
+
+```bash
+# 错误写法
+expdp scott/tiger dumpfile=/tmp/exp.dmp
+
+# 正确写法
+expdp scott/tiger directory=DUMP_DIR dumpfile=exp.dmp
+```
+
+#### ORA-14460: 只指定一个 COMPRESS 或 NOCOMPRESS
+
+**解决**：添加 `transform=segment_attributes:n` 参数忽略表空间约束。
+
+```bash
+impdp scott/tiger directory=DUMP_DIR dumpfile=exp.dmp transform=segment_attributes:n
+```
+
+#### ORA-12899: 列值太大
+
+```
+ORA-12899: value too large for column "NAME" (actual: 82, maximum: 80)
+```
+
+**原因**：字符集差异，UTF-8 中文字符占 3 字节，GBK 占 2 字节。
+
+**解决**：
+1. 修改目标库字符集
+2. 扩大目标字段长度
+3. 使用 `convert()` 函数转换
+
+---
+
+## SQL 基础
+
+### 常用函数
+
+#### 字符串函数
+
+| 函数 | 说明 | 示例 |
+|------|------|------|
+| CONCAT(s1, s2) | 拼接字符串 | CONCAT('Hello', 'World') |
+| SUBSTR(s, start, len) | 截取字符串 | SUBSTR('Hello', 2, 3) → ell |
+| LENGTH(s) | 返回长度 | LENGTH('你好') → 2 |
+| INSTR(s, substr) | 查找位置 | INSTR('Hello', 'll') → 3 |
+| REPLACE(s, old, new) | 替换字符串 | REPLACE('Hello', 'l', 'L') |
+| TRIM(s) | 去除空格 | TRIM(' Hello ') |
+| LPAD(s, len, pad) | 左填充 | LPAD('5', 5, '0') → 00005 |
+| RPAD(s, len, pad) | 右填充 | RPAD('5', 5, '0') → 50000 |
+
+#### 数值函数
+
+| 函数 | 说明 | 示例 |
+|------|------|------|
+| ROUND(n, d) | 四舍五入 | ROUND(3.14159, 2) → 3.14 |
+| TRUNC(n, d) | 截断 | TRUNC(3.14159, 2) → 3.14 |
+| MOD(m, n) | 取余 | MOD(10, 3) → 1 |
+| CEIL(n) | 向上取整 | CEIL(3.1) → 4 |
+| FLOOR(n) | 向下取整 | FLOOR(3.9) → 3 |
+
+#### 日期函数
+
+| 函数 | 说明 | 示例 |
+|------|------|------|
+| SYSDATE | 当前日期时间 | SYSDATE |
+| SYSTIMESTAMP | 当前时间戳 | SYSTIMESTAMP |
+| ADD_MONTHS(d, n) | 加月份 | ADD_MONTHS(SYSDATE, 3) |
+| MONTHS_BETWEEN(d1, d2) | 月份差 | MONTHS_BETWEEN(d1, d2) |
+| TRUNC(d, format) | 日期截断 | TRUNC(SYSDATE, 'YYYY') |
+| TO_CHAR(d, format) | 日期转字符串 | TO_CHAR(SYSDATE, 'YYYY-MM-DD') |
+| TO_DATE(s, format) | 字符串转日期 | TO_DATE('2024-01-01', 'YYYY-MM-DD') |
+
+#### 类型转换函数
+
+| 函数 | 说明 | 示例 |
+|------|------|------|
+| TO_CHAR | 转换为字符 | TO_CHAR(123) → '123' |
+| TO_NUMBER | 转换为数字 | TO_NUMBER('123') → 123 |
+| TO_DATE | 转换为日期 | TO_DATE('2024', 'YYYY') |
+| CAST | 类型转换 | CAST('123' AS NUMBER) |
+| DECODE | 条件转换 | DECODE(status, 1, '启用', '禁用') |
+
+### 常用查询
+
+```sql
+-- 分页查询（12c 之前）
+SELECT * FROM (
+    SELECT ROWNUM AS rn, t.* FROM (
+        SELECT * FROM emp ORDER BY empno
+    ) t WHERE ROWNUM <= 20
+) WHERE rn > 10;
+
+-- 分页查询（12c+）
+SELECT * FROM emp ORDER BY empno OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY;
+
+-- 递归查询（树形结构）
+SELECT employee_id, last_name, manager_id, LEVEL
+FROM employees
+START WITH manager_id IS NULL
+CONNECT BY PRIOR employee_id = manager_id;
+
+-- 高级分组
+SELECT department_id, job_id, SUM(salary)
+FROM employees
+GROUP BY ROLLUP(department_id, job_id);
+
+-- 分析函数
+SELECT employee_id, department_id, salary,
+       RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rank,
+       DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS dense_rank,
+       ROW_NUMBER() OVER (PARTITION BY department_id ORDER BY salary DESC) AS row_num
+FROM employees;
+```
+
+---
+
+## 表分区
+
+### 什么是表分区
+
+当表数据量不断增大时，查询性能会下降。表分区将数据在物理上分散存储到多个表空间，但逻辑上仍是一张完整的表。
+
+**分区优点：**
+- 提高查询性能（只需扫描相关分区）
+- 便于数据维护（可独立管理分区）
+- 提高可用性（单个分区损坏不影响其他分区）
+- 支持数据生命周期管理（历史数据归档）
+
+### 范围分区
+
+基于列值范围进行分区，适合日期、数值类型。
+
+```sql
+CREATE TABLE order (
+    order_id NUMBER(10) NOT NULL,
+    order_date DATE NOT NULL,
+    status VARCHAR2(20)
 )
+PARTITION BY RANGE (order_date) (
+    PARTITION p2023_q1 VALUES LESS THAN (TO_DATE('2023-04-01', 'YYYY-MM-DD')),
+    PARTITION p2023_q2 VALUES LESS THAN (TO_DATE('2023-07-01', 'YYYY-MM-DD')),
+    PARTITION p2023_q3 VALUES LESS THAN (TO_DATE('2023-10-01', 'YYYY-MM-DD')),
+    PARTITION p2023_q4 VALUES LESS THAN (TO_DATE('2024-01-01', 'YYYY-MM-DD')),
+    PARTITION p_max VALUES LESS THAN (MAXVALUE)
+);
 ```
 
-**二、列表分区：**
+### 列表分区
 
-该分区的特点是某列的值只有几个，基于这样的特点我们可以采用列表分区。 
+基于离散值列表进行分区。
 
 ```sql
-CREATE TABLE PROBLEM_TICKETS 
-( 
-  PROBLEM_ID NUMBER(7) NOT NULL PRIMARY KEY, 
-  DESCRIPTION VARCHAR2(2000), 
-  CUSTOMER_ID NUMBER(7) NOT NULL, 
-  DATE_ENTERED DATE NOT NULL, 
-  STATUS VARCHAR2(20) 
-) 
-PARTITION BY LIST (STATUS) 
-( 
-  PARTITION PROB_ACTIVE      VALUES ('ACTIVE')       TABLESPACE PROB_TS01, 
-  PARTITION PROB_INACTIVE    VALUES ('INACTIVE')     TABLESPACE PROB_TS02 
+CREATE TABLE sales (
+    sale_id NUMBER(10),
+    region VARCHAR2(20),
+    amount NUMBER(12, 2)
 )
+PARTITION BY LIST (region) (
+    PARTITION p_east VALUES ('北京', '上海', '广东'),
+    PARTITION p_west VALUES ('四川', '重庆', '陕西'),
+    PARTITION p_other VALUES (DEFAULT)
+);
 ```
 
-**三、散列分区：**
+### 散列分区
 
-这类分区是在列值上使用散列算法，以确定将行放入哪个分区中。当列的值没有合适的条件时，建议使用散列分区。请看下列示例： 
+使用散列算法均匀分布数据，适合没有明显范围特征的列。
 
 ```sql
-CREATE TABLE HASH_TABLE 
-( 
-  COL NUMBER(8), 
-  INF VARCHAR2(100) 
-) 
-PARTITION BY HASH (COL) 
-( 
-  PARTITION PART01 TABLESPACE HASH_TS01, 
-  PARTITION PART02 TABLESPACE HASH_TS02, 
-   PARTITION PART03 TABLESPACE HASH_TS03 
+CREATE TABLE sales_hash (
+    sale_id NUMBER(10),
+    amount NUMBER(12, 2)
 )
+PARTITION BY HASH (sale_id) (
+    PARTITION p1 TABLESPACE ts1,
+    PARTITION p2 TABLESPACE ts2,
+    PARTITION p3 TABLESPACE ts3,
+    PARTITION p4 TABLESPACE ts4
+);
 ```
 
-**四、复合范围列表分区：**
+### 复合分区
 
-这种分区是基于范围分区和列表分区，表首先按某列进行范围分区，然后再按某列进行列表分区，分区之中的分区被称为子分区。 
+#### 范围-列表复合分区
 
-**五、复合范围散列分区：**
-
-这种分区是基于范围分区和散列分区，表首先按某列进行范围分区，然后再按某列进行散列分区。与上面的定义方式非常的类似，在此不单独举例。
-
-表分区对于**用户**来说是**透明**的，我们在插入数据时Oracle会自动判断插入的数据，然后放入相应的表分区中。但有时我们想单独查询某个分区中的数据时，就必须手工指定分区的名称。
-
-
-
-**查看表分区数据**
-
-指定P1表分区查询SALES表信息： 
-
-```
-SELECT * FROM SALES PARTITION(P1);
-```
-
-指定P1SUB1子分区查询SALES表信息: 
-
-```
-SELECT * FROM SALES SUBPARTITION(P1SUB1);
+```sql
+CREATE TABLE sales_range_list (
+    sale_id NUMBER(10),
+    sale_date DATE,
+    region VARCHAR2(20),
+    amount NUMBER(12, 2)
+)
+PARTITION BY RANGE (sale_date)
+SUBPARTITION BY LIST (region) (
+    PARTITION p2023 VALUES LESS THAN (TO_DATE('2024-01-01', 'YYYY-MM-DD'))
+    SUBPARTITION p2023_east VALUES ('北京', '上海'),
+    SUBPARTITION p2023_west VALUES ('四川', '重庆'),
+    SUBPARTITION p2023_other VALUES (DEFAULT)
+);
 ```
 
+### 分区维护
 
+```sql
+-- 查看分区
+SELECT partition_name, tablespace_name
+FROM user_tab_partitions
+WHERE table_name = 'ORDER';
 
-## impdp导入dmp[文件](http://blog.csdn.net/zengmingen/article/details/60957942)
+-- 查询特定分区数据
+SELECT * FROM sales PARTITION (p2023_q1);
 
-impdp命令在cmd下直接用，不必登录oracle。只能导入expdp导出的dmp文件。
+-- 添加分区
+ALTER TABLE order ADD PARTITION p2024_q1
+VALUES LESS THAN (TO_DATE('2024-04-01', 'YYYY-MM-DD'));
 
-expdp导出的时候，需要创建 DIRECTORY
+-- 删除分区
+ALTER TABLE order DROP PARTITION p2023_q1;
 
-导出什么表空间，导入也要什么表空间。
+-- 合并分区
+ALTER TABLE order MERGE PARTITIONS p2023_q3, p2023_q4 INTO PARTITION p2023_h2;
 
-导出什么用户，导入也要什么用户。
-
-如果没有要新建。
-
-从杭州服务器expdp导出了TOOLBOX用户的数据库dmp文件，要导入宁波本地开发环境中。宁波本地oracle环境是全新的（windows环境）。
-
-**创建表空间**
-
-```
-create tablespace TOOLBOX
-logging
-datafile 'C:\oraclexe\app\oracle\oradata\XE\TOOLBOX.dbf'
-size 50m
-autoextend on
-next 32m maxsize unlimited
-extent management local;
-```
-
- 
-
-**创建用户，赋予权限**
-
-```
-create user TOOLBOX identified by 123456;
-alter user TOOLBOX default tablespace TOOLBOX;
-grant CREATE ANY DIRECTORY,create session,create table,create view,unlimited tablespace to TOOLBOX;
+-- 拆分分区
+ALTER TABLE order SPLIT PARTITION p2023_h2
+AT (TO_DATE('2023-10-01', 'YYYY-MM-DD'))
+INTO (PARTITION p2023_q3, PARTITION p2023_q4);
 ```
 
-登录ToolBox用户
+---
 
- 
+## 性能优化
 
-**创建DIRECTORY**
+### 执行计划分析
 
-```
-CREATE OR REPLACE DIRECTORY DMPDIR AS 'D:\Temp\orcl\product\11.1.0\db_1\admin\sample\bdump'; 
-```
+执行计划展示了 SQL 的执行方式，是优化的基础。
 
-目录创建以后，就可以把读写权限授予特定用户，具体语法如下:
+```sql
+-- 查看执行计划
+EXPLAIN PLAN FOR
+SELECT e.last_name, d.department_name
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+WHERE e.salary > 5000;
 
-```
-GRANT READ[,WRITE] ON DIRECTORY directory TO username;
-```
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
 
- 
+-- 实时查看执行计划（SQL 正在执行）
+SELECT * FROM v$sql_plan WHERE sql_id = 'your_sql_id';
 
-**编写导入impdp语句**
-
-```
-impdp toolbox/123456 DIRECTORY=DMPDIR DUMPFILE=hz_toolbox_20160613.dmp full=y
-```
-
-> **注意：**DUMPFILE参数不可以包含路径，要么是默认路径，要么指定directory参数来指定自己的dump文件路径。
-
-
-
-**导入错误处理**
-
-> 连接到: Personal Oracle Database 11g Release 11.2.0.1.0 - 64bit Production
-> With the Partitioning, OLAP, Data Mining and Real Application Testing options
-> ORA-39001: 参数值无效
-> ORA-39000: 转储文件说明错误
-> ORA-39088: 文件名不能包含路径说明
-
-解：出现上述错误是因为导入的文件的需要放在oracle的默认的导入导出目录下面。如果不想放在oracle默认的导入导出目录下面的话，可以创建一个directory进行导入导出操作，在导入的时候只需指定directory参数（directory=directoryname）即可。
-
-```
-CREATE [OR REPLACE] DIRECTORY directoryname AS 'pathname';
-create or replace directory dump_dir as 'D:\dump\dir'
+-- 查看历史执行计划
+SELECT * FROM v$sql_plan_history WHERE sql_id = 'your_sql_id';
 ```
 
-这样把目录d:\dump\dir设置成dump_dir代表的directory
+### 查看执行计划的常用视图
 
- 
+```sql
+-- 查看正在执行的 SQL
+SELECT sql_text, sql_id, status
+FROM v$session s
+JOIN v$sqlarea a ON s.sql_id = a.sql_id
+WHERE s.username = 'SCOTT';
 
-> ORA-14460只能指定一个COMPRESS或NOCOMPRESS子句
+-- 查看等待事件
+SELECT event, wait_time, state
+FROM v$session_wait
+WHERE sid = (SELECT sid FROM v$mystat WHERE ROWNUM = 1);
 
-解：需要在这个导入语句中加入transform=segment_attributes:n参数。该参数可与忽略expdp导出时附带的相关表空间和存储子句约束。
-
-**示例：**
-
+-- 查看系统统计信息
+SELECT * FROM v$sysstat WHERE statistic# = 12;  -- 物理读取
 ```
-impdp ilanni/numen@192.168.24.249:/orcl **transform=segment_attributes:n** directory=wpdp_dir remap_schema=numen: ilanni dumpfile=140109.dmp logfile=1401092.log
+
+### 索引优化
+
+```sql
+-- 创建索引
+CREATE INDEX idx_emp_dept ON employees(department_id);
+CREATE INDEX idx_emp_name ON employees(last_name, first_name);
+
+-- 创建唯一索引
+CREATE UNIQUE INDEX uk_emp_email ON employees(email);
+
+-- 创建函数索引
+CREATE INDEX idx_emp_upper ON employees(UPPER(last_name));
+
+-- 重建索引
+ALTER INDEX idx_emp_dept REBUILD;
+
+-- 合并索引
+ALTER INDEX idx_emp_dept COALESCE;
+
+-- 删除索引
+DROP INDEX idx_emp_dept;
 ```
 
- 
+### Hint 优化
 
-> ORA-02374: conversion error loading table "SXCMS"."T_FACT_LOAN_M"
-> ORA-12899: value too large for column REGISTERADD (actual: 82, maximum: 80)
-> ORA-02372: data for row: REGISTERADD : 0X'D3C0B4A8C7F8D0C7B9E2B4F3B5C0393939BAC531B4B1A3A8D6'
+Hint 可以影响优化器的执行计划选择。
 
-解：字符集差异导致.中文在UTF-8里占3个字节，ZHS16GBK里占2个字节。
+```sql
+-- 强制使用索引
+SELECT /*+ INDEX(e idx_emp_dept) */ *
+FROM employees e
+WHERE department_id = 50;
 
-查看两个库的字符集：select * from nls_database_parameters where parameter ='NLS_CHARACTERSET';
+-- 强制全表扫描
+SELECT /*+ FULL(e) */ *
+FROM employees e
+WHERE department_id = 50;
 
-第一种方法可以通过：修改字符集方法在这个网址：http://blog.csdn.net/lyb3290/article/details/53758884，
+-- 强制排序合并连接
+SELECT /*+ USE_MERGE(e d) */ *
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id;
 
-还有一种方法是创建新的不同字符集的实例再导入即可。再导入的时候在cmd里面使用set ORACLE_SID=PROJECT 指定新创建的实例即可。
+-- 强制嵌套循环连接
+SELECT /*+ USE_NL(e d) */ *
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id;
 
+-- 并行执行
+SELECT /*+ PARALLEL(e, 4) */ *
+FROM employees e;
+```
+
+### 常用性能视图
+
+```sql
+-- 查看 Top SQL（按 CPU 时间）
+SELECT sql_id, sql_text, cpu_time / 1000000 AS cpu_sec, executions
+FROM v$sqlarea
+ORDER BY cpu_time DESC
+FETCH FIRST 10 ROWS ONLY;
+
+-- 查看 Top SQL（按物理读取）
+SELECT sql_id, sql_text, buffer_gets, disk_reads
+FROM v$sqlarea
+ORDER BY disk_reads DESC
+FETCH FIRST 10 ROWS ONLY;
+
+-- 查看表统计信息
+SELECT table_name, num_rows, blocks, avg_row_len
+FROM user_tables
+WHERE table_name = 'EMPLOYEES';
+
+-- 查看索引统计信息
+SELECT index_name, blevel, leaf_blocks, distinct_keys
+FROM user_indexes
+WHERE table_name = 'EMPLOYEES';
+```
+
+---
+
+## 常见问题
+
+### 连接问题
+
+**Q: ORA-12541: TNS: 无监听程序**
+
+```bash
+# 检查监听器状态
+lsnrctl status
+
+# 启动监听器
+lsnrctl start
+```
+
+**Q: ORA-01017: 用户名/口令无效**
+
+```bash
+# 检查用户名密码是否正确
+# 注意 Oracle 密码区分大小写（11g+ 默认区分）
+```
+
+**Q: ORA-12514: TNS: 监听程序当前无法识别连接描述符中请求的服务**
+
+检查 tnsnames.ora 中的 SERVICE_NAME 是否正确，或服务是否启动。
+
+### 性能问题
+
+**Q: SQL 执行很慢，怎么排查？**
+
+```sql
+-- 1. 查看执行计划
+EXPLAIN PLAN FOR your_sql;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+-- 2. 检查统计信息是否最新
+SELECT table_name, num_rows, last_analyzed
+FROM user_tables;
+
+-- 3. 重新收集统计信息
+EXEC DBMS_STATS.GATHER_TABLE_STATS(USER, 'YOUR_TABLE');
+```
+
+**Q: 如何查看锁表？**
+
+```sql
+-- 查看被锁的表
+SELECT l.session_id AS sid,
+       l.locked_mode,
+       l.oracle_username,
+       l.os_user_name,
+       o.object_name,
+       o.object_type
+FROM v$locked_object l
+JOIN dba_objects o ON l.object_id = o.object_id;
+
+-- 杀掉会话
+ALTER SYSTEM KILL SESSION 'sid, serial#';
+```
+
+### 表空间问题
+
+**Q: ORA-01653: 表空间不足**
+
+```sql
+-- 1. 查看表空间使用情况
+SELECT tablespace_name, (bytes - free_bytes) / bytes * 100 AS usage_pct
+FROM (SELECT tablespace_name, bytes, LEAD(bytes) OVER (ORDER BY tablespace_name) AS free_bytes
+      FROM (SELECT tablespace_name, SUM(bytes) AS bytes
+            FROM dba_data_files GROUP BY tablespace_name));
+
+-- 2. 扩展表空间
+ALTER TABLESPACE tablespace_name ADD DATAFILE '/path/to/file.dbf' SIZE 100M;
+```
+
+### 导入导出问题
+
+**Q: impdp 导入报错 ORA-01917？**
+
+用户不存在，需要先创建用户：
+```sql
+CREATE USER newuser IDENTIFIED BY password;
+GRANT CONNECT, RESOURCE TO newuser;
+```
+
+**Q: 如何查看导入导出进度？**
+
+```sql
+-- 查看 Job 状态
+SELECT * FROM dba_datapump_jobs;
+```
+
+---
+
+## 参考资料
+
+- [Oracle 官方文档](https://docs.oracle.com/en/database/oracle/oracle-database/)
+- [Oracle Live SQL](https://livesql.oracle.com/)
+- [Oracle Database 19c 安装指南](https://docs.oracle.com/en/database/oracle/oracle-database/19/xe/install-and-configure-oracle-database.html)
+- [SQL 语言参考](https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/)
+- [DBMS_STATS 包文档](https://docs.oracle.com/en/database/oracle/oracle-database/21/arpls/DBMS_STATS.html)
