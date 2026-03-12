@@ -1,314 +1,563 @@
-## SpringBoot中的Tomcat
+## 概述
 
-### 请求限制
+### 什么是 Tomcat
 
-Spring Boot 默认使用 Tomcat 作为 Web 容器，未修改配置时，拒绝访问的条件由以下参数决定：
+Tomcat 是 Apache 软件基金会（Apache Software Foundation）的 Jakarta 项目中的一个核心项目，由 Apache、Sun 和其他一些公司及个人共同开发而成。由于有了 Sun 的参与和支持，最新的 Servlet 和 JSP 规范总是能在 Tomcat 中得到体现。
 
-- **最大线程数（`maxThreads`）**：200  
-  当并发请求数超过 200 时，新请求会被放入队列。
-- **队列容量（`acceptCount`）**：100  
-  当队列满 100 个请求时，后续请求会被拒绝（返回`503 Service Unavailable`）。
+Tomcat 是一种轻量级的 Web 应用服务器（Servlet 容器），完全支持 Java Servlet、JavaServer Pages（JSP）、Java EL 和 WebSocket 规范，是开发和部署 Java Web 应用的常用选择。
 
-**总拒绝阈值 = 最大线程数 + 队列容量 = 200 + 100 = 300**  
+### Tomcat 架构
+
+Tomcat 的核心架构包括以下组件：
+
+- **Server**：顶级容器，代表整个 Tomcat 实例
+- **Service**：包含一个 Engine 和一个或多个 Connector
+- **Engine**：处理请求的容器，一个 Service 只有一个 Engine
+- **Host**：表示虚拟主机
+- **Context**：表示 Web 应用
+- **Connector**：负责处理网络连接
+- **Executor**：线程池
+
+### Spring Boot 与 Tomcat
+
+Spring Boot 默认使用 Tomcat 作为嵌入式 Web 容器。通过 spring-boot-starter-web 依赖自动引入 Tomcat。
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+```
+
+#### 版本对应关系
+
+| Spring Boot 版本 | Tomcat 版本 | Servlet API | 最低 Java 版本 |
+|-----------------|-------------|-------------|---------------|
+| 1.x | 8.x | javax.servlet | Java 7 |
+| 2.x | 9.x | javax.servlet | Java 8 |
+| 3.x | 10.x | jakarta.servlet | Java 17 |
+| 3.1+ | 11.x | jakarta.servlet | Java 21 |
+
+> **注意**：Spring Boot 3.x 之后升级到 Jakarta EE 9+（jakarta.servlet），与之前的 javax.servlet 不兼容。
+
+#### 替换嵌入式容器
+
+可以替换为其他嵌入式容器：
+
+```xml
+<!-- 排除 Tomcat，添加 Undertow -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-undertow</artifactId>
+</dependency>
+```
+
+#### Spring Boot 中的请求限制
+
+Spring Boot 默认配置下，Tomcat 的请求处理能力由以下参数决定：
+
+- **最大线程数（`maxThreads`）**：200
+  - 当并发请求数超过 200 时，新请求会被放入队列
+- **队列容量（`acceptCount`）**：100
+  - 当队列满时，后续请求会被拒绝（返回 503 Service Unavailable）
+
+**总拒绝阈值 = 最大线程数 + 队列容量 = 200 + 100 = 300**
+
 即当并发请求数达到 300 时，服务开始拒绝新请求。
-
-#### 示例配置
 
 ```properties
 # 通用优化配置
 server.tomcat.max-threads=300          # 最大线程数
-server.tomcat.min-spare-threads=50     # 最小空闲线程数（减少冷启动延迟）
+server.tomcat.min-spare-threads=50     # 最小空闲线程数
 server.tomcat.accept-count=200         # 队列容量
 server.tomcat.connection-timeout=60000 # 连接超时时间（毫秒）
 ```
 
+---
 
-
-## Tomcat处理[资源](https://www.zhihu.com/question/57400909/answer/154753720)
-
-Tomcat访问所有的资源，都是用Servlet来实现的。所以Tomcat又叫Servlet容器嘛，什么都交给Servlet来处理。
-
-在Tomcat看来，资源分3种：
-
-1. 静态资源，如css,html,js,jpg,png等。交由DefaultServlet类处理
-
-2. Servlet，交由InvokerServlet类处理
-
-3. JSP，交由JspServlet类来处理
-
-**那么什么时候调用哪个Servlet呢？**
-
-有一个类叫做org.apache.tomcat.util.http.mapper.Mapper，它一共进行了7个大的规则判断，第7个，就是判断是否是该用DefaultServlet。
-
-简单地说：先看是不是servlet,然后看是不是jsp，如果都不是，那么就是你DefaultServlet的活儿了。
-
-到了DefaultServlet之后，就是一个普通的HttpServlet了，doPost方法会交由doGet处理，doGet又交由一个叫做 serveResource的方法处理，在serveResource方法里又瞎搞八搞了许多事情，最后在一个叫做copy()方法里，把静态资源对应的输入流读取出来，扔到了输出流里，这样你的浏览器就看到数据了。
-
-## 相关概念
+## 核心概念
 
 ### ServletContext
 
-ServletContext 被 Servlet 程序用来与 Web 容器通信。例如写日志，转发请求。每一个 Web 应用程序含有一个Context，被Web应用内的各个**程序共享**。因为Context可以用来保存资源并且共享，所以我所知道的 [ServletContext](https://blog.csdn.net/gavin_john/article/details/51399425) 的最大应用是Web缓存----把不经常更改的内容读入内存，所以服务器响应请求的时候就不需要进行慢速的磁盘I/O了。
+ServletContext 是 Web 容器的上下文对象，代表当前 Web 应用。每个 Web 应用在部署时，容器会为其创建一个 ServletContext 对象，并被该应用内的所有 Servlet 共享。
 
-**创建**
+#### 特性
 
-- WEB容器在启动时，它会为每个Web应用程序都创建一个对应的ServletContext，它代表当前Web应用。并且它被所有客户端共享。
-- ServletContext对象可以通过ServletConfig.getServletContext()方法获得对ServletContext对象的引用，也可以通过this.getServletContext()方法获得其对象的引用。
-- 由于一个WEB应用中的所有Servlet共享同一个ServletContext对象，因此Servlet对象之间可以通过ServletContext对象来实现通讯。ServletContext对象通常也被称之为context域对象。公共聊天室就会用到它。
-- 当web应用关闭、Tomcat关闭或者Web应用reload的时候，ServletContext对象会被销毁
+- **创建时机**：Web 容器启动时为每个 Web 应用程序创建
+- **共享范围**：被 Web 应用内的所有程序共享
+- **生命周期**：随 Web 应用关闭、Tomcat 关闭或 Web 应用 reload 时销毁
 
-**应用场景** 
+#### 获取方式
 
-1. 网站计数器 
+```java
+// 通过 ServletConfig 获取
+ServletContext context = getServletConfig().getServletContext();
 
-2. 网站的在线用户显示 
+// 通过继承 HttpServlet 直接获取
+ServletContext context = this.getServletContext();
+```
 
-3. 简单的聊天系统
+#### 应用场景
+
+1. **网站计数器** - 记录网站访问量
+2. **在线用户显示** - 维护当前在线用户列表
+3. **数据缓存** - 将不经常更改的数据缓存到内存，减少磁盘 I/O
+4. **跨 Servlet 通信** - 通过 setAttribute 和 getAttribute 在不同 Servlet 间共享数据
 
 ### 线程池
 
-tomcat线程池与java线程池不一样，tomcat线程池其实**就是连接池**，主要用于处理网络请求。
+Tomcat 使用线程池来处理并发请求，这与 Java 标准线程池有所不同。
 
-**一、线程池参数**
+#### 线程池参数
 
-1. 核心线程数：**默认**情况下，Tomcat 的**核心线程数**一般为 **10**。这意味着在没有高负载的情况下，线程池会保持至少 10 个线程处于活动状态，随时准备处理请求。
-2. 最大线程数：Tomcat 的默认**最大线程数**通常为 **200**。当请求量增加时，线程池可以创建的最大线程数量为 200。这有助于在高负载情况下处理大量并发请求，但同时也需要考虑系统资源的限制。
-3. 线程空闲超时时间：默认情况下，如果一个线程在 60 秒内没有被使用，它将会被回收。这个超时时间可以根据实际应用的需求进行调整，以平衡系统资源的使用和响应时间。
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| 核心线程数 | 10 | 线程池保持的最小活跃线程数 |
+| 最大线程数 | 200 | 线程池可创建的最大线程数 |
+| 空闲超时 | 60秒 | 线程空闲超时回收时间 |
 
-**二、工作原理**
+#### 工作原理
 
-当请求到达 Tomcat 服务器时，Tomcat 会从线程池中分配一个线程来处理该请求。如果当前线程池中没有可用的线程，并且线程数量未达到最大线程数，Tomcat 会创建新的线程来处理请求。这点与java线程池先放入等待队列的逻辑不一样。当请求处理完成后，线程会返回到线程池中，等待下一个请求的到来。如果线程在一段时间内没有被使用，它可能会被回收，以释放系统资源。
+1. 请求到达 Tomcat 时，从线程池分配一个线程处理
+2. 若无空闲线程且未达最大线程数，则创建新线程
+3. 请求处理完成后，线程返回线程池等待下一个请求
+4. 空闲线程超过超时时间可能被回收
 
-## Tomcat调优
+> **注意**：Tomcat 的线程池主要用于处理网络请求，与 Java 标准线程池的队列机制有所不同。
 
-[调优](https://blog.csdn.net/wangyonglin1123/article/details/50986524)
+---
 
-Tomcat的优化分成两块：
+## 请求处理机制
 
-1. Tomcat启动命令行中的优化参数即JVM优化
-2. Tomcat容器自身参数的优化（这块很像ApacheHttp     Server）
+### 资源类型
 
-**1** **启动行参数优化**
+在 Tomcat 中，所有资源访问都通过 Servlet 实现。Tomcat 将请求资源分为三类：
 
-Tomcat 的启动参数位于tomcat的安装目录\bin目录下的catalina.sh文件，在最开始注释文字的最后一段也就是真正有效的shell命令开始的那里加入如下的参数
+| 类型 | 处理 Servlet | 说明 |
+|------|--------------|------|
+| 静态资源 | DefaultServlet | 处理 CSS、HTML、JS、图片等 |
+| Servlet | InvokerServlet | 处理用户注册的 Servlet |
+| JSP | JspServlet | 处理 JSP 页面 |
 
-jdk1.7：
+### 处理流程
 
-```
-export JAVA_OPTS="-server -Xms1400M -Xmx1400M -Xss512k -XX:+AggressiveOpts -XX:+UseBiasedLocking -XX:PermSize=128M -XX:MaxPermSize=256M -XX:+DisableExplicitGC -XX:MaxTenuringThreshold=31 -XX:+UseConcMarkSweepGC -XX:+UseParNewGC  -XX:+CMSParallelRemarkEnabled -XX:+UseCMSCompactAtFullCollection -XX:LargePageSizeInBytes=128m  -XX:+UseFastAccessorMethods -XX:+UseCMSInitiatingOccupancyOnly -Djava.awt.headless=true "
-```
+Tomcat 通过 Mapper 类进行路由判断，流程如下：
 
-jdk1.8：
+1. 首先判断是否是 Servlet
+2. 然后判断是否是 JSP
+3. 最后由 DefaultServlet 处理静态资源
 
-```
-export JAVA_OPTS="-server -Xms2G -Xmx2G -Xmn512m -XX:MetaspaceSize=512M -XX:MaxMetaspaceSize=512M -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:+HeapDumpOnOutOfMemoryError -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -Xloggc:/appl/gc.log -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly "
-```
-
-> **参数解释**
-> 
-> **-server**  
-> 只要你的tomcat是运行在生产环境中的，这个参数必须加上
-> 
-> **-Xms** **–Xmx**  
-> 把Xms与Xmx两个值设成一样是最优的做法
-> 
-> **–Xmn**  
-> 设置年轻代大小为512m。整个堆大小=年轻代大小 + 年老代大小 + 持久代大小。持久代一般固定大小为64m，所以增大年轻代后，将会减小年老代大小。此值对系统性能影响较大，Sun官方推荐配置为整个堆的3/8。
-> 
-> **-Xss**  
-> 是指设定每个线程的堆栈大小。这个就要依据你的程序，看一个线程 大约需要占用多少内存，可能会有多少线程同时运行等。一般不易设置超过1M，要不然容易出现out ofmemory。
-> 
-> **-XX:+AggressiveOpts**  
-> 作用如其名（aggressive），启用这个参数，则每当JDK版本升级时，你的JVM都会使用最新加入的优化技术（如果有的话）
-> 
-> **-XX:+UseBiasedLocking**  
-> 启用一个优化了的线程锁，我们知道在我们的appserver，每个http请求就是一个线程，有的请求短有的请求长，就会有请求排队的现象，甚至还会出现线程阻塞，这个优化了的线程锁使得你的appserver内对线程处理自动进行最优调配。
-> 
-> **-XX:PermSize=128M-XX:MaxPermSize=256M**  
-> XX:PermSize设置非堆内存初始值，默认是物理内存的1/64；在数据量的很大的文件导出时，一定要把这两个值设置上，否则会出现内存溢出的错误。
-> XX:MaxPermSize设置最大非堆内存的大小，默认是物理内存的1/4。
-> 如果是物理内存4GB，那么64分之一就是64MB，这就是PermSize默认值，也就是永生代内存初始大小；四分之一是1024MB，这就是MaxPermSize默认大小。
-> 
-> **-XX:+DisableExplicitGC**  
-> 在程序代码中不允许有显示的调用”System.gc()”。看到过有两个极品工程中每次在DAO操作结束时手动调用System.gc()一下，觉得这样 做好像能够解决它们的out ofmemory问题一样，付出的代价就是系统响应时间严重降低，就和我在关于Xms,Xmx里的解释的原理一样，这样去调用GC导致系统的JVM大起大落
-> 
-> **-XX:+UseParNewGC**  
-> 对年轻代采用多线程并行回收，这样收得快。
-> 
-> **-XX:+UseConcMarkSweepGC**  
-> 即CMS gc，这一特性只有jdk1.5即后续版本才具有的功能，它使用的是gc估算触发和heap占用触发。
-> 
-> **-XX:MaxTenuringThreshold**  
-> 设 置垃圾最大年龄。如果设置为0的话，则年轻代对象不经过Survivor区，直接进入年老代。对于年老代比较多的应用，可以提高效率。如果将此值设置为一 个较大值，则年轻代对象会在Survivor区进行多次复制，这样可以增加对象再年轻代的存活时间，增加在年轻代即被回收的概率。
-> 
-> 这个值的设置是根据本地的jprofiler监控后得到的一个理想的值，不能一概而论原搬照抄。
-> 
-> **-XX:LargePageSizeInBytes**  
-> 指定Java heap的分页页面大小
-> 
-> **-XX:+UseFastAccessorMethods**  
-> get,set 方法转成本地代码
-> 
-> **-Djava.awt.headless=true**  
-> 这 个参数一般我们都是放在最后使用的，这全参数的作用是这样的，有时我们会在我们的J2EE工程中使用一些图表工具如：jfreechart，用于在web 网页输出GIF/JPG等流，在winodws环境下，一般我们的app server在输出图形时不会碰到什么问题，但是在linux/unix环境下经常会碰到一个exception导致你在winodws开发环境下图片显示的好好可是在linux/unix下却显示不出来，因此加上这个参数以免避这样的情况出现。
-
-上述这样的配置，基本上可以达到：
-
-- 系统响应时间增快
-- JVM回收速度增快同时又不影响系统的响应率
-- JVM内存最大化利用
-- 线程阻塞情况最小化
-
-**2** **容器优化**
-
-前面我们对Tomcat启动时的命令进行了优化，增加了系统的JVM可使用数、垃圾回收效率与线程阻塞情况、增加了系统响应效率等还有一个很重要的指标，我们没有去做优化，就是吞吐量。
-
-打开tomcat安装目录\conf\server.xml文件，定位到这一行：
+#### DefaultServlet 处理流程
 
 ```
-<connector port="8080" protocol="HTTP/1.1" <="" p="" style="word-wrap: break-word;">
+请求 → doPost/doGet → serveResource → copy → 输出流
 ```
 
-这一行就是我们的tomcat容器性能参数设置的地方，它一般都会有一个默认值，这些默认值是远远不够我们的使用的，我们来看经过更改后的这一段的配置：
+DefaultServlet 最终通过 `copy()` 方法将静态资源的输入流读取并写入输出流，完成资源响应。
 
+---
+
+## 运行模式
+
+Tomcat 支持三种 I/O 模式：
+
+### BIO（阻塞 I/O）
+
+- **全称**：Blocking I/O
+- **特点**：传统的 Java I/O 操作，阻塞式处理
+- **性能**：三种模式中最低
+- **适用场景**：低并发、简单应用
+
+### NIO（非阻塞 I/O）
+
+- **全称**：New I/O / Non-blocking I/O
+- **特点**：基于 Java.nio 包，支持非阻塞操作
+- **性能**：优于 BIO，适合高并发场景
+- **适用场景**：高并发 Web 应用（Tomcat 8+ 默认模式）
+
+> **说明**：NIO 优化了网络 I/O 读写，但如果系统瓶颈不在网络 I/O（如每次读取字节数较少），BIO 和 NIO 性能差异不明显。
+
+### APR（Apache Portable Runtime）
+
+- **全称**：Apache Portable Runtime
+- **特点**：通过 JNI 调用 Apache 核心动态链接库
+- **性能**：最高性能，适合高并发生产环境
+- **适用场景**：对静态文件处理性能要求高的场景
+
+> **注意**：
+> - Tomcat 7 默认 BIO 模式，需要手动优化
+> - Tomcat 8+ 默认 NIO 模式，无需修改
+> - Windows 版 Tomcat 默认携带 tcnative-1.dll，默认使用 APR 模式
+
+### 配置运行模式
+
+修改 `conf/server.xml` 中的 Connector 节点：
+
+```xml
+<!-- BIO 模式 -->
+<Connector port="8080" protocol="org.apache.coyote.http11.Http11Protocol" />
+
+<!-- NIO 模式 -->
+<Connector port="8080" protocol="org.apache.coyote.http11.Http11NioProtocol" />
+
+<!-- APR 模式 -->
+<Connector port="8080" protocol="org.apache.coyote.http11.Http11AprProtocol" />
 ```
-<connector  port="8080" protocol="HTTP/1.1" <=""  p="" style="word-wrap: break-word;">         URIEncoding="UTF-8" minSpareThreads="25"  maxSpareThreads="75"         enableLookups="false" disableUploadTimeout="true"  connectionTimeout="20000"         acceptCount="300" maxThreads="300"  maxProcessors="1000" minProcessors="5"         useURIValidationHack="false"                           compression="on" compressionMinSize="2048"                           compressableMimeType="text/html,text/xml,text/javascript,text/css,text/plain"           redirectPort="8443"  />  
+
+### AJP 协议
+
+当使用 Nginx + Tomcat 集群时，建议禁用 AJP 协议：
+
+```xml
+<!-- 注释掉 AJP 连接器 -->
+<!-- <Connector protocol="AJP/1.3" address="::1" port="8009" redirectPort="8443" /> -->
 ```
 
-> **URIEncoding=”UTF-8”**  
-> 使得tomcat可以解析含有中文名的文件的url
-> 
-> **maxSpareThreads**  
-> maxSpareThreads 的意思就是如果空闲状态的线程数多于设置的数目，则将这些线程中止，减少这个池中的线程总数。
-> 
-> **minSpareThreads**  
-> 最小备用线程数，tomcat启动时的初始化的线程数。
-> 
-> **enableLookups**  
-> 这个功效和Apache中的HostnameLookups一样，设为关闭。
-> 
-> **connectionTimeout**  
-> connectionTimeout为网络连接超时时间毫秒数。
-> 
-> **maxThreads**  
-> maxThreads Tomcat使用线程来处理接收的每个请求。这个值表示Tomcat可创建的最大的线程数，即最大并发数。
-> 
-> **acceptCount**  
-> acceptCount是当线程数达到maxThreads后，后续请求会被放入一个等待队列，这个acceptCount是这个队列的大小，如果这个队列也满了，就直接refuse connection
-> 
-> **maxProcessors与minProcessors**  
-> 在 Java中线程是程序运行时的路径，是在一个程序中与其它控制线程无关的、能够独立运行的代码段。它们共享相同的地址空间。多线程帮助程序员写出CPU最大利用率的高效程序，使空闲时间保持最低，从而接受更多的请求。通常Windows是1000个左右，Linux是2000个左右。
-> 
-> **useURIValidationHack**  
-> 如果把useURIValidationHack设成"false"，可以减少它对一些url的不必要的检查从而减省开销。
-> 
->  **enableLookups="false"**  
-> 为了消除DNS查询对性能的影响我们可以关闭DNS查询，方式是修改server.xml文件中的enableLookups参数值。
-> 
-> **disableUploadTimeout**  
-> 类似于Apache中的keeyalive一样
-> 
-> **compression="on" compressionMinSize="2048"** **...**  
-> 给Tomcat配置gzip压缩(HTTP压缩)功能，HTTP 压缩可以大大提高浏览网站的速度，它的原理是，在客户端请求网页后，从服务器端将网页文件压缩，再下载到客户端，由客户端的浏览器负责解压缩并浏览。相对 于普通的浏览过程HTML,CSS,Javascript , Text ，它可以节省40%左右的流量。更为重要的是，它可以对动态生成的，包括CGI、PHP , JSP , ASP , Servlet,SHTML等输出的网页也能进行压缩，压缩效率惊人。
-> 
-> 1. compression="on"  on：表示允许压缩（文本将被压缩）、force：表示所有情况下都进行压缩，默认值为off
-> 
-> 2. compressionMinSize="2048" 启用压缩的输出内容大小，这里面默认为2KB
-> 
-> 3. noCompressionUserAgents="gozilla, traviata" 对于以下的浏览器，不启用压缩
-> 
-> 4. compressableMimeType="text/html,text/xml"　压缩类型
+---
 
-## Tomcat的[运行模式](http://tyrion.iteye.com/blog/2256896)
+## 配置优化
 
-**bio：** (blocking I/O)，阻塞式I/O操作，一般而言，表示Tomcat使用的是传统的Java I/O操作。bio模式是三种运行模式中性能最低的一种。
+### 连接器配置
 
-**nio：** [nio](https://www.cnblogs.com/nizuimeiabc1/p/8934185.html)(new I/O)，是Java SE 1.4及后续版本提供的一种新的I/O操作方式(即Java.nio包及其子包)。java nio是一个基于缓冲区、并能提供非阻塞I/O操作的Java API，因此nio也被看成是non-blocking I/O的缩写。它拥有比传统I/O操作(bio)更好的并发运行性能。关于nio与bio在tomcat上的差别可以参考这个[简书](https://www.jianshu.com/p/76ff17bc6dea)：NIO只是优化了网络IO的读写，如果系统的瓶颈不在这里，比如每次读取的字节说都是500b，那么BIO和NIO在性能上没有区别。（个人感觉与socket的nio一样，并发小于1000时，区别不大，而并发很多的时候，更多的是使用nginx）
+打开 `conf/server.xml`，配置 Connector 节点：
 
-**apr：** (Apache Portable Runtime/Apache可移植运行时)，是Apache HTTP服务器的支持库。可以简单地理解为Tomcat将以JNI的形式调用Apache HTTP服务器的核心动态链接库来处理文件读取或网络传输操作，从而大大地提高Tomcat对静态文件的处理性能。 Tomcat apr也是在Tomcat上运行高并发应用的首选模式。
+```xml
+<Connector
+    port="8080"
+    protocol="HTTP/1.1"
+    URIEncoding="UTF-8"
+    minSpareThreads="25"
+    maxSpareThreads="75"
+    maxThreads="300"
+    acceptCount="200"
+    connectionTimeout="20000"
+    enableLookups="false"
+    disableUploadTimeout="true"
+    compression="on"
+    compressionMinSize="2048"
+    compressableMimeType="text/html,text/xml,text/javascript,text/css,text/plain"
+    redirectPort="8443" />
+```
 
-修改运行模式为NIO模式：修改server.xml里的Connector节点，修改protocol为org.apache.coyote.http11.Http11NioProtocol
+#### 参数说明
 
-> **注：**通过对tomcat几个版本的测试，tomcat7默认启动是bio模式，需要优化；tomcat8及8以上默认是nio模式，无需改变运行模式，如果是windows版本的话，包里面还默认携带一个[tcnative-1.dll](http://www.365mini.com/page/tomcat-connector-mode.htm)，默认就是在Tomcat apr模式下运行。
+| 参数 | 说明 |
+|------|------|
+| `URIEncoding` | URL 编码格式，建议设置为 UTF-8 |
+| `minSpareThreads` | 最小备用线程数，Tomcat 启动时初始化 |
+| `maxSpareThreads` | 最大空闲线程数，超出时回收 |
+| `maxThreads` | 最大线程数，即最大并发数 |
+| `acceptCount` | 等待队列大小，满队列时拒绝连接 |
+| `connectionTimeout` | 连接超时时间（毫秒） |
+| `enableLookups` | 是否开启 DNS 反向查询，建议关闭 |
+| `disableUploadTimeout` | 禁用上传超时 |
+| `compression` | 启用 gzip 压缩 |
+| `compressionMinSize` | 启用压缩的最小文件大小 |
+| `compressableMimeType` | 支持压缩的 MIME 类型 |
 
-当用nginx和tomcat做企业级集群的时候，需要禁用掉AJP协议。
+### Spring Boot 配置
 
-## Tomcat版本
+在 `application.properties` 中配置：
 
-通过对比发现，**Linux**版本的Tomcat和**Windows**相比，是可以互换的，windows版本包含全部linux版本的文件，只是在windows的版本中多加了2个.exe文件和一个tcnative-1.dll文件。
+```properties
+# 线程池配置
+server.tomcat.max-threads=300
+server.tomcat.min-spare-threads=50
+server.tomcat.accept-count=200
+server.tomcat.connection-timeout=60000
+
+# 连接配置
+server.tomcat.max-connections=10000
+server.tomcat.accept-count=100
+
+# 压缩配置
+server.compression.enabled=true
+server.compression.mime-types=text/html,text/xml,text/javascript,text/css,text/plain
+```
+
+或在 `application.yml` 中：
+
+```yaml
+server:
+  tomcat:
+    max-threads: 300
+    min-spare-threads: 50
+    accept-count: 200
+    connection-timeout: 60000
+    max-connections: 10000
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/javascript,text/css,text/plain
+```
+
+---
+
+## JVM调优
+
+### 启动参数优化
+
+Tomcat 的启动参数在 `bin/catalina.sh`（Linux）或 `bin/catalina.bat`（Windows）中配置。
+
+#### JDK 8+ 推荐配置
+
+```bash
+export JAVA_OPTS="-server \
+-Xms2G -Xmx2G \
+-Xmn512m \
+-XX:MetaspaceSize=512M \
+-XX:MaxMetaspaceSize=512M \
+-XX:+UseG1GC \
+-XX:MaxGCPauseMillis=200 \
+-XX:+HeapDumpOnOutOfMemoryError \
+-verbose:gc \
+-XX:+PrintGCDetails \
+-XX:+PrintGCTimeStamps \
+-XX:+PrintGCDateStamps \
+-Xloggc:/appl/gc.log \
+-Djava.awt.headless=true"
+```
+
+#### 参数说明
+
+| 参数 | 说明 |
+|------|------|
+| `-server` | 生产环境必须启用，使用 Server JVM |
+| `-Xms` `-Xmx` | 堆初始/最大内存，建议设为相同值避免动态调整 |
+| `-Xmn` | 年轻代大小，推荐为堆内存的 3/8 |
+| `-XX:MetaspaceSize` | 元空间初始大小（JDK 8+） |
+| `-XX:MaxMetaspaceSize` | 元空间最大大小（JDK 8+） |
+| `-XX:+UseG1GC` | 使用 G1 垃圾收集器（JDK 9+ 默认） |
+| `-XX:MaxGCPauseMillis` | 最大 GC 暂停时间目标 |
+| `-XX:+HeapDumpOnOutOfMemoryError` | 内存溢出时生成堆转储 |
+| `-XX:+PrintGCDetails` | 打印详细 GC 日志 |
+| `-XX:+PrintGCTimeStamps` | 打印 GC 时间戳 |
+| `-Xloggc` | GC 日志文件路径 |
+| `-Djava.awt.headless=true` | 无头模式，用于服务器端图形处理 |
+
+#### JDK 17+ 额外参数
+
+```bash
+export JAVA_OPTS="-server \
+-Xms2G -Xmx2G \
+-XX:+UseZGC \
+-XX:+HeapDumpOnOutOfMemoryError \
+-XX:HeapDumpPath=/appl/heapdump.hprof \
+-Djava.awt.headless=true \
+--add-opens=java.base/java.lang=ALL-UNNAMED \
+--add-opens=java.base/java.util=ALL-UNNAMED"
+```
+
+### 内存设置建议
+
+| 服务器内存 | 堆内存 | 年轻代 | 元空间 |
+|-----------|--------|--------|--------|
+| 4GB | 2GB | 512MB - 768MB | 256MB - 512MB |
+| 8GB | 4GB | 1GB - 1.5GB | 512MB - 1GB |
+| 16GB | 8GB | 2GB - 3GB | 1GB |
+
+---
+
+## Gzip压缩
+
+### 配置方式
+
+修改 `conf/server.xml`：
+
+```xml
+<Connector port="8080" protocol="HTTP/1.1"
+   connectionTimeout="20000"
+   redirectPort="8443"
+   compression="on"
+   compressionMinSize="2048"
+   compressableMimeType="text/html,text/xml,text/javascript,application/javascript,text/css,text/plain,text/json,application/json" />
+```
+
+#### 参数说明
+
+| 参数 | 说明 |
+|------|------|
+| `compression` | 压缩开关：on/off/force |
+| `compressionMinSize` | 启用压缩的最小文件大小（字节），默认 2048 |
+| `compressableMimeType` | 支持压缩的 MIME 类型列表 |
+| `noCompressionUserAgents` | 不进行压缩的用户代理（可选） |
+
+### Spring Boot 配置
+
+```properties
+server.compression.enabled=true
+server.compression.mime-types=text/html,text/xml,text/javascript,text/css,text/plain,application/json
+server.compression.min-response-size=2048
+```
+
+### 验证压缩
+
+```bash
+# 使用 curl 验证
+curl -I -H "Accept-Encoding: gzip" http://localhost:8080/
+
+# 查看响应头
+# Content-Encoding: gzip 表示已启用压缩
+```
+
+---
 
 ## 编码设置
 
-Tomcat 的编码通常在两个地方可以配置，一是conf/server.xml，二是bin/catalina.sh
-
-**conf/server.xml**
-
-```
-<Connector executor="tomcatThreadPool"
-    port="8088" protocol="HTTP/1.1"
-    redirectPort="8443" URIEncoding="GBK"/>
-```
-
-**bin/catalina.sh**
-
-```
-JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=GBK"
-```
-
-## Tomcat开启Gzip
-
-修改Tomcat目录下的/conf/server.xml，添加[字段](https://www.cnblogs.com/DDgougou/p/8675504.html)：
+### server.xml 配置
 
 ```xml
-<Connector port="9092" protocol="HTTP/1.1"
-   connectionTimeout="20000"
-   redirectPort="8443" 
-   compression="on"
-   compressionMinSize="2048"
-   compressableMimeType="text/html,text/xml,text/javascript,application/javascript,text/css,text/plain,text/json,application/json"
-   />
+<Connector port="8080" protocol="HTTP/1.1"
+    redirectPort="8443"
+    URIEncoding="UTF-8" />
 ```
 
-参数说明：
+### 启动参数配置
 
-1、compression="on" 开启压缩。可选值："on"开启，"off"关闭，"force"任何情况都开启。
+在 `bin/catalina.sh` 中添加：
 
-2、compressionMinSize="2048"大于2KB的文件才进行压缩。用于指定压缩的最小数据大小，单位B，默认2048B。注意此值的大小，如果配置不合理，产生的后果是小文件压缩后反而变大了，达不到预想的效果。
+```bash
+JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
+```
 
-3、noCompressionUserAgents="gozilla, traviata"，对于这两种浏览器，不进行压缩（我也不知道这两种浏览器是啥，百度上没找到），其值为正则表达式，匹配的UA将不会被压缩，默认空。
+### Spring Boot 配置
 
-4、compressableMimeType="text/html,text/xml,application/javascript,text/css,text/plain,text/json"会被压缩的MIME类型列表，多个逗号隔，表明支持html、xml、js、css、json等文件格式的压缩（plain为无格式的，但对于具体是什么，我比较概念模糊）。compressableMimeType很重要，它用来告知tomcat要对哪一种文件进行压缩。
+```properties
+server.tomcat.uri-encoding=UTF-8
+spring.http.encoding.charset=UTF-8
+spring.http.encoding.enabled=true
+spring.http.encoding.force=true
+```
 
-**备注：**开启gzip后，返回头中会有 Content-Encoding: gzip，请求端基于Java的话，可直接使用RestTemplate解析，会自动解压gzip，返回解压后的数据。
+---
 
-## Tomcat的几种部署方式
+## 部署方式
 
-**第一种：**
+### 第一种：修改 server.xml
 
-编辑tomcat/conf/server.xml下的<host/>节点中添加：
+在 `conf/server.xml` 的 `<Host>` 节点中添加 Context：
 
 ```xml
+<Host name="localhost" appBase="webapps" unpackWARs="true" autoDeploy="true">
+    <Context path="/hello"
+        docBase="D:/myapp/webroot"
+        debug="0"
+        privileged="true" />
+</Host>
+```
+
+- `path`：访问路径
+- `docBase`：应用实际路径
+- `debug`：调试级别
+- `privileged`：是否拥有特权
+
+### 第二种：创建 Context 配置文件
+
+在 `conf/Catalina/localhost` 目录下创建 XML 文件（文件名即为访问路径）：
+
+```xml
+<!-- conf/Catalina/localhost/hello.xml -->
 <Context path="/hello"
-docBase="D:/eclipse3.2.2/forwebtoolsworkspacehello/WebRoot" debug="0"
-privileged="true" >
-</Context>
+    docBase="D:/myapp/webroot"
+    debug="0"
+    privileged="true" />
 ```
 
-将web项目拷贝到tomcat/webapps下
+**优点**：
+- 无需修改 server.xml
+- 可隐藏真实项目名称
+- 支持热部署
 
-**第三种：**
+### 第三种：部署到 webapps 目录
 
-在conf目录中，新建Catalina\localhost目录，在该目录中新建一个xml文件，名字任意（不与本文件夹中的其他文件名重复），xml内容为：
+将 war 包或解压后的应用拷贝到 `webapps` 目录：
 
+```bash
+# 方式一：直接拷贝
+cp -r /myapp /path/to/tomcat/webapps/
+
+# 方式二：部署 war 包
+cp myapp.war /path/to/tomcat/webapps/
 ```
-<Context path="/hello"
-docBase="D:/eclipse3.2.2/forwebtoolsworkspacehello/WebRoot" debug="0"
-privileged="true" >
-</Context>
+
+Tomcat 会自动解压和部署。
+
+### 第四种：Tomcat Manager
+
+使用 Tomcat 管理界面部署：
+
+1. 访问 `http://localhost:8080/manager/html`
+2. 在 "WAR file to deploy" 部分上传 war 包
+
+---
+
+## 常见问题
+
+### 1. 启动报错：端口被占用
+
+```bash
+# 查找占用端口的进程
+netstat -ano | findstr 8080
+
+# Windows 结束进程
+taskkill /PID <PID> /F
+
+# Linux 结束进程
+kill -9 <PID>
 ```
 
-注：这个方法的优点是可以定义别名。服务器端运行的项目名称为path，外部访问的URL则使用XML的文件名。这个方法很方便的隐藏了项目的名称，对于一些项目名称被固定不能更换，但外部访问时又想换个路径时非常有效。
+### 2. 内存溢出（OOM）
 
-**第四种：**
+```properties
+# 添加 JVM 参数
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/path/to/heapdump.hprof
+```
 
-用tomcat在线的后台管理器，直接上传war包。
+分析堆转储文件定位问题。
+
+### 3. 响应缓慢
+
+- 检查线程池配置是否合理
+- 检查是否存在数据库连接泄漏
+- 检查是否启用 Gzip 压缩
+- 查看 GC 日志分析是否频繁 Full GC
+
+### 4. 部署后 404
+
+- 确认 war 包名称与访问路径一致
+- 检查 web.xml 配置是否正确
+- 确认应用已成功启动，查看日志
+
+### 5. JSP 无法解析
+
+确认 web.xml 中已配置 JSP Servlet：
+
+```xml
+<servlet>
+    <servlet-name>jsp</servlet-name>
+    <servlet-class>org.apache.jasper.servlet.JspServlet</servlet-class>
+</servlet>
+<servlet-mapping>
+    <servlet-name>jsp</servlet-name>
+    <url-pattern>*.jsp</url-pattern>
+</servlet-mapping>
+```
+
+---
+
+## 参考资料
+
+- [Apache Tomcat 官方文档](https://tomcat.apache.org/)
+- [Spring Boot 官方文档](https://spring.io/projects/spring-boot)
+- [Tomcat 架构详解](https://tomcat.apache.org/tomcat-10.1-doc/architecture/overview.html)
