@@ -626,35 +626,79 @@ public class User {
 }
 ```
 
+### 快速入门
+
+MyBatis-Plus 提供两套方案：
+
+**方案一：只使用 BaseMapper（推荐简单场景）**
+
 ```java
-// 3. Mapper 继承 BaseMapper
+// Mapper 层：继承 BaseMapper 获得基础 CRUD
+public interface UserMapper extends BaseMapper<User> {
+    // BaseMapper 已提供：insert, deleteById, updateById, selectById, selectList 等方法
+}
+```
+
+```java
+// Service 层直接调用
+@Service
+public class UserService {
+
+    @Autowired
+    private UserMapper userMapper;
+
+    public User getUserById(Long id) {
+        return userMapper.selectById(id);  // 基础 CRUD
+    }
+
+    public List<User> searchUsers(String name) {
+        return userMapper.selectList(new QueryWrapper<User>().like("name", name));
+    }
+}
+```
+
+**方案二：IService + ServiceImpl（推荐复杂业务场景）**
+
+```java
+// Mapper 层：同样需要继承 BaseMapper
 public interface UserMapper extends BaseMapper<User> {
 }
 ```
 
 ```java
-// 4. Service 层
+// Service 层：继承 ServiceImpl，获得更丰富的业务方法
 @Service
 public class UserService extends ServiceImpl<UserMapper, User> {
 
-    // 继承 IService 的方法
+    // IService 提供的增强方法
     public User getUserById(Long id) {
-        return getById(id);
+        return getById(id);  // 继承自 IService
     }
 
     public boolean saveUser(User user) {
-        return save(user);
+        return save(user);  // 继承自 IService，包含自动填充等逻辑
     }
 
-    // 条件构造器
+    // 条件构造器查询
     public List<User> searchUsers(String name, Integer age) {
         return list(new QueryWrapper<User>()
             .like("name", name)
             .eq("age", age)
             .orderByDesc("create_time"));
     }
+
+    // 链式调用（更推荐）
+    public List<User> searchUsersChain(String name) {
+        return list(new QueryWrapper<User>().like("name", name));
+    }
 }
 ```
+
+> **说明：**
+> - BaseMapper 是 MyBatis-Plus 的核心，提供基础的增删改查方法
+> - IService 是对 BaseMapper 的进一步封装，在 Service 层使用更方便
+> - 两者都需要 Mapper 继承 BaseMapper，但 Service 层可以根据需要选择是否使用 IService
+> - IService 的 save/update 方法会自动填充 `@TableField(fill = FieldFill.INSERT)` 等注解的字段
 
 ### 常用注解
 
