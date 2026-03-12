@@ -1,254 +1,939 @@
-## [**概述**](https://www.jianshu.com/p/ec40a82cae28)
+# MyBatis
 
-MyBatis和Hibernate一样，是一个优秀的持久层框架。原生的jdbc操作存在大量的重复性代码（如注册驱动，创建连接，创建statement，结果集检测等）。框架的作用就是把这些繁琐的代码封装，这样可以让程序员专注于sql语句本身。
+## 概述
 
-MyBatis通过XML或者注解的方式将要执行的sql语句配置起来，并通过java对象和sql语句映射成最终执行的sql语句。最终由MyBatis框架执行sql，并将结果映射成java对象并返回。
+### MyBatis 是什么
 
-## 数据处理
+MyBatis 是一个优秀的持久层框架，原生 JDBC 操作存在大量的重复性代码（如注册驱动、创建连接、创建 Statement、结果集检测等）。框架的作用就是把这些繁琐的代码封装，让程序员专注于 SQL 语句本身。
 
-1. 参数映射：ParameterHandler
-2. SQL解析：SqlSource
-3. SQL执行：Executor
-4. 结果处理和映射：ResultSetHandler
+MyBatis 通过 XML 或注解的方式将要执行的 SQL 语句配置起来，并通过 Java 对象和 SQL 语句映射成最终执行的 SQL 语句。最终由 MyBatis 框架执行 SQL，并将结果映射成 Java 对象返回。
 
-## MyBatis的[执行流程](https://blog.csdn.net/qq_32166627/article/details/70741729)
+**MyBatis 的核心优势：**
+- 半自动 ORM 框架，不完全自动生成 SQL
+- 手动编写 SQL，灵活可控
+- 支持动态 SQL
+- XML 与注解两种配置方式
 
-1. mybatis**配置文件**，包括Mybatis全局配置文件和Mybatis映射文件，其中全局配置文件配置了数据源、事务等信息；映射文件配置了SQL执行相关的信息。
-2. mybatis通过读取配置文件信息（全局配置文件和映射文件），生成Configuration对象，然后根据Configuration构造出SqlSessionFactory，即会话工厂。
-3. 通过**SqlSessionFactory**，可以创建SqlSession即会话。Mybatis是通过SqlSession来操作数据库的。
-4. **SqlSession**本身不能直接操作数据库，它是通过底层的Executor执行器接口来操作数据库的。Executor接口有两个实现类，一个是普通执行器，一个是缓存执行器（默认）。MyBatis封装了对数据库的**访问**，把对数据库的会话和事务控制放到了SqlSession对象中
-5. **Executor**执行器要处理的SQL信息是封装到一个底层对象MappedStatement中。该对象包括：SQL语句、输入参数映射信息、输出结果集映射信息。其中输入参数和输出结果的映射类型包括java的简单类型、HashMap集合对象、POJO对象类型。
+### MyBatis 版本演进
 
-**Executor的功能和作用**
+| 版本 | 发布年份 | 主要特性 |
+|------|----------|----------|
+| MyBatis 3.0 | 2010 | 全新架构，支持注解 |
+| MyBatis 3.2 | 2013 | 缓存增强、批量操作 |
+| MyBatis 3.3 | 2016 | 关联查询优化 |
+| MyBatis 3.4 | 2017 | 日志优化、性能提升 |
+| MyBatis 3.5 | 2019 | Java 8 特性支持、流式查询 |
+| MyBatis 3.6 | 2022 | 完善中文文档、性能优化 |
+| MyBatis 3.7+ | 后续 | 模块化重构、持续优化 |
 
-1. 根据传递的参数，完成SQL语句的动态解析，生成BoundSql对象，供StatementHandler使用；
-2. 为查询创建缓存，以提高性能；
-3. 创建JDBC的Statement连接对象，传递给StatementHandler对象，返回List查询结果；
+---
 
-## **MyBatis初始化机制**
+## 核心概念与术语
 
-任何框架的初始化，无非是加载自己运行时所需要的配置信息。MyBatis的配置信息，大概包含以下信息，其高层级结构如下：
+### 四大对象
 
-configuration 配置
-    properties 属性
-    settings 设置
-    typeAliases 类型命名
-    typeHandlers 类型处理器
-    objectFactory 对象工厂
-    plugins 插件
-    environments 环境
-        environment 环境变量
-        transactionManager 事物管理器
-        dataSource 数据源
-    映射器
+MyBatis 通过四大对象协作完成数据库操作：
 
-使用 org.apache.ibatis.session.**Configuration**对象作为一个**所有配置**信息的容器，Configuration对象的组织结构和XML配置文件的组织结构几乎完全一样（当然，Configuration对象的功能并不限于此，它还负责创建一些MyBatis内部使用的对象，如Executor等。可以这么说，MyBatis初始化的过程，就是创建 Configuration对象的过程。
+| 组件 | 职责 |
+|------|------|
+| **Executor** | 执行器，负责 SQL 语句的生成和查询缓存的维护 |
+| **StatementHandler** | 封装 JDBC Statement 操作，负责设置参数、转换结果集 |
+| **ParameterHandler** | 负责将用户传递的参数转换成 JDBC Statement 需要的参数 |
+| **ResultSetHandler** | 负责将 JDBC 返回的 ResultSet 结果集转换成 List 集合 |
 
-**MyBatis的初始化可以有两种方式**
+### 核心组件
 
-基于**XML配置**文件：基于XML配置文件的方式是将MyBatis的所有配置信息放在XML文件中，MyBatis通过加载并XML配置文件，将配置文信息组装成内部的Configuration对象。
+```java
+// 执行流程
+SqlSessionFactoryBuilder → SqlSessionFactory → SqlSession → Executor → StatementHandler → ParameterHandler → ResultSetHandler
+```
 
-基于**Java API：**这种方式不使用XML配置文件，需要MyBatis使用者在Java代码中，手动创建Configuration对象，然后将配置参数set 进入Configuration对象中。
+| 组件 | 说明 |
+|------|------|
+| **SqlSession** | MyBatis 工作的主要顶层 API，表示和数据库交互的会话 |
+| **Executor** | MyBatis 执行器，是 MyBatis 调度的核心 |
+| **StatementHandler** | 封装 JDBC Statement 操作 |
+| **ParameterHandler** | 参数转换处理器 |
+| **ResultSetHandler** | 结果集转换处理器 |
+| **TypeHandler** | Java 类型和 JDBC 类型之间的映射转换 |
+| **MappedStatement** | 维护 select/update/delete/insert 节点封装 |
+| **SqlSource** | 动态生成 SQL，封装到 BoundSql |
+| **BoundSql** | 动态生成的 SQL 语句及参数信息 |
+| **Configuration** | 所有配置信息的容器 |
 
-## [**主要构件**](https://www.jianshu.com/p/ec40a82cae28)及其相互关系
+---
 
-**SqlSession：**作为MyBatis工作的主要顶层API，表示和数据库交互的会话，完成必要数据库增删改查功能；
+## MyBatis 配置
 
-**Executor：**MyBatis执行器，是MyBatis 调度的核心，负责SQL语句的生成和查询缓存的维护；
-
-**StatementHandler：**封装了JDBC Statement操作，负责对JDBC statement 的操作，如设置参数、将Statement结果集转换成List集合。
-
-**ParameterHandler：**负责对用户传递的参数转换成JDBC Statement 所需要的参数；
-
-**ResultSetHandler：**负责将JDBC返回的ResultSet结果集对象转换成List类型的集合；
-
-**TypeHandler：**负责java数据类型和jdbc数据类型之间的映射和转换；
-
-**MappedStatement：**MappedStatement维护了一条<select|update|delete|insert>节点的封装；
-
-**SqlSource：**负责根据用户传递的parameterObject，动态地生成SQL语句，将信息封装到BoundSql对象中，并返回；
-
-**BoundSql：**表示动态生成的SQL语句以及相应的参数信息；
-
-**Configuration：**MyBatis所有的配置信息都维持在Configuration对象之中；
-
-**SqlSessionFactoryBuilder ：**SqlSessionFactory的构造器，用于创建SqlSessionFactory，采用了[**Builder设计模式**](onenote:JAVA.one#CoreJava&section-id={BB0F7AEA-6EDE-4C62-BA6B-C3B44D3FF49F}&page-id={72C3EAD6-D7FE-4D38-8DEC-2C9AA6B9DFA9}&object-id={429876D7-25E2-09B1-2661-B59378EEC7CA}&D&base-path=https://d.docs.live.net/33c60bae7d1e31a9/文档/技术学习)
-
-**SqlSessionFactory：**SqlSession工厂类，以工厂形式创建SqlSession对象，采用了Factory工厂设计模式
-
- ![image](../_images/eca72be9-0035-416a-873a-75a5e1afa036.png)
-
-## Executor在sqlSession中的[应用](https://blog.csdn.net/ykzhen2015/article/details/50315027)
-
-一个mapper被执行是通过动态代理来完成的，然后进入到了sqlSession的方法中去。这个并不难理解，但是sqlSession内部是通过**四大对象**的协作来运行。(**四大对象是指：executor，statementHandler，parameterHandler，resultHandler对象**)
-
-SqlSession是一个接口，mybatis内部是通过DefaultSqlSession这个实现类为我们提供服务。这个类是通过executor去执行方法来完成查询的。
-
-**三种执行器**
-
-- **Simple**Executor：SIMPLE 就是普通的执行器。
-
-- **Reuse**Executor：执行器会重用预处理语句（prepared statements）
-
-- **Batch**Executor：它是批量执行器
-
-默认的是simple，该模式下它为每个语句的执行创建一个新的预处理语句，单条提交sql；而batch模式重复使用已经预处理的语句，批量执行所有更新语句，显然batch性能将更优；batch模式也有自己的问题，比如在Insert操作时，在事务没有提交之前，是没有办法获取到自增的id，这在某型情形下是不符合业务要求的，在同一事务中batch模式和simple模式之间无法转换
-
-可以通过配置文件的settings里面的元素defaultExecutorType，配置它，默认是采用SimpleExecutor如果你在Spring运用它，那么你可以这么配置它：
+### 全局配置文件结构
 
 ```xml
-<bean id="sqlSessionTemplateBatch" class="org.mybatis.spring.SqlSessionTemplate">       
-    <constructor-arg index="0" ref="sqlSessionFactory" />    
-    <!--更新采用批量的executor -->    
-    <constructor-arg index="1" value="BATCH"/>    
-</bean> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+    PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!-- 属性配置 -->
+    <properties resource="db.properties">
+        <property name="username" value="root"/>
+    </properties>
+
+    <!-- 设置 -->
+    <settings>
+        <!-- 开启驼峰命名映射 -->
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <!-- 开启二级缓存 -->
+        <setting name="cacheEnabled" value="true"/>
+        <!-- 日志实现 -->
+        <setting name="logImpl" value="SLF4J"/>
+    </settings>
+
+    <!-- 类型别名 -->
+    <typeAliases>
+        <package name="com.example.entity"/>
+    </typeAliases>
+
+    <!-- 类型处理器 -->
+    <typeHandlers>
+        <package name="com.example.handler"/>
+    </typeHandlers>
+
+    <!-- 环境配置 -->
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <property name="driver" value="${driver}"/>
+                <property name="url" value="${url}"/>
+                <property name="username" value="${username}"/>
+                <property name="password" value="${password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+
+    <!-- 映射器 -->
+    <mappers>
+        <mapper resource="mapper/UserMapper.xml"/>
+        <package name="com.example.mapper"/>
+    </mappers>
+</configuration>
 ```
 
-这样，它便是一个批量的执行器。mybatis的三个executor都有一个共同的父类——**Base**Executor。
+### Spring Boot 配置
 
-## [MyBatis缓存](https://tech.meituan.com/mybatis_cache.html)
+```properties
+# 数据源
+spring.datasource.url=jdbc:mysql://localhost:3306/test
+spring.datasource.username=root
+spring.datasource.password=123456
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
-**一级缓存**
+# MyBatis 配置
+mybatis.mapper-locations=classpath:mapper/*.xml
+mybatis.type-aliases-package=com.example.entity
+mybatis.configuration.map-underscore-to-camel-case=true
+mybatis.configuration.cache-enabled=true
 
-在应用运行过程中，我们有可能在一次数据库会话中，执行多次查询条件完全相同的SQL，MyBatis提供了一级缓存的方案优化这部分场景，如果是相同的SQL语句，会优先命中一级缓存，避免直接对数据库进行查询，提高性能。
-
-- MyBatis一级缓存的生命周期和SqlSession一致。
-
-- MyBatis一级缓存内部设计简单，只是一个没有容量限定的HashMap，在缓存的功能性上有所欠缺。
-
-- MyBatis的一级缓存最大范围是SqlSession内部，有多个SqlSession或者分布式的环境下，数据库写操作会引起脏数据，建议设定缓存级别为Statement。
-  
-  - 当有多个`SqlSession`并发操作数据时，每个`SqlSession`都有自己独立的一级缓存。假设一个`SqlSession`（`SqlSession1`）执行了查询操作并缓存了数据，同时另一个`SqlSession`（`SqlSession2`）对相同的数据进行了更新操作并提交了事务，由于`SqlSession1`的缓存没有及时更新，此时`SqlSession1`再从缓存中读取数据就可能产生脏读。
-
-> 一级缓存是默认开启的，无需额外配置。
-
-**二级缓存**
-
-在上文中提到的一级缓存中，其最大的共享范围就是一个SqlSession内部，如果多个SqlSession之间需要共享缓存，则需要使用到二级缓存。开启二级缓存后，会使用CachingExecutor装饰Executor，进入一级缓存的查询流程前，先在CachingExecutor进行二级缓存的查询。
-
-二级缓存开启后，同一个namespace下的所有操作语句，都影响着同一个Cache，即二级缓存被多个SqlSession共享，是一个全局的变量。
-
-当开启缓存后，数据的查询执行的流程就是 二级缓存 -> 一级缓存 -> 数据库。
-
-但是，通常我们会为每个单表创建单独的映射文件，由于MyBatis的二级缓存是基于namespace的，多表查询语句所在的namspace无法感应到其他namespace中的语句对多表查询中涉及的表进行的修改，引发脏数据问题。
-
-> **总结**
-> 
-> MyBatis的二级缓存相对于一级缓存来说，实现了SqlSession之间缓存数据的共享，同时粒度更加的细，能够到namespace级别，通过Cache接口实现类不同的组合，对Cache的可控性也更强。
-> 
-> MyBatis在多表查询时，极大可能会出现脏数据，有设计上的缺陷，安全使用二级缓存的条件比较苛刻。
-> 
-> 在分布式环境下，由于默认的MyBatis Cache实现都是基于本地的，分布式环境下必然会出现读取到脏数据，需要使用集中式缓存将MyBatis的Cache接口实现，有一定的开发成本，直接使用Redis,Memcached等分布式缓存可能成本更低，安全性也更高。
-
-## SpringBoot中的SqlSession
-
-在mybatis与springboot的结合中，sqlSession的实现类不再是myBatis默认的DefaultSqlSession，而是SqlSessionTemplate。
-
-**SqlSessionTemplate** 是 MyBatis-Spring 的核心。 这个类负责管理 MyBatis 的 SqlSession, 调用 MyBatis 的 SQL 方法, 翻译异常。 SqlSessionTemplate 是线程安全的, 可以被多个 DAO 所共享使用。
-
-SqlSessionTemplate的内部类SqlSessionInterceptor动态代理创建sqlSession。
-
-在与springboot结合之后，sqlSession的创建在没有共享一个事务的情况下，都是一次mapper接口调用创建一个sqlSession，如果多次查询共享一个事务（通过SqlSessionHolder），则会共享同一个sqlSession（一级缓存）。
-
-> Tips：SqlSessionHolder用于在TransactionSynchronizationManager中保持当前的SqlSession
-
-Spring 与 Mybatis的结合中，通过 `SqlSessionInterceptor` 对SqlSession进行管理，在mapper方法的执行前后进行sqlSession的开启和提交（关闭）。在事务提交的时候会清理一级缓存。
-
-## [MyBatis结合Redis](http://blog.csdn.net/xiaolyuh123/article/details/73912617)
-
-1、开启Mybatis二级缓存
-
-2、自定义缓存需要实现Mybatis的Cache接口，我这里将使用Redis来作为缓存的容器。
-
-## Mybatis与JPA比较
-
-**Mybatis**
-
-需要在spring-boot的主类添加@MapperScan("com.example.demo.dao")
-
-需要添加Mapper(Dao)接口，自定义所有的Dao方法以及使用注解或者xml添加对应方法的sql实现。
-
-没有自动建表，需要手动建表。
-
-配置application.properties连接数据库属性。
-
-**JPA**
-
-需要在pojo类添加注解@Entity，pojo类对应的每个属性需要添加@Id或者@Column。
-
-添加Repository(Dao)接口，需要实现JpaRepository接口，可以不写方法声明。
-
-配置application.properties连接数据库属性。
-
-可通过配置spring.jpa.properties.hibernate.hbm2ddl.auto=update属性实现自动建表。
-
-> **总结：**都需要添加Dao类，Mybatis的Dao类需要实现具体sql（注解或者xml），JPA不需要。对于pojo类的侵入性而言，Mybatis无需更改pojo类的任何地方，而JPA需要添加注解实现映射。
-
-## **mybatis和hibernate的区别**
-
-- hibernate入门门槛高，是一个标准的ORM矿建（对象关系映射），不需要程序写sql，sql语句自动生成，对sql语句进行优化、修改比较困难。
-
-- mybatis专注于sql本身，需要程序员自己编写sql语句，sql修改、优化比较方便。是一个不完全的ORM框架，而且比较重要的一点是mybatis对于**输入参数和返回参数的自动映射**使得开发更加方便。
-  
-  > hibernate适用于**需求变化不多**的中小型项目，比如：后台管理系统；mybatis适用于**需求变化较多**的项目，比如：互联网项目。
-
-## SQL注入
-
-主要解决sql的like 、in 、order by [注入问题](https://blog.csdn.net/chen3888015/article/details/79657083)
-
-**Like**
-
-处理方式1：在程序中校验并拼接%后，直接用#格式，如下
-
-```
-select * from user where name like #{name}
+# 开启日志
+logging.level.com.example.mapper=DEBUG
 ```
 
-处理方式2：在xml配置中用sql的内置函数拼接，如下
+**常用配置项：**
 
-```
-select * from user where name like concat('%',#{name},'%')
-```
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| mybatis.mapper-locations | Mapper XML 路径 | classpath*:mapper/**/*.xml |
+| mybatis.type-aliases-package | 类型别名包 | - |
+| mybatis.configuration.map-underscore-to-camel-case | 驼峰映射 | false |
+| mybatis.configuration.cache-enabled | 开启二级缓存 | true |
+| mybatis.configuration.default-fetch-size | 默认抓取数量 | - |
+| mybatis.configuration.default-statement-timeout | 默认超时时间 | - |
 
-**In**
+---
 
-```
-select * from user where id in
-<foreach collection="ids" item="item" open="("separator="," close=")">#{item}</foreach>
-```
+## Mapper 接口与 XML
 
-## Mapper方法不可重载
-
-mybatis在动态代理调用方法时，Mybatis使用package+Mapper+method全限名作为key，去xml内寻找唯一sql来执行的。类似：key=x.y.UserMapper.getUserById，那么，重载方法时将导致矛盾。对于Mapper接口，[Mybatis禁止方法重载（overLoad）](https://blog.csdn.net/yuandengta/article/details/108645364)。
-
-## Tips
-
-### 设置单次查询超时时间
-
-在 MyBatis 中，可以通过在 select 标签中设置 timeout 属性来设置某次数据库查询的超时时间，单位为秒。例如：
+### XML 映射文件
 
 ```xml
-<select id="selectUser" parameterType="int" resultType="User" timeout="10">
-  select * from user where id = #{id}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.UserMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="User">
+        <id column="id" property="id"/>
+        <result column="user_name" property="userName"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, user_name, age, email, create_time
+    </sql>
+
+    <!-- 查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_user
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_user (user_name, age, email, create_time)
+        VALUES (#{userName}, #{age}, #{email}, #{createTime})
+    </insert>
+
+    <!-- 更新 -->
+    <update id="updateById" parameterType="User">
+        UPDATE t_user
+        <set>
+            <if test="userName != null">user_name = #{userName},</if>
+            <if test="age != null">age = #{age},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM t_user WHERE id = #{id}
+    </delete>
+
+</mapper>
+```
+
+### 注解方式
+
+```java
+@Mapper
+public interface UserMapper {
+
+    @Select("SELECT * FROM t_user WHERE id = #{id}")
+    User selectById(Long id);
+
+    @Insert("INSERT INTO t_user(user_name, age, email) VALUES(#{userName}, #{age}, #{email})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insert(User user);
+
+    @Update("UPDATE t_user SET user_name = #{userName}, age = #{age} WHERE id = #{id}")
+    int update(User user);
+
+    @Delete("DELETE FROM t_user WHERE id = #{id}")
+    int deleteById(Long id);
+
+    @Select("SELECT * FROM t_user WHERE user_name LIKE CONCAT('%', #{name}, '%')")
+    List<User> searchByName(String name);
+}
+```
+
+### 动态 SQL
+
+**if 条件判断：**
+
+```xml
+<select id="search" resultMap="BaseResultMap">
+    SELECT * FROM t_user
+    <where>
+        <if test="userName != null">
+            AND user_name = #{userName}
+        </if>
+        <if test="age != null">
+            AND age = #{age}
+        </if>
+    </where>
 </select>
 ```
 
-上述代码中，timeout 属性被设置为 10 秒，表示如果查询时间超过 10 秒，将会抛出 TimeoutException 异常。需要注意的是，timeout 属性只对查询操作有效，对于更新、删除等操作无效。此外，如果数据库本身设置了超时时间，那么 MyBatis 中设置的超时时间将会被忽略。
+**choose/when/otherwise：**
 
-## FAQ
+```xml
+<select id="search" resultMap="BaseResultMap">
+    SELECT * FROM t_user
+    <where>
+        <choose>
+            <when test="userName != null">
+                AND user_name = #{userName}
+            </when>
+            <when test="age != null">
+                AND age = #{age}
+            </when>
+            <otherwise>
+                AND status = 1
+            </otherwise>
+        </choose>
+    </where>
+</select>
+```
 
-> **Mybatis 无法注入mapper**
+**foreach 循环：**
 
-解决：未配置包扫描路径。
+```xml
+<!-- IN 查询 -->
+<select id="selectByIds" resultMap="BaseResultMap">
+    SELECT * FROM t_user
+    WHERE id IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">
+        #{id}
+    </foreach>
+</select>
 
-Mybatis的xml方式或者注解方式都需要配置@MapperScan
+<!-- 批量插入 -->
+<insert id="batchInsert">
+    INSERT INTO t_user (user_name, age) VALUES
+    <foreach collection="users" item="user" separator=",">
+        (#{user.userName}, #{user.age})
+    </foreach>
+</insert>
+```
 
-> **访问mapper方法出现异常：binding.BindingException: Invalid bound statement (not found)**
+**set 更新：**
 
-可能原因1：
-mybatis.mapper-locations路径配置有误：例如：mybatis.mapper-locations=classpath:mybatis/mapper/ArticleMapper.xml
-重新编译项目：rebuild
+```xml
+<update id="updateById" parameterType="User">
+    UPDATE t_user
+    <set>
+        <if test="userName != null">user_name = #{userName},</if>
+        <if test="age != null">age = #{age},</if>
+    </set>
+    WHERE id = #{id}
+</update>
+```
 
-可能原因2：
-1 当所有接口的mapper对应的xml文件都放在同一个目录下的时候，mybatis.mapper-locations指定到该目录并用\*匹配即可；
-2 当所有接口的mapper对应的xml文件放在各自的包路径下面时，不仅仅需要mybatis.mapper-locations用\*匹配目录，还需要在pom.xml下的<build>中加入对xml的打包，否则生成的运行文件中不包含对应的xml文件，导致出现异常：BindingException: Invalid bound statement (not found)
+---
+
+## 执行流程与原理
+
+### 执行流程图
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    MyBatis 配置文件                         │
+│            (mybatis-config.xml + Mapper.xml)               │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 SqlSessionFactoryBuilder                    │
+│                     (Builder 模式)                          │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   SqlSessionFactory                         │
+│                   (工厂模式)                                 │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      SqlSession                             │
+│              (数据库会话，线程不安全)                        │
+└─────────┬───────────────────────────────────┬───────────────┘
+          │                                   │
+          ▼                                   ▼
+┌─────────────────────┐           ┌─────────────────────────┐
+│   CachingExecutor   │           │      SimpleExecutor     │
+│    (二级缓存装饰)    │           │     (BaseExecutor)      │
+└─────────┬───────────┘           └───────────┬─────────────┘
+          │                                   │
+          ▼                                   ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   StatementHandler                         │
+│          (JDBC Statement 操作封装)                          │
+└────────────┬──────────────────────────┬────────────────────┘
+             │                          │
+             ▼                          ▼
+┌─────────────────────┐           ┌─────────────────────────┐
+│  ParameterHandler   │           │   ResultSetHandler      │
+│    (参数处理)       │           │     (结果处理)          │
+└─────────────────────┘           └─────────────────────────┘
+```
+
+### Executor 执行器
+
+MyBatis 有三种执行器：
+
+| 执行器 | 说明 | 特点 |
+|--------|------|------|
+| **SimpleExecutor** | 普通执行器 | 每次执行创建新的 PreparedStatement |
+| **ReuseExecutor** | 重用执行器 | 重复使用已预编译的 Statement |
+| **BatchExecutor** | 批量执行器 | 批量执行所有更新语句 |
+
+**配置方式：**
+
+```xml
+<!-- mybatis-config.xml -->
+<settings>
+    <setting name="defaultExecutorType" value="SIMPLE"/>
+</settings>
+```
+
+```java
+// Spring Boot 配置
+mybatis.configuration.default-executor-type=SIMPLE
+```
+
+```java
+// Spring Boot 指定特定 Mapper 使用批处理
+@Configuration
+public class MyBatisConfig {
+    @Bean
+    public SqlSessionTemplate sqlSessionTemplateBatch(SqlSessionFactory sqlSessionFactory) {
+        return new SqlSessionTemplate(sqlSessionFactory, ExecutorType.BATCH);
+    }
+}
+```
+
+> **注意：** BatchExecutor 在事务未提交前无法获取自增 ID。
+
+### 预编译语句重用
+
+```java
+// ReuseExecutor 效果示例
+// 第一次执行
+PreparedStatement ps = connection.prepareStatement("SELECT * FROM user WHERE id = ?");
+ps.setInt(1, 1);
+ps.executeQuery();
+
+// 第二次执行相同 SQL（复用）
+// 不再创建新的 PreparedStatement，直接重用
+ps = connection.prepareStatement("SELECT * FROM user WHERE id = ?");
+ps.setInt(1, 2);
+ps.executeQuery();
+```
+
+---
+
+## MyBatis 缓存
+
+### 一级缓存
+
+一级缓存是 SqlSession 级别的缓存，默认开启。
+
+```java
+// 同一个 SqlSession 中，两次查询相同 ID 的用户
+User user1 = userMapper.selectById(1L);  // 查询数据库
+User user2 = userMapper.selectById(1L);  // 从一级缓存获取
+
+// 不同的 SqlSession
+SqlSession session1 = sqlSessionFactory.openSession();
+SqlSession session2 = sqlSessionFactory.openSession();
+
+UserMapper mapper1 = session1.getMapper(UserMapper.class);
+UserMapper mapper2 = session2.getMapper(UserMapper.class);
+
+User user1 = mapper1.selectById(1L);  // 查询数据库
+User user2 = mapper2.selectById(1L);  // 再次查询数据库
+```
+
+**特点：**
+- 生命周期与 SqlSession 一致
+- 范围是 SqlSession 内部
+- 多 SqlSession 并发操作可能产生脏数据
+
+**失效场景：**
+- SqlSession 关闭或 clear
+- 执行了 update/delete/insert 操作
+- 手动调用 `sqlSession.clearCache()`
+
+### 二级缓存
+
+二级缓存是 namespace 级别的缓存，需要手动开启。
+
+```xml
+<!-- 方式1：XML 配置 -->
+<mapper namespace="com.example.mapper.UserMapper">
+    <cache/>
+
+    <!-- 或者配置缓存参数 -->
+    <cache
+        eviction="FIFO"
+        flushInterval="60000"
+        size="512"
+        readOnly="true"/>
+</mapper>
+```
+
+```java
+// 方式2：注解方式
+@CacheNamespace(eviction = FIFO.class, flushInterval = 60000, size = 512)
+@Mapper
+public interface UserMapper { }
+```
+
+**查询流程：**
+
+```
+二级缓存 → 一级缓存 → 数据库
+```
+
+**问题：**
+- 多表查询时可能产生脏数据
+- 分布式环境下需要使用集中式缓存（Redis）
+
+### Redis 二级缓存
+
+```xml
+<!-- pom.xml 添加依赖 -->
+<dependency>
+    <groupId>org.mybatis.caches</groupId>
+    <artifactId>mybatis-redis</artifactId>
+    <version>1.0.0-beta2</version>
+</dependency>
+```
+
+```xml
+<!-- Redis 配置 -->
+<cache type="org.mybatis.caches.redis.RedisCache">
+    <property name="host" value="localhost"/>
+    <property name="port" value="6379"/>
+    <property name="password" value=""/>
+</cache>
+```
+
+---
+
+## Spring Boot 集成
+
+### 快速入门
+
+```java
+// 1. 添加依赖
+// pom.xml
+<dependency>
+    <groupId>org.mybatis.spring.boot</groupId>
+    <artifactId>mybatis-spring-boot-starter</artifactId>
+    <version>3.0.3</version>
+</dependency>
+```
+
+```java
+// 2. Mapper 接口
+@Mapper
+public interface UserMapper {
+    @Select("SELECT * FROM t_user WHERE id = #{id}")
+    User findById(Long id);
+
+    @Insert("INSERT INTO t_user(name, age) VALUES(#{name}, #{age})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insert(User user);
+}
+```
+
+```java
+// 3. 启动类配置
+@SpringBootApplication
+@MapperScan("com.example.mapper")  // 扫描 Mapper 接口
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
+```
+
+### SqlSessionTemplate
+
+在 Spring Boot 中，SqlSession 的实现是 SqlSessionTemplate，它是线程安全的。
+
+```java
+// 源码解析
+public class SqlSessionTemplate implements SqlSession {
+    private final SqlSessionProxy proxy;  // 动态代理
+
+    // 内部类 SqlSessionInterceptor 实现自动管理 SqlSession
+    private class SqlSessionInterceptor implements InvocationHandler {
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            SqlSession sqlSession = getSqlSession(
+                SqlSessionTemplate.this.sqlSessionFactory,
+                SqlSessionTemplate.this.executorType,
+                SqlSessionTemplate.this.exceptionTranslator);
+
+            try {
+                Object result = method.invoke(sqlSession, args);
+                if (!isSqlSessionTransactional(sqlSession, SqlSessionTemplate.this.sqlSessionFactory)) {
+                    sqlSession.commit(true);  // 提交
+                }
+                return result;
+            } finally {
+                if (sqlSession != null) {
+                    closeSqlSession(sqlSession, SqlSessionTemplate.this.sqlSessionFactory);
+                }
+            }
+        }
+    }
+}
+```
+
+### 事务管理
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Transactional(rollbackFor = Exception.class)
+    public void saveUser(User user) {
+        userMapper.insert(user);
+        // 其他操作
+    }
+
+    // 只读事务（性能优化）
+    @Transactional(readOnly = true)
+    public List<User> findAll() {
+        return userMapper.selectAll();
+    }
+}
+```
+
+---
+
+## MyBatis-Plus
+
+MyBatis-Plus（简称 MP）是 MyBatis 的增强工具，简化开发。
+
+### 快速入门
+
+```java
+// 1. 添加依赖
+<dependency>
+    <groupId>com.baomidou</groupId>
+    <artifactId>mybatis-plus-boot-starter</artifactId>
+    <version>3.5.5</version>
+</dependency>
+```
+
+```java
+// 2. 实体类
+@Data
+@TableName("t_user")
+public class User {
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
+    private String name;
+    private Integer age;
+    private String email;
+
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
+}
+```
+
+```java
+// 3. Mapper 继承 BaseMapper
+public interface UserMapper extends BaseMapper<User> {
+}
+```
+
+```java
+// 4. Service 层
+@Service
+public class UserService extends ServiceImpl<UserMapper, User> {
+
+    // 继承 IService 的方法
+    public User getUserById(Long id) {
+        return getById(id);
+    }
+
+    public boolean saveUser(User user) {
+        return save(user);
+    }
+
+    // 条件构造器
+    public List<User> searchUsers(String name, Integer age) {
+        return list(new QueryWrapper<User>()
+            .like("name", name)
+            .eq("age", age)
+            .orderByDesc("create_time"));
+    }
+}
+```
+
+### 常用注解
+
+| 注解 | 说明 |
+|------|------|
+| @TableName | 表名 |
+| @TableId | 主键 |
+| @TableField | 字段映射 |
+| @TableLogic | 逻辑删除 |
+
+### 分页查询
+
+```java
+// 1. 配置分页插件
+@Configuration
+public class MyBatisPlusConfig {
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor());
+        return interceptor;
+    }
+}
+```
+
+```java
+// 2. 分页查询
+IPage<User> page = new Page<>(1, 10);
+QueryWrapper<User> wrapper = new QueryWrapper<>();
+wrapper.gt("age", 18);
+IPage<User> result = userMapper.selectPage(page, wrapper);
+
+System.out.println("总记录数: " + result.getTotal());
+System.out.println("数据: " + result.getRecords());
+```
+
+### 条件构造器
+
+```java
+// 等于 =
+new QueryWrapper<User>().eq("age", 20);
+
+// 不等于 <>
+new QueryWrapper<User>().ne("age", 20);
+
+// 大于 >
+new QueryWrapper<User>().gt("age", 18);
+
+// 小于 <
+new QueryWrapper<User>().lt("age", 60);
+
+// LIKE
+new QueryWrapper<User>().like("name", "张");
+
+// IN
+new QueryWrapper<User>().in("id", Arrays.asList(1, 2, 3));
+
+// 排序
+new QueryWrapper<User>().orderByDesc("create_time").orderByAsc("age");
+
+// 链式调用
+new QueryWrapper<User>()
+    .like("name", "张")
+    .gt("age", 18)
+    .orderByDesc("create_time")
+    .last("LIMIT 10");
+```
+
+---
+
+## MyBatis 与 JPA/Hibernate 对比
+
+### 核心区别
+
+| 特性 | JPA/Hibernate | MyBatis |
+|------|---------------|----------|
+| ORM 程度 | 全自动化 | 半自动 |
+| SQL 控制 | 自动生成 | 手动编写 |
+| 学习曲线 | 较陡 | 较平缓 |
+| 性能调优 | 困难 | 灵活 |
+| 侵入性 | 高（需加注解） | 低（无需改 POJO） |
+
+### 适用场景
+
+**JPA/Hibernate 适用于：**
+- 需求变化不多的中小型项目
+- 快速开发，原型迭代
+- 业务逻辑为主，数据模型稳定
+- 团队熟悉 ORM 概念
+
+**MyBatis 适用于：**
+- 需求变化较多的项目
+- 复杂查询场景
+- 需要精细 SQL 优化
+- 已有数据库 Schema
+- 需要高度控制 SQL
+
+### 代码对比
+
+**MyBatis 方式：**
+
+```java
+// Mapper
+@Mapper
+public interface UserMapper {
+    User selectByName(String name);
+}
+
+// XML
+<select id="selectByName" resultType="User">
+    SELECT * FROM user WHERE name = #{name}
+</select>
+```
+
+**JPA 方式：**
+
+```java
+// 实体
+@Entity
+public class User {
+    @Id
+    private Long id;
+    private String name;
+}
+
+// Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+    User findByName(String name);
+}
+```
+
+> **总结：** JPA 对 POJO 侵入性强，需要添加注解；MyBatis 需要手动写 SQL 但更灵活。
+
+---
+
+## SQL 注入防护
+
+### #{} vs ${}
+
+- **#{}** - 预编译参数，防止 SQL 注入
+- **${}** - 字符串拼接，存在 SQL 注入风险
+
+```xml
+<!-- 安全：使用 #{} -->
+<select id="selectByName" resultType="User">
+    SELECT * FROM user WHERE name = #{name}
+</select>
+
+<!-- 危险：使用 ${} -->
+<select id="selectByName" resultType="User">
+    SELECT * FROM user WHERE name = '${name}'
+</select>
+```
+
+### Like 查询
+
+```xml
+<!-- 方式1：程序拼接 -->
+<select id="search" resultType="User">
+    SELECT * FROM user WHERE name LIKE #{name}
+</select>
+// Java: userMapper.search("%张%");
+
+<!-- 方式2：函数拼接（推荐） -->
+<select id="search" resultType="User">
+    SELECT * FROM user WHERE name LIKE CONCAT('%', #{name}, '%')
+</select>
+// Java: userMapper.search("张");
+```
+
+### In 查询
+
+```xml
+<select id="selectByIds" resultType="User">
+    SELECT * FROM user
+    WHERE id IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">
+        #{id}
+    </foreach>
+</select>
+```
+
+---
+
+## 常见问题与 Tips
+
+### Tips
+
+**1. 设置单次查询超时时间**
+
+```xml
+<select id="selectUser" timeout="10">
+    SELECT * FROM user WHERE id = #{id}
+</select>
+```
+
+**2. Mapper 方法重载问题**
+
+MyBatis 使用 `package+Mapper+method` 全限名作为 key 查找 SQL，**不支持方法重载**。
+
+```java
+// 错误：无法区分
+User selectById(Long id);
+User selectById(Integer id);  // 编译通过但运行异常
+```
+
+**3. 返回主键**
+
+```xml
+<insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO user (name, age) VALUES (#{name}, #{age})
+</insert>
+```
+
+### FAQ
+
+**Q: MyBatis 无法注入 Mapper？**
+
+A: 检查是否配置了 `@MapperScan`：
+```java
+@SpringBootApplication
+@MapperScan("com.example.mapper")  // 扫描路径
+public class Application { }
+```
+
+**Q: BindingException: Invalid bound statement？**
+
+A: 可能原因：
+1. XML 文件位置不对
+2. 未正确配置 `mapper-locations`
+3. 未在 pom.xml 中配置 xml 打包
+
+```xml
+<!-- pom.xml -->
+<build>
+    <resources>
+        <resource>
+            <directory>src/main/resources</directory>
+        </resource>
+        <resource>
+            <directory>src/main/java</directory>
+            <includes>
+                <include>**/*.xml</include>
+            </includes>
+        </resource>
+    </resources>
+</build>
+```
+
+**Q: 一级缓存没有生效？**
+
+A: 检查是否每次都创建新的 SqlSession，确保在同一个事务内。
+
+**Q: 如何打印 SQL 日志？**
+
+```properties
+logging.level.com.example.mapper=DEBUG
+logging.level.org.mybatis=DEBUG
+```
+
+**Q: 懒加载失效？**
+
+A: MyBatis 本身不提供懒加载（与 JPA/Hibernate 不同），如需懒加载可使用 `mybatis-association` 等插件。
+
+**Q: 多数据源配置？**
+
+```java
+@Bean
+@Primary
+@ConfigurationProperties("spring.datasource.primary")
+public DataSource primaryDataSource() {
+    return DataSourceBuilder.create().build();
+}
+
+@Bean
+@ConfigurationProperties("spring.datasource.secondary")
+public DataSource secondaryDataSource() {
+    return DataSourceBuilder.create().build();
+}
+```
+
+然后为不同数据源创建不同的 SqlSessionFactory 和 MapperScan。
