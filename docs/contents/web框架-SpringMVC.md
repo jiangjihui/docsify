@@ -1,287 +1,1043 @@
-## **Spring MVC** [**概述**](https://www.yiibai.com/spring_mvc/springmvc_overview.html)
-
-> Spring Web MVC是一种基于Java的实现了Web MVC设计模式的请求驱动类型的轻量级Web框架，即使用了MVC架
-> 构模式的思想，**将web层进行职责解耦**，基于请求驱动指的就是使用请求-响应模型。
-
-Spring web MVC框架提供了MVC(模型 - 视图 - 控制器)架构和用于开发灵活和松散耦合的Web应用程序的组件。 **MVC**模式导致应用程序的不同方面(输入逻辑，业务逻辑和UI逻辑)分离，同时提供这些元素之间的松散耦合。
-
-- **模型(Model)** 封装了应用程序数据，通常它们将由**POJO**类组成。
-- **视图(View)** 负责渲染模型数据，一般来说它生成客户端浏览器可以**解释HTML**输出。
-- **控制器(Controller)** 负责处理用户请求并 **构建** 适当的模型，并将其传递给视图进行渲染（响应数据）。
-
-
-
-## Spring MVC 构成
-
-Spring MVC 主要由以下几个部分构成：
-
-**1. 前端控制器（DispatcherServlet）**
-
-- 这是 Spring MVC 的核心组件，所有的请求都先进入该控制器。它负责接收 HTTP 请求，并将请求分发给相应的处理器（Handler）进行处理。
-- 它的配置通常在 web.xml 文件中或者通过 Java 配置类来完成。它实际是继承 HttpServlet。
-
-**2. 处理器映射器（HandlerMapping）**
-
-- 作用是根据请求的 URL 等信息找到对应的处理器（Handler），也就是具体的 Controller 中的方法。
-- 常见的处理器映射器有 SimpleUrlHandlerMapping、RequestMappingHandlerMapping 等。
-
-**3. 处理器（Handler）**
-
-- 通常是指开发人员编写的控制器（Controller）类中的处理方法。这些方法负责处理具体的业务逻辑，例如从数据库中获取数据、执行业务规则等。
-- 控制器中的方法可以接受请求参数，并返回一个 ModelAndView 对象或者其他数据类型。
-
-**4. 处理器适配器（HandlerAdapter）**
-
-- 因为处理器（Handler）可以有多种不同的形式，处理器适配器的作用就是将处理器包装成统一的形式，使得 DispatcherServlet 可以调用。
-- 例如，RequestMappingHandlerAdapter 用于适配使用了 @RequestMapping 注解的处理器方法。
-
-**5. 视图解析器（ViewResolver）**
-
-- 当处理器方法返回一个视图名称（View Name）时，视图解析器负责根据这个名称找到对应的实际视图（View），例如 JSP 页面、Thymeleaf 模板等。
-- 常见的视图解析器有 InternalResourceViewResolver、ThymeleafViewResolver 等。
-
-**6. 视图（View）**
-
-- 视图负责将处理结果呈现给用户。
-- 可以是静态的 HTML 页面、动态生成的 JSP 页面、基于模板引擎（如 Thymeleaf、FreeMarker 等）生成的页面等多种形式。
-
-
-
-### Spring MVC IOC 容器的形成
-
-**WebApplicationContext**：是专门为 Web 应用设计的上下文环境。它在 ApplicationContext 的基础上，添加了一些 Web 相关的特性，例如对 ServletContext 和 ServletConfig 的访问能力，以及对 Web 相关作用域（如 request、session 等）的支持。
-
-- 在 Spring MVC 中，存在一个专门用于 Web 层的 IOC 容器（WebApplicationContext）。这个容器实际上**是** Spring IOC 容器（**ApplicationContext**）的**子容器**。
-
-- 当配置 Spring MVC 时，会创建一个`DispatcherServlet`，而这个`DispatcherServlet`会初始化它自己的`WebApplicationContext`，这个`WebApplicationContext`就是作为根`ApplicationContext`的子容器。
-
-> **父子容器的关系和作用**
-> 
-> - **共享性**：子容器可以访问父容器中定义的 bean，但是父容器不能访问子容器中的 bean。这使得在 Spring MVC 中，Web 层的组件（定义在 Spring MVC 的子容器中）可以方便地使用在整个应用程序层面定义的服务和其他组件（定义在根 Spring 容器中）。
-> - **隔离性**：Spring MVC 的子容器可以独立于根容器进行配置和管理，这样可以将 Web 相关的配置和非 Web 相关的配置分开，提高了配置的清晰性和可维护性。例如，可以在根容器中配置数据访问层和业务逻辑层的 bean，而在 Spring MVC 的子容器中配置控制器（Controller）和与 Web 视图相关的 bean。
-
-
-
-## 优势
-
-- 清晰的角色划分：前端控制器（DispatcherServlet）、请求到处理器映射（HandlerMapping）、处理器适配器（HandlerAdapter）、视图解析器（ViewResolver）、处理器或页面控制器（Controller）、验证器（ Validator）、命令对象（Command  请求参数绑定到的对象就叫命令对象）、表单对象（Form Object  提供给表单展示和提交到的对象就叫表单对象）。 
-- 分工明确，而且扩展点相当灵活，可以很容易扩展，虽然几乎不需要； 
-- 由于命令对象就是一个POJO，无需继承框架特定API，可以使用命令对象直接作为业务对象； 
-- 和Spring 其他框架无缝集成，是其它Web框架所不具备的； 
-- 可适配，通过HandlerAdapter可以支持任意的类作为处理器； 
-- 可定制性，HandlerMapping、ViewResolver等能够非常简单的定制； 
-- 功能强大的数据验证、格式化、绑定机制； 
-- 利用Spring提供的Mock对象能够非常简单的进行Web层单元测试； 
-- 本地化、主题的解析的支持，使我们更容易进行国际化和主题的切换。 
-- 强大的JSP标签库，使JSP编写更容易。 
-- 还有比如RESTful风格的支持、简单的文件上传、约定大于配置的契约式编程支持、基于注解的零配置支持等等。
-
-## **HttpServlet**
-
-Servlet([Tomcat](onenote:Web容器.one#Tomcat&section-id={9B6AA5FE-49EA-422B-B611-7B2BC44897FB}&page-id={07BA235F-A0EA-4830-9442-676A4E344354}&object-id={171FCE31-5BDC-03EB-2164-752F0448381D}&D&base-path=https://d.docs.live.net/33c60bae7d1e31a9/文档/技术学习))容器负责创建HttpServlet对象，并把Http请求直接封装到HttpServlet对象中，大大简化了HttpServlet解析请求数据的工作量。
-
-**HttpServlet容器响应Web客户请求流程：**
-
-1）Web客户向Servlet容器发出Http请求；
-
-2）Servlet容器解析Web客户的Http请求；
-
-3）Servlet容器创建一个HttpRequest对象，在这个对象中封装Http请求信息；
-
-4）Servlet容器创建一个HttpResponse对象；
-
-5）Servlet容器调用HttpServlet的service方法，把HttpRequest和HttpResponse对象作为service方法的参数传给HttpServlet对象；
-
-6）HttpServlet调用HttpRequest的有关方法，获取HTTP请求信息；
-
-7）HttpServlet调用HttpResponse的有关方法，生成响应数据；
-
-8）Servlet容器把HttpServlet的响应结果传给Web客户。
-
-SpringMVC的**DispatcherServlet**间接**继承**了**HttpServlet**抽象类，来实现请求和响应的处理。如果需要自己造轮子(造MVC框架)去处理http请求，就继承HttpServlet去实现自己的方法即可。
-
-## DispatcherServlet
-
-Spring Web模型 - 视图 - 控制器(MVC)框架是围绕**DispatcherServlet**设计的，它处理所有的HTTP请求和响应。又叫前端控制器，来自前端的请求会先到达这里，它负责到后台去匹配合适的handler。是SpringMVC的统一处理入口。
-
-DispatcherServlet在初始化的时候就会根据 `DispatcherServlet.properties` 把映射器、适配器、试图解析器、异常处理器、文件处理器等都初始化。所有的请求都会被它的 `doService()` 方法处理，里面最主要的是调用 `doDispatch()` 方法。
-
-请求处理工作流如下图所示：
-
- ![image](../_images/32bb45b4-fd0d-4b61-99ad-32a11ffe6094.png)
-
-以下是对应于到DispatcherServlet的传入HTTP请求的事件顺序：
-
-- 在接收到HTTP请求后，DispatcherServlet会查询HandlerMapping以调用相应的Controller。
-- Controller接受请求并根据使用的GET或POST方法调用相应的服务方法。     服务方法将基于定义的业务逻辑设置模型数据，并将视图名称返回给DispatcherServlet。
-- DispatcherServlet将从ViewResolver获取请求的定义视图。
-- 当视图完成，DispatcherServlet将模型数据传递到最终的视图，并在浏览器上呈现。
-
-所有上述组件，即: HandlerMapping，Controller和ViewResolver是WebApplicationContext的一部分，它是普通ApplicationContext的扩展，带有Web应用程序所需的一些额外功能。
-
-> 注：需要通过使用**web.xml**文件中的URL映射来映射希望**DispatcherServlet处理**的请求。
-
-## HandlerMapping
-
-> HandlerMapping负责映射用户的URL和对应的处理类。
-
-HandlerMapping在这个SpringMVC体系结构中有着举足轻重的地位，充当着**url和Controller之间映射**关系**配置**的角色。HandlerMapping是接口，Spring MVC提供了一系列HandlerMapping的实现，根据一定的规则选择controller。如果当前的HandlerMappign实现中没有能够满足你所需要的规则是，可以通过实现HandlerMapping接口进行扩展。它主要有三部分组成：HandlerMapping映射注册、根据url获取对应的处理器、拦截器注册。
-
-HandlerMapping是处理器映射器，根据请求找到处理器Handler，但并不是简单的返回处理器，而是将处理器和拦截器封装，形成一个处理器执行链(HandlerExecuteChain)。
-
-## HandlerAdapter
-
-HandlerAdapter是处理器适配器，Spring MVC通过HandlerAdapter来实际调用处理函数。它是SpringMvc处理流程的第二步,当HandlerMapping获取了定位请求处理器Handler，DispatcherServlet会将得到的Handler告知HandlerAdapter，HandlerAdapter再根据请求去**定位请求的具体处理方法**是哪一个。
-
-### 流程
-
-DispatcherServlter会根据handlerMapping传过来的controller与已经注册好了的HandlerAdapter 一一匹配，看哪一种HandlerAdapter是支持该controller类型的，如果找到了其中一种HandlerAdapter是支持传过来的 controller类型，那么该HandlerAdapter会调用自己的handle方法，handle方法运用Java的 反射机制执行controller的具体方法来获得ModelAndView。
-
-> 例如SimpleControllerHandlerAdapter是支持 实现了controller接口的控制器，如果自己写的控制器实现了controller接口，那么 SimpleControllerHandlerAdapter就会去执行自己写控制器中的具体方法来完成请求。
-
-### 作用
-
-1. HandlerAdapter定义了如何处理请求的策略，通过请求url、请求Method和处理器的requestMapping定义，最终确定使用处理类的哪个方法来处理请求，并检查处理类相应处理方法的参数以及相关的Annotation配置，确定如何转换需要的参数传入调用方法，并最终调用返回ModelAndView。
-
-2. DispatcherServlet中根据HandlerMapping找到对应的handler method后，首先检查当前工程中注册的所有可用的handlerAdapter，根据handlerAdapter中的supports方法找到可以使用的handlerAdapter。
-
-3. 通过调用handlerAdapter中的handler方法来处理及准备handler method的参数及annotation(这就是spring mvc如何将request中的参数变成handle method中的输入参数的地方)，最终调用实际的handler method。
-
-## **初始化加载**
-
- ![image](../_images/dcea31aa-b4d6-4b64-b621-92b874f77272.jpg)
-
-从图中可以看出：
-Spring的ContextLoaderListener初始化的上下文加载的Bean是对于整个应用程序共享的，不管是使用什么表现层技术，一般如DAO层、Service层Bean；
-SpringMVC的DispatcherServlet初始化的上下文加载的Bean是只对Spring Web MVC有效的Bean，如Controller、HandlerMapping、HandlerAdapter等等，该初始化上下文应该只加载Web相关组件。
-
-## **Spring MVC获取表单参数**
-
-Spring MVC获取表单参数有如下4种：
-
-- **Controller形参(Model)** ：写在Controller方法的形参里。
-- **bean(View)** ：通过bean接收。
-
-注意：使用bean接收无需定义form表单输入框name的前缀为xxx.属性，而是直接使用属性即可。
-
-- **HttpServletRequest(Controller)** ：通过request.getParameter("参数名")获取参数值。
-- **json**
-
-## **Spring MVC数据绑定**
-
-springMVC默认支持的数据绑定类型：
-
-**基本数据类型及其包装类类型**
-
-与方法形参一致
-
-形参数据类型声明为想要的数据类型，默认参数名字要和传递过来的参数名字保持一致，例如提交的请求为：
-
-```java
-// http://localhost:8088/smvc/login.action?id=100
-@RequestMapping(“/login”)
-public String login(Integer id){
-    //形式参数id就可以接收到请求url上的id属性值。
-}
+# Spring MVC
+
+## 概述
+
+### Spring MVC 是什么
+
+Spring Web MVC 是一种基于 Java 实现的 Web MVC 设计模式的请求驱动型轻量级 Web 框架。它将 Web 层进行职责解耦，基于请求-响应模型工作。
+
+**MVC 架构：**
+
+- **模型（Model）** - 封装应用程序数据，通常由 POJO 类组成
+- **视图（View）** - 负责渲染模型数据，生成 HTML 输出
+- **控制器（Controller）** - 负责处理用户请求，构建模型并传递给视图
+
+### Spring MVC 版本演进
+
+| 版本 | 发布年份 | 主要特性 |
+|------|----------|----------|
+| Spring 2.5 | 2007 | 引入注解支持（@RequestMapping） |
+| Spring 3.0 | 2009 | REST 支持、注解驱动、验证器 |
+| Spring 3.2 | 2013 | Spring MVC 测试框架、异步处理 |
+| Spring 4.0 | 2013 | REST 增强、WebSocket 支持 |
+| Spring 4.3 | 2016 | 组合注解（@GetMapping 等）、CORS |
+| Spring 5.0 | 2017 | 函数式路由、Reactive 响应式支持 |
+| Spring 5.3 | 2020 | 改进的日志、RFC 7807 响应式错误处理 |
+| Spring 6.0 | 2022 | Jakarta EE 9+、UTF-8 默认编码 |
+
+---
+
+## 核心概念与组件
+
+### 核心组件
+
+| 组件 | 说明 |
+|------|------|
+| **DispatcherServlet** | 前端控制器，Spring MVC 的统一入口 |
+| **HandlerMapping** | 处理器映射器，根据 URL 找到对应的 Handler |
+| **HandlerAdapter** | 处理器适配器，调用具体的处理方法 |
+| **ViewResolver** | 视图解析器，解析视图名称到具体视图 |
+| **View** | 视图，负责渲染模型数据 |
+| **HandlerInterceptor** | 拦截器，在请求前后执行自定义逻辑 |
+
+### WebApplicationContext
+
+WebApplicationContext 是专门为 Web 应用设计的上下文环境，是 ApplicationContext 的扩展。
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  根 ApplicationContext                      │
+│              (业务层、数据层 Bean)                           │
+└─────────────────────────────────────────────────────────────┘
+                          │
+         ┌────────────────┴────────────────┐
+         ▼                                 ▼
+┌─────────────────────┐         ┌─────────────────────┐
+│ 父容器可访问子容器  │         │  子 WebApplicationContext │
+│ 子容器不可访问父容器│         │   (Controller、ViewResolver)│
+└─────────────────────┘         └─────────────────────┘
 ```
 
-使用注解@RequestParam
+**父子容器关系：**
+- 子容器可以访问父容器的 Bean
+- 父容器不能访问子容器的 Bean
+- 通常：根容器配置 DAO/Service，子容器配置 Controller
 
-如果参数名字和request提交过来的请求参数名字不一致，可以使用注解@RequestParam指明要将提交过来的哪个请求参数，注入给哪个方法参数。
+---
 
-```java
-@RequestMapping(“/login”)
-public String login(@RequestParam(value="id",required=false,defaultValue="100")Integer user_id){
-    //形式参数id就可以接收到请求url上的id属性值。
-    //如上代码指定了随请求传递过来的名字为uid的参数将赋值给user_id,参数不是必须的，如果请求没有传递名字为id的参数，那么赋予user_id默认值为100
-}
+## 执行流程
+
+### 请求处理流程
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        HTTP 请求                            │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   DispatcherServlet                         │
+│                    (前端控制器)                              │
+└─────────┬─────────────────────────────────────┬───────────────┘
+          │                                     │
+          ▼                                     ▼
+┌─────────────────────┐           ┌─────────────────────────┐
+│    HandlerMapping   │           │   HandlerInterceptor    │
+│   (找到 Handler)    │           │     (预处理/后处理)      │
+└─────────┬───────────┘           └────────────┬────────────┘
+          │                                    │
+          ▼                                    │
+┌─────────────────────┐                       │
+│   HandlerAdapter    │───────────────────────┘
+│  (调用 Handler)     │
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│    Controller       │
+│   (处理业务逻辑)    │
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│   ViewResolver      │
+│  (解析视图名称)     │
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│        View         │
+│   (渲染视图)        │
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        HTTP 响应                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-> Tips：如果Controller方法参数中定义的是基本数据类型，但是从页面 提交过来的数据为null或者””的话，会出现数据转换的异常。也就是必须保证表单传递过来的数据不能为null或””，所以，在开发过程中，对可能为空 的数据，最好将参数数据类型定义成包装类型
+### DispatcherServlet 初始化
 
-**URI模板(template)映射**
+DispatcherServlet 启动时会根据 `DispatcherServlet.properties` 配置文件初始化以下组件：
 
-URI Template可以允许@RequestMapping方法方便的选中URL的一部分内容进行访问。
+1. HandlerMapping - 处理器映射器
+2. HandlerAdapter - 处理器适配器
+3. ViewResolver - 视图解析器
+4. LocaleResolver - 本地化解析器
+5. ThemeResolver - 主题解析器
+6. MultipartResolver - 文件上传解析器
+7. ExceptionHandlerExceptionResolver - 异常处理器
 
-一个URI Template看起来像一个URI 字符串，包含一个或多个变量名。当你给这些变量赋了合适的值之后，这个模板变成一个URI。例如: http://www.example.com/users/{userId}这个URI Template包含了一个userId变量，当给它指派一个值 test, 就变成了URI ->http://www.example.com/users/test.
+---
 
-语法：
+## Spring Boot 集成
 
-```java
-@RequestMapping("/path/{param}")
-@RequestMapping("/path/{param}/path2");
-@requestMapping("/path/{param1}/path2/{param2}")
-```
-
-模板参数只有**一个**
-
-声明之后，在SpringMVC中你可以在一个方法参数上使用@PathVariable注解绑定它到这个URI模板变量上(方法参数可以是任意你想使用的简单数据类型,类似，int,double,String，Date等，后期数据绑定详细介绍...)。例如：
+### 快速入门
 
 ```java
-@RequestMapping("/third/{userId}")
-public String third(@PathVariable Long userId){
-    System.out.println("userId:"+userId);
-    return "/index.jsp";
-}
-```
-
-一般要求方法中用来接收模板参数值的变量名要和模板参数名保持一致(即方法参数名<-->模板参数名)。如果方法参数跟模板参数名不一致，可以使用@PathVariable("模板参数名")来指定要将那个参数映射到当前方法参数上，例如：
-
-```java
-@RequestMapping("/third/{userId}")
-public String third(@PathVariable("userId") Long uid){
-    System.out.println("userId:"+uid);
-    return "/index.jsp";
-}
-```
-
-模板参数有**多个**
-
-给每一个模板参数指定一个方法参数接收：
-
-```java
-@RequestMapping("/third/{userId}/update/{userId2}")
-public String third(@PathVariable("userId") Long uid,@PathVariable String userId2){
-    System.out.println("userId:"+uid);
-    System.out.println("userId2:"+userId2);
-    System.out.println("我是模板映射哟！");
-    return "/index.jsp";
-}
+// 1. 添加依赖
+// pom.xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
 ```
 
 ```java
-// 使用一个map集合接收所有的参数：
-@RequestMapping("/users/{userid}/save/{name}")
-public String four(@PathVariable Map<String, String> vars){
-    for(String key:vars.keySet()){
-    System.out.println(key+"...."+vars.get(key));
+// 2. 创建 Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @GetMapping("/{id}")
+    public User getUser(@PathVariable Long id) {
+        // 查询用户
+        return new User(id, "张三", 25);
     }
-    return "/index.jsp";
-}
-```
 
-此时将所有的模板参数名当做key值，访问时使用的替换值，作为map集合的value值存放。
-
-分别在**类级别**和**方法级**别使用模板URI：
-
-```java
-@RequestMapping("/anno/{aid}")
-public class AnnoController {
-    @RequestMapping("/users/{userid}")
-    public String four(@PathVariable Long aid,@PathVariable userid){
-        return "/index.jsp";
+    @PostMapping
+    public User createUser(@RequestBody User user) {
+        // 创建用户
+        return user;
     }
 }
 ```
 
-## Spring MVC和Struts2的[区别](http://www.jb51.net/article/120410.htm)
+```java
+// 3. 启动类
+@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
+```
 
-1、springmvc基于**方法**开发的，struts2基于**类**开发的。
+### 配置文件
 
-2、**单例**和**多例**的[区别](https://blog.csdn.net/silenttalfrede/article/details/52950762)：springmvc在映射的时候，通过形参来接收参数的，是将url和controller方法映射，映射成功后，springmvc生成一个handlers对象，对象中只包括一个method，方法执行结束的时候，形参的数据就销毁，所以springmvc可以进行单例开发，并且建议使用。在Spring整合时，SpringMVC的Controller Bean默认**单例模式**。所以默认对所有的请求，只会创建一个Controller，线程安全。
+```properties
+# 服务端口
+server.port=8080
 
-但是structs接收的参数是通过类的成员变量来接收的，这些变量在多线程访问中，是共享的，而不是像springmvc那样，方法结束之后，形参自动销毁，且无法使用单例，只能使用多例。和Spring整合时Struts2的ActionBean注入作用域是**原型模式**（用于创建重复的对象,同时又能保证性能）否则会出现线程并发问题。
+# 应用名称
+spring.application.name=myapp
 
-3、Struts2入口是**Filter**，Spring MVC入口是**Servlet**。则两者个方面机制不同，比如拦截器实现机制
+# 上下文路径
+server.servlet.context-path=/api
 
-4、Spring MVC结合Spring的Ioc/AOP特性, Spring Boot热更新等解决方案, 开发效率比Struts2高。SpringMVC开发速度和性能较优于Struts2，流程更容易理解
+# Jackson 配置
+spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+spring.jackson.time-zone=GMT+8
+spring.jackson.default-property-inclusion=non_null
+
+# 文件上传
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=20MB
+
+# 静态资源
+spring.web.resources.static-locations=classpath:/static/,classpath:/public/
+spring.mvc.static-path-pattern=/static/**
+```
+
+**常用配置项：**
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| server.port | 服务端口 | 8080 |
+| server.servlet.context-path | 上下文路径 | / |
+| spring.mvc.view.prefix | 视图前缀 | - |
+| spring.mvc.view.suffix | 视图后缀 | - |
+| spring.web.resources.static-locations | 静态资源路径 | classpath:/static |
+| spring.mvc.static-path-pattern | 静态资源路径匹配 | /static/** |
+
+---
+
+## 控制器注解
+
+### @RequestMapping
+
+```java
+// 类级别：指定基础路径
+@RequestMapping("/api")
+public class ApiController {
+
+    // 方法级别：指定具体路径
+    @RequestMapping("/users")
+    public String users() {
+        return "users";
+    }
+}
+```
+
+### 组合注解
+
+```java
+@GetMapping       // 查询
+@PostMapping      // 创建
+@PutMapping       // 更新
+@DeleteMapping    // 删除
+@PatchMapping     // 部分更新
+```
+
+```java
+@GetMapping("/users")
+public List<User> getUsers() {
+    return userService.findAll();
+}
+
+@PostMapping("/users")
+public User createUser(@RequestBody User user) {
+    return userService.save(user);
+}
+
+@PutMapping("/users/{id}")
+public User updateUser(@PathVariable Long id, @RequestBody User user) {
+    user.setId(id);
+    return userService.update(user);
+}
+
+@DeleteMapping("/users/{id}")
+public void deleteUser(@PathVariable Long id) {
+    userService.delete(id);
+}
+```
+
+### 注解属性
+
+```java
+@RequestMapping(
+    value = "/users",
+    method = RequestMethod.GET,      // 请求方法
+    params = "action=view",          // 请求参数条件
+    headers = "Content-Type=application/json",  // 请求头条件
+    consumes = "application/json",   // 消费的数据类型
+    produces = "application/json"     // 生产的数据类型
+)
+public User getUser() {
+    return new User();
+}
+```
+
+---
+
+## 参数绑定
+
+### 基本类型参数
+
+```java
+// URL 参数绑定
+// GET /users?id=1&name=张三
+@GetMapping("/users")
+public User getUser(Long id, String name) {
+    // 参数名与请求参数一致
+    return userService.findById(id);
+}
+
+// 使用 @RequestParam 指定参数名
+@GetMapping("/users")
+public User getUser(@RequestParam("id") Long userId,
+                    @RequestParam(value = "name", required = false) String userName) {
+    return userService.findById(userId);
+}
+```
+
+**@RequestParam 属性：**
+
+| 属性 | 说明 |
+|------|------|
+| value/name | 请求参数名 |
+| required | 是否必需，默认 true |
+| defaultValue | 默认值 |
+
+### PathVariable 路径变量
+
+```java
+// RESTful 风格 URL
+// GET /users/1
+@GetMapping("/users/{id}")
+public User getUser(@PathVariable Long id) {
+    return userService.findById(id);
+}
+
+// 多个路径变量
+// GET /users/1/orders/10
+@GetMapping("/users/{userId}/orders/{orderId}")
+public Order getOrder(@PathVariable Long userId, @PathVariable Long orderId) {
+    return orderService.findById(userId, orderId);
+}
+
+// 路径变量名与方法参数名不同
+@GetMapping("/users/{id}")
+public User getUser(@PathVariable("id") Long userId) {
+    return userService.findById(userId);
+}
+```
+
+### POJO 对象绑定
+
+```java
+// 表单提交或 URL 参数
+// GET /users?id=1&name=张三&age=25
+@GetMapping("/users")
+public User getUser(User user) {
+    // 自动将参数映射到 User 对象的属性
+    return user;
+}
+
+// POST 请求体绑定
+@PostMapping("/users")
+public User createUser(@RequestBody User user) {
+    return userService.save(user);
+}
+```
+
+### @RequestBody 与 @ResponseBody
+
+```java
+// @RequestBody - 将请求体反序列化为对象
+@PostMapping("/users")
+public User createUser(@RequestBody User user) {
+    return userService.save(user);
+}
+
+// @ResponseBody - 将返回值序列化为响应体
+@ResponseBody
+@PostMapping("/users")
+public User createUser(@RequestBody User user) {
+    return userService.save(user);
+}
+
+// @RestController = @Controller + @ResponseBody
+@RestController
+public class UserController {
+    // 所有方法都返回 JSON
+}
+```
+
+### @ModelAttribute
+
+```java
+// 绑定请求参数到对象
+@PostMapping("/users/save")
+public String saveUser(@ModelAttribute User user) {
+    userService.save(user);
+    return "redirect:/users";
+}
+
+// 在方法参数中使用
+@GetMapping("/users/edit")
+public String editUser(@ModelAttribute User user) {
+    // 会自动从 session 或请求参数中绑定
+    return "user-edit";
+}
+
+// 标注在方法上 - 在所有方法执行前执行
+@ModelAttribute
+public void init(Model model) {
+    model.addAttribute("message", "Hello");
+}
+```
+
+---
+
+## 响应处理
+
+### 返回视图
+
+```java
+// 返回视图名称
+@Controller
+public class UserController {
+
+    @GetMapping("/users")
+    public String listUsers(Model model) {
+        model.addAttribute("users", userService.findAll());
+        return "user-list";  // 视图名称
+    }
+}
+```
+
+### 返回 JSON
+
+```java
+// 返回 JSON 数据
+@RestController
+public class UserController {
+
+    @GetMapping("/api/users")
+    public List<User> getUsers() {
+        return userService.findAll();
+    }
+
+    @GetMapping("/api/users/{id}")
+    public User getUser(@PathVariable Long id) {
+        return userService.findById(id);
+    }
+}
+```
+
+### 返回文本
+
+```java
+// 返回纯文本
+@GetMapping("/text")
+@ResponseBody
+public String getText() {
+    return "Hello World";
+}
+```
+
+### Model 和 ModelMap
+
+```java
+@GetMapping("/users")
+public String listUsers(Model model) {
+    // 添加属性
+    model.addAttribute("users", userService.findAll());
+    model.addAttribute("count", 10);
+
+    // 指定属性在视图中的名称
+    model.addAttribute("userList", userService.findAll());
+
+    // 返回视图
+    return "user-list";
+}
+
+@GetMapping("/users")
+public String listUsers(ModelMap modelMap) {
+    // ModelMap 的用法与 Model 类似
+    modelMap.addAttribute("users", userService.findAll());
+    return "user-list";
+}
+```
+
+### Session Attribute
+
+```java
+// 操作 Session 属性
+@GetMapping("/cart")
+public String cart(HttpSession session, Model model) {
+    List<Item> items = (List<Item>) session.getAttribute("cart");
+    model.addAttribute("items", items);
+    return "cart";
+}
+
+@PostMapping("/cart/add")
+public String addToCart(@RequestParam Long itemId, HttpSession session) {
+    List<Item> cart = (List<Item>) session.getAttribute("cart");
+    if (cart == null) {
+        cart = new ArrayList<>();
+    }
+    cart.add(itemService.findById(itemId));
+    session.setAttribute("cart", cart);
+    return "redirect:/cart";
+}
+```
+
+---
+
+## 拦截器
+
+### HandlerInterceptor 接口
+
+```java
+public class AuthInterceptor implements HandlerInterceptor {
+
+    // 预处理 - 在 Controller 执行前调用
+    @Override
+    public boolean preHandle(HttpServletRequest request,
+                            HttpServletResponse response,
+                            Object handler) throws Exception {
+        String token = request.getHeader("Authorization");
+        if (token == null) {
+            response.setStatus(401);
+            return false;  // 不继续执行
+        }
+        return true;  // 继续执行
+    }
+
+    // 后处理 - 在 Controller 执行后、视图渲染前调用
+    @Override
+    public void postHandle(HttpServletRequest request,
+                          HttpServletResponse response,
+                          Object handler,
+                          ModelAndView modelAndView) throws Exception {
+        // 可以修改 ModelAndView
+        if (modelAndView != null) {
+            modelAndView.addObject("timestamp", System.currentTimeMillis());
+        }
+    }
+
+    // 完成处理 - 在视图渲染后调用
+    @Override
+    public void afterCompletion(HttpServletRequest request,
+                               HttpServletResponse response,
+                               Object handler,
+                               Exception ex) throws Exception {
+        // 清理资源、记录日志
+        if (ex != null) {
+            log.error("Request processing error", ex);
+        }
+    }
+}
+```
+
+### 注册拦截器
+
+```java
+// 方式1：实现 WebMvcConfigurer
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new AuthInterceptor())
+                .addPathPatterns("/api/**")      // 拦截路径
+                .excludePathPatterns("/api/login", "/api/public/**");  // 排除路径
+    }
+}
+
+// 方式2：@Bean 方式
+@Configuration
+public class WebConfig {
+
+    @Bean
+    public AuthInterceptor authInterceptor() {
+        return new AuthInterceptor();
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(authInterceptor())
+                .addPathPatterns("/api/**");
+    }
+}
+```
+
+### 拦截器执行顺序
+
+```
+请求 → Interceptor1.preHandle → Interceptor2.preHandle → Controller
+                                                  ↓
+                                          Interceptor2.postHandle
+                                          Interceptor1.postHandle
+                                                  ↓
+                                              View 渲染
+                                                  ↓
+                                          Interceptor2.afterCompletion
+                                          Interceptor1.afterCompletion → 响应
+```
+
+---
+
+## 异常处理
+
+### @ExceptionHandler
+
+```java
+@Controller
+public class UserController {
+
+    @ExceptionHandler(NullPointerException.class)
+    public String handleNullPointer(NullPointerException e, Model model) {
+        model.addAttribute("error", "空指针异常: " + e.getMessage());
+        return "error";
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    @ResponseBody
+    public Result handleBusiness(BusinessException e) {
+        return Result.error(e.getCode(), e.getMessage());
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseBody
+    public Result handleException(Exception e) {
+        return Result.error(500, "系统错误");
+    }
+}
+```
+
+### @ControllerAdvice 全局异常处理
+
+```java
+// 全局异常处理
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(NullPointerException.class)
+    public Result handleNullPointer(NullPointerException e) {
+        return Result.error(500, "空指针异常");
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public Result handleBusiness(BusinessException e) {
+        return Result.error(e.getCode(), e.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Result handleValidation(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldError().getDefaultMessage();
+        return Result.error(400, message);
+    }
+}
+```
+
+### 自定义异常
+
+```java
+// 自定义业务异常
+public class BusinessException extends RuntimeException {
+    private Integer code;
+
+    public BusinessException(Integer code, String message) {
+        super(message);
+        this.code = code;
+    }
+
+    public Integer getCode() {
+        return code;
+    }
+}
+
+// 使用
+@PostMapping("/users")
+public User createUser(@RequestBody User user) {
+    if (user.getName() == null) {
+        throw new BusinessException(400, "用户名不能为空");
+    }
+    return userService.save(user);
+}
+```
+
+---
+
+## 文件上传
+
+### 单文件上传
+
+```java
+@RestController
+public class FileController {
+
+    @PostMapping("/upload")
+    public Result upload(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return Result.error(400, "文件为空");
+        }
+
+        String filename = file.getOriginalFilename();
+        String path = "uploads/" + filename;
+
+        try {
+            file.transferTo(new File(path));
+            return Result.ok(path);
+        } catch (IOException e) {
+            return Result.error(500, "文件上传失败");
+        }
+    }
+}
+```
+
+### 多文件上传
+
+```java
+@PostMapping("/upload/multiple")
+public Result uploadMultiple(@RequestParam("files") MultipartFile[] files) {
+    List<String> paths = new ArrayList<>();
+
+    for (MultipartFile file : files) {
+        if (!file.isEmpty()) {
+            String filename = file.getOriginalFilename();
+            String path = "uploads/" + filename;
+            try {
+                file.transferTo(new File(path));
+                paths.add(path);
+            } catch (IOException e) {
+                return Result.error(500, "文件上传失败: " + filename);
+            }
+        }
+    }
+
+    return Result.ok(paths);
+}
+```
+
+### Spring Boot 配置
+
+```properties
+# 文件上传配置
+spring.servlet.multipart.enabled=true
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=20MB
+spring.servlet.multipart.file-size-threshold=2KB
+spring.servlet.multipart.location=${java.io.tmpdir}
+```
+
+---
+
+## RESTful 风格
+
+### RESTful API 设计
+
+```
+GET    /api/users        # 获取用户列表
+GET    /api/users/{id}   # 获取单个用户
+POST   /api/users        # 创建用户
+PUT    /api/users/{id}   # 更新用户
+DELETE /api/users/{id}   # 删除用户
+```
+
+### 完整示例
+
+```java
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    // 获取用户列表
+    @GetMapping
+    public Result<List<User>> list(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        Page<User> page = new Page<>(pageNum, pageSize);
+        IPage<User> result = userService.page(page);
+        return Result.ok(result.getRecords());
+    }
+
+    // 获取单个用户
+    @GetMapping("/{id}")
+    public Result<User> getById(@PathVariable Long id) {
+        User user = userService.getById(id);
+        if (user == null) {
+            return Result.error(404, "用户不存在");
+        }
+        return Result.ok(user);
+    }
+
+    // 创建用户
+    @PostMapping
+    public Result<User> create(@RequestBody @Valid User user) {
+        userService.save(user);
+        return Result.ok(user);
+    }
+
+    // 更新用户
+    @PutMapping("/{id}")
+    public Result<User> update(@PathVariable Long id, @RequestBody @Valid User user) {
+        user.setId(id);
+        userService.updateById(user);
+        return Result.ok(user);
+    }
+
+    // 删除用户
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        userService.removeById(id);
+        return Result.ok();
+    }
+}
+```
+
+### 统一返回结果
+
+```java
+@Data
+public class Result<T> {
+    private Integer code;
+    private String message;
+    private T data;
+
+    public static <T> Result<T> ok(T data) {
+        Result<T> result = new Result<>();
+        result.setCode(200);
+        result.setMessage("success");
+        result.setData(data);
+        return result;
+    }
+
+    public static <T> Result<T> error(Integer code, String message) {
+        Result<T> result = new Result<>();
+        result.setCode(code);
+        result.setMessage(message);
+        return result;
+    }
+}
+```
+
+---
+
+## 常用配置
+
+### 静态资源处理
+
+```java
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    // 方式1：配置文件
+    // spring.web.resources.static-locations=classpath:/static/
+    // spring.mvc.static-path-pattern=/static/**
+
+    // 方式2：代码配置
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/static/**")
+                .addResourceLocations("classpath:/static/");
+
+        // 外部文件目录
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:uploads/");
+    }
+}
+```
+
+### 视图解析器配置
+
+```properties
+# Thymeleaf 配置
+spring.thymeleaf.cache=false
+spring.thymeleaf.prefix=classpath:/templates/
+spring.thymeleaf.suffix=.html
+spring.thymeleaf.mode=HTML
+spring.thymeleaf.encoding=UTF-8
+```
+
+```java
+// JSP 视图解析器配置
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void configureViewResolvers(ViewResolverRegistry registry) {
+        registry.jsp("/WEB-INF/views/", ".jsp");
+    }
+}
+```
+
+### CORS 跨域配置
+
+```java
+// 方式1：注解方式
+@RestController
+@CrossOrigin(origins = "*")
+public class UserController {
+    // 所有方法支持跨域
+}
+
+// 方法级别
+@CrossOrigin(origins = "http://localhost:3000")
+@GetMapping("/users")
+public List<User> getUsers() {
+    return users;
+}
+
+// 方式2：全局配置
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+                .allowedOrigins("http://localhost:3000")
+                .allowedMethods("GET", "POST", "PUT", "DELETE")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
+}
+```
+
+### 拦截器配置
+
+```java
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        // 日志拦截器
+        registry.addInterceptor(new LogInterceptor())
+                .addPathPatterns("/api/**")
+                .order(1);
+
+        // 认证拦截器
+        registry.addInterceptor(new AuthInterceptor())
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/api/login", "/api/public/**")
+                .order(2);
+    }
+}
+```
+
+---
+
+## 常见问题与 Tips
+
+### Tips
+
+**1. 获取 HttpServletRequest**
+
+```java
+@GetMapping("/request")
+public void handleRequest(HttpServletRequest request) {
+    String uri = request.getRequestURI();
+    String method = request.getMethod();
+    String ip = request.getRemoteAddr();
+}
+```
+
+**2. 重定向**
+
+```java
+// 重定向到视图
+return "redirect:/users";
+
+// 重定向到 URL
+return "redirect:https://example.com";
+
+// 带参数重定向
+return "redirect:/users?id=" + id;
+```
+
+**3. 转发**
+
+```java
+// 转发到视图
+return "forward:/users";
+
+// 转发到其他 Controller
+return "forward:/api/users";
+```
+
+**4. 避免空指针**
+
+```java
+// 使用 Optional
+@GetMapping("/user")
+public Optional<User> getUser(@RequestParam Long id) {
+    return userService.findById(id);
+}
+```
+
+### FAQ
+
+**Q: 404 但 Controller 存在？**
+
+A: 检查：
+1. Controller 是否在包扫描范围内
+2. @RequestMapping 路径是否正确
+3. Spring Boot 自动配置是否生效
+
+**Q: 参数绑定失败？**
+
+A: 检查：
+1. 参数名与请求参数名是否一致
+2. 数据类型是否匹配
+3. 是否需要 @RequestParam 注解
+
+**Q: 中文乱码？**
+
+A: 解决方案：
+```properties
+server.servlet.encoding.charset=UTF-8
+server.servlet.encoding.enabled=true
+server.servlet.encoding.force=true
+```
+
+**Q: 文件上传大小限制？**
+
+A: 配置：
+```properties
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=50MB
+```
+
+**Q: @ResponseBody 返回字符串带双引号？**
+
+A: 使用 @RestController 或在方法上添加 @ResponseBody
+
+**Q: Session 共享问题？**
+
+A: 分布式环境下使用 Redis Session：
+```xml
+<dependency>
+    <groupId>org.springframework.session</groupId>
+    <artifactId>spring-session-data-redis</artifactId>
+</dependency>
+```
+
+**Q: Spring MVC 执行流程？**
+
+A:
+1. 请求到达 DispatcherServlet
+2. HandlerMapping 找到 Handler
+3. HandlerInterceptor.preHandle
+4. HandlerAdapter 调用 Handler
+5. Handler 返回 ModelAndView
+6. ViewResolver 解析视图
+7. View 渲染页面
+8. HandlerInterceptor.postHandle
+9. HandlerInterceptor.afterCompletion
