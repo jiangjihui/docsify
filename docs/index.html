@@ -8,10 +8,12 @@
 	<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@5/dist/themes/core.min.css">
 	<style>
 		:root {
+			/* 移动端/触屏设备：内容区占满宽度 */
 			--content-max-width: 90%;
 		}
 		@media (pointer: fine) and (min-width: 1200px) {
 			:root {
+				/* 桌面端（宽屏+鼠标）：内容区收紧，阅读更舒适 */
 				--content-max-width: 70%;
 			}
 		}
@@ -35,7 +37,7 @@
             // 开启文档自身目录
             subMaxLevel: 2
 		};
-</script>
+	</script>
 	<script src="//cdn.jsdelivr.net/npm/docsify@5/dist/docsify.min.js"></script>
 	<script src="//cdn.jsdelivr.net/npm/docsify@5/dist/plugins/search.min.js"></script>
     <!--Medium's 风格的图片缩放插件-->
