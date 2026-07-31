@@ -212,6 +212,92 @@ Service 是一种网络抽象，用于定义一组 Pod 的访问策略。因为 
 你可以把 **Deployment** 想象成公司的“人力资源部门”，负责招聘（创建 Pod）、裁员（删除 Pod）和人员更替（更新版本）；而 **Service** 则是公司的“总机前台”，不管内部员工怎么变动，客户只要拨打总机号码（Service IP），总能被转接到当前在岗的员工（健康的 Pod）那里。
 
 
+### 如何在 Kubernetes (K8s) 中部署一个新服务
+
+在 Kubernetes (K8s) 中部署一个新服务，核心流程其实非常清晰。整个过程可以分为“准备阶段”和“部署阶段”两大步。
+
+#### 🛠️ 第一阶段：准备工作（打包镜像）
+
+在将服务交给 K8s 之前，你需要先把它打包成一个 Docker 镜像。
+
+对于 Go 语言开发的后端服务来说，这一步非常高效。通常推荐使用**多阶段构建**来编写 Dockerfile：在构建阶段使用完整的 Go 环境编译代码，然后在最终阶段将编译好的二进制文件放入 `scratch` 或 `alpine` 等极简镜像中。这样不仅能大幅减小镜像体积，还能提升运行时的安全性。
+
+#### 📝 第二阶段：编写 K8s 配置文件（核心）
+
+K8s 是通过 YAML 文件来声明式管理资源的。部署一个新服务，你主要需要编写两个核心配置文件：
+
+**1. Deployment 配置（负责“管理应用”）**
+它告诉 K8s 如何创建和管理你的 Pod（即运行中的服务实例）。
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-go-service      # 服务的名称
+spec:
+  replicas: 3              # 期望运行的 Pod 副本数量（保证高可用）
+  selector:
+    matchLabels:
+      app: my-go-service   # 标签选择器，用于关联下方的 Pod
+  template:
+    metadata:
+      labels:
+        app: my-go-service # Pod 的标签
+    spec:
+      containers:
+      - name: my-go-service
+        image: your-registry/my-go-service:v1.0 # 你打包好的镜像地址
+        ports:
+        - containerPort: 8080  # 容器内部监听的端口
+```
+
+**2. Service 配置（负责“暴露服务”）**
+它为你的 Pod 提供一个固定的访问入口和负载均衡。
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-go-service-svc
+spec:
+  selector:
+    app: my-go-service     # 必须与 Deployment 中 Pod 的标签一致
+  ports:
+    - protocol: TCP
+      port: 80             # Service 对外暴露的端口
+      targetPort: 8080     # 转发到容器内部的端口
+  type: ClusterIP          # 服务类型（ClusterIP仅限集群内访问，LoadBalancer可暴露到公网）
+```
+
+#### 🚀 第三阶段：执行部署与验证
+
+将上面的 YAML 内容保存为文件（例如 `deployment.yaml` 和 `service.yaml`），然后使用 `kubectl` 命令行工具将它们应用到集群中：
+
+**1. 应用配置**
+```bash
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+```
+*(注：你也可以用 `---` 将两个配置合并到一个文件中，一次性 apply)*
+
+**2. 检查状态**
+确认 Pod 是否已经成功启动并处于 Running 状态：
+```bash
+kubectl get pods -l app=my-go-service
+kubectl get deployments
+kubectl get services
+```
+
+**3. 故障排查（如果需要）**
+如果 Pod 状态异常，可以通过以下命令查看详细信息和日志：
+```bash
+kubectl describe pod <pod-name>  # 查看 Pod 的详细事件和调度情况
+kubectl logs -f <pod-name>       # 实时查看容器的运行日志
+```
+
+#### 🔄 后续：如何更新服务？
+
+当你修改了代码并打包了新的镜像（例如 `v1.1`）后，只需要修改 `deployment.yaml` 中的 `image` 字段，然后重新执行一次 `kubectl apply -f deployment.yaml`。K8s 会自动执行**滚动更新**，用新版本的 Pod 平滑替换旧版本的 Pod，整个过程不会中断服务。
+
+
 
 
 ## minikube
