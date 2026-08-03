@@ -1,0 +1,5 @@
+# superpowers 设计文档与 spec（仅本地存在，不提交）
+docs/superpowers/
+
+# 飞书文档拉取的临时文件
+tmp/
