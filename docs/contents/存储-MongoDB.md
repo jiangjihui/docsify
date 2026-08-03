@@ -357,7 +357,7 @@ db.vibrationCalcEntity.stats();
 
 mongoDB 执行语句解析：
 
-”queryPlanner”, “executionStats”, 和”allPlansExecution” 分别表示：概要模式，执行状态模式，所有信息模式，默认的是概要模式。
+“queryPlanner”, “executionStats”, 和”allPlansExecution” 分别表示：概要模式，执行状态模式，所有信息模式，默认的是概要模式。
 
 示例：
 
@@ -370,6 +370,261 @@ db.featureValueEntity.find().limit(30).explain('executionStats')
 > IXSCAN，表示使用了索引扫描
 >
 > nReturned 显示为 3，表示匹配查询并返回的文档数目为 3
+
+## 索引
+
+### 索引类型
+
+| 类型 | 创建语法 | 说明 | 适用场景 |
+| --- | --- | --- | --- |
+| 单键索引 | `{field: 1}` | 对单个字段建索引 | 最常见，按某字段查询 |
+| 复合索引 | `{field1: 1, field2: -1}` | 多字段联合索引 | 多条件组合查询 |
+| 多键索引 | 自动创建 | 索引字段值为数组 | 数组字段查询 |
+| 文本索引 | `{field: “text”}` | 全文搜索 | 文本搜索（中文支持有限） |
+| 地理空间索引 | `{field: “2dsphere”}` | 地理位置查询 | LBS应用 |
+| Hash索引 | `{field: “hashed”}` | 哈希分片键 | 分片集群，均匀分布 |
+| TTL索引 | `{field: 1}`, expireAfterSeconds | 自动过期删除 | 日志、会话数据 |
+
+```javascript
+// 创建复合索引（1升序，-1降序）
+db.users.createIndex({ age: 1, name: -1 })
+
+// 创建TTL索引（3600秒后自动删除）
+db.logs.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 })
+
+// 查看索引
+db.users.getIndexes()
+
+// 删除索引
+db.users.dropIndex(“age_1_name_-1”)
+```
+
+### 索引策略
+
+- **ESR原则**：复合索引字段顺序遵循 Equal → Sort → Range，等值查询字段在前，排序字段居中，范围查询字段在后
+- **覆盖查询**：查询所需字段全部在索引中，无需回表读取文档
+- **避免过度索引**：每个索引占用额外存储，写入时需更新所有索引
+
+```javascript
+// 查看索引使用情况
+db.users.aggregate([{ $indexStats: {} }])
+
+// explain 分析查询计划
+db.users.find({ age: { $gt: 20 } }).sort({ name: 1 }).explain(“executionStats”)
+```
+
+## 聚合管道
+
+Aggregation Pipeline 是 MongoDB 的数据分析框架，通过多个阶段（Stage）管道式处理文档：
+
+```javascript
+db.orders.aggregate([
+  // 1. 筛选
+  { $match: { status: “completed”, date: { $gte: ISODate(“2024-01-01”) } } },
+  // 2. 分组统计
+  { $group: {
+      _id: “$categoryId”,
+      totalRevenue: { $sum: “$amount” },
+      orderCount: { $sum: 1 },
+      avgAmount: { $avg: “$amount” }
+  }},
+  // 3. 排序
+  { $sort: { totalRevenue: -1 } },
+  // 4. 投影（选择字段）
+  { $project: {
+      category: “$_id”,
+      totalRevenue: 1,
+      orderCount: 1,
+      _id: 0
+  }},
+  // 5. 分页
+  { $skip: 0 }, { $limit: 10 }
+])
+```
+
+### 常用阶段
+
+| 阶段 | 说明 | 示例 |
+| --- | --- | --- |
+| `$match` | 过滤文档 | `{ $match: { status: “A” } }` |
+| `$group` | 分组聚合 | `{ $group: { _id: “$city”, total: { $sum: “$amount” } } }` |
+| `$sort` | 排序 | `{ $sort: { total: -1 } }` |
+| `$project` | 字段投影/重命名 | `{ $project: { name: 1, total: 1, _id: 0 } }` |
+| `$limit` | 限制数量 | `{ $limit: 10 }` |
+| `$skip` | 跳过数量 | `{ $skip: 20 }` |
+| `$unwind` | 展开数组 | `{ $unwind: “$tags” }` |
+| `$lookup` | 左连接 | 关联其他集合（见下文） |
+| `$facet` | 多管道并行 | 在一次查询中执行多个聚合 |
+
+### $lookup 关联查询
+
+```javascript
+db.orders.aggregate([
+  {
+    $lookup: {
+      from: “users”,           // 关联的集合
+      localField: “userId”,    // 当前集合的字段
+      foreignField: “_id”,     // 关联集合的字段
+      as: “userInfo”           // 输出字段名
+    }
+  },
+  { $unwind: “$userInfo” }     // 将数组展开为对象
+])
+```
+
+> MongoDB 不支持 JOIN，`$lookup` 是唯一的关联查询方式，但性能不如关系数据库的 JOIN，应避免在大量数据上使用。
+
+## 副本集
+
+副本集（Replica Set）是 MongoDB 实现高可用的基础，通过数据复制和自动故障转移保障服务可用性。
+
+### 架构
+
+```
+┌─────────────┐
+│   Primary    │ ← 处理所有写操作和默认读操作
+│  (读写)      │
+└──────┬───────┘
+       │ 异步复制（oplog）
+┌──────┴───────┐
+│  Secondary   │ ← 同步Primary数据，可配置为可读
+│  (只读)      │
+└──────────────┘
+┌──────────────┐
+│   Arbiter    │ ← 只投票不存储数据，打破平局
+│  (投票)      │
+└──────────────┘
+```
+
+### 选举机制
+
+- 副本集至少需要3个节点（或2个数据节点+1个Arbiter）
+- Primary不可用时，Secondary发起选举，获得多数票的节点成为新Primary
+- 选举基于Raft协议，通常在10秒内完成
+
+### 读写关注
+
+| 读关注级别 | 说明 |
+| --- | --- |
+| `local` | 从节点自身读取，可能读到旧数据（默认） |
+| `majority` | 读取已提交到多数节点的数据，保证不回滚 |
+| `linearizable` | 线性一致性读，最强一致但性能最低 |
+
+| 写关注级别 | 说明 |
+| --- | --- |
+| `w: 1` | Primary写入即返回（默认） |
+| `w: majority` | 多数节点写入才返回，保证不丢失 |
+| `w: all` | 所有节点写入才返回 |
+
+```javascript
+// 写入时指定写关注
+db.orders.insertOne(
+  { orderNo: “001”, amount: 100 },
+  { writeConcern: { w: “majority”, j: true, wtimeout: 5000 } }
+)
+
+// 读取时指定读关注
+db.orders.find({}).readConcern(“majority”)
+```
+
+## Spring Boot 集成
+
+### 依赖配置
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-mongodb</artifactId>
+</dependency>
+```
+
+```yaml
+spring:
+  data:
+    mongodb:
+      uri: mongodb://user:password@localhost:27017/mydb
+      # 或副本集
+      # uri: mongodb://host1:27017,host2:27017,host3:27017/mydb?replicaSet=rs0
+```
+
+### MongoTemplate
+
+```java
+@Autowired
+private MongoTemplate mongoTemplate;
+
+// 插入
+mongoTemplate.insert(new User(“张三”, 25));
+
+// 查询
+Query query = new Query(Criteria.where(“age”).gt(20).and(“name”).is(“张三”));
+List<User> users = mongoTemplate.find(query, User.class);
+
+// 更新
+Update update = new Update().set(“age”, 26).inc(“version”, 1);
+mongoTemplate.updateFirst(query, update, User.class);
+
+// 聚合
+Aggregation agg = Aggregation.newAggregation(
+    Aggregation.match(Criteria.where(“status”).is(“active”)),
+    Aggregation.group(“department”).sum(“salary”).as(“totalSalary”),
+    Aggregation.sort(Sort.Direction.DESC, “totalSalary”)
+);
+AggregationResults<Result> results = mongoTemplate.aggregate(agg, “users”, Result.class);
+```
+
+### MongoRepository
+
+```java
+public interface UserRepository extends MongoRepository<User, String> {
+
+    // 按名称查询
+    List<User> findByName(String name);
+
+    // 按年龄范围查询
+    List<User> findByAgeBetween(int min, int max);
+
+    // 分页查询
+    Page<User> findByDepartment(String dept, Pageable pageable);
+}
+```
+
+> MongoRepository 适合简单CRUD，复杂查询和聚合建议使用 MongoTemplate。
+
+## 性能调优
+
+### 慢查询优化
+
+1. **开启慢查询记录**：`db.setProfilingLevel(1, 100)` 记录超过100ms的操作
+2. **分析执行计划**：`db.collection.find(...).explain(“executionStats”)`
+3. **关注关键指标**：
+   - `COLLSCAN` → 全表扫描，需添加索引
+   - `docsExamined` 远大于 `nReturned` → 索引过滤效果差
+   - `executionTimeMillis` → 执行时间
+
+### 索引优化
+
+- 为高频查询字段创建复合索引，遵循ESR原则
+- 避免在低选择性字段（如性别）上建单独索引
+- 定期清理无用索引：`db.collection.aggregate([{ $indexStats: {} }])` 查看使用频率
+
+### 内存配置
+
+```yaml
+# mongod.conf
+storage:
+  wiredTiger:
+    engineConfig:
+      cacheSizeGB: 4    # WiredTiger缓存大小，建议物理内存的50%
+    collectionConfig:
+      blockCompressor: snappy  # 压缩算法：snappy/zlib/zstd/none
+```
+
+### 写入优化
+
+- **批量写入**：使用 `insertMany()` 替代循环 `insertOne()`
+- **无序写入**：`{ ordered: false }` 允许并行写入，失败不中断
+- **合理分片**：大集合使用分片分散写入压力
 
 
 
