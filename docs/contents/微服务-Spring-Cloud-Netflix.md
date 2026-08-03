@@ -1,4 +1,6 @@
-## [**概述**](https://segmentfault.com/a/1190000014567118?utm_source=feed-content)
+# Spring Cloud Netflix
+
+## 概述
 
 Spring Cloud，它是在 Spring Boot 的基础上，增加了一堆微服务相关的规范，并对应用上下文（Application Context）进行了功能增强。
 
@@ -88,7 +90,7 @@ Spring Cloud是一系列框架的有序集合。它利用Spring Boot的开发便
 
 
 
-## **子项目**
+## 子项目
 
 - 分布式/版本化配置：Spring Cloud Config
 - 服务注册和发现：Netflix Eureka 或者 Spring     Cloud Eureka（对前者的二次封装）

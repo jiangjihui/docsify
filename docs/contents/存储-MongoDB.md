@@ -1,4 +1,6 @@
-## **MongoDB简介**
+# MongoDB
+
+## 简介
 
 
 
@@ -286,7 +288,7 @@ db.grantRolesToUser( "jjh" , [ { role: "dbOwner", db: "admin" },{ "role": "clust
 
 
 
-## **查看集合（表）的**[**信息**](https://blog.csdn.net/weixin_41287692/article/details/88418788)
+## 查看集合（表）的[信息](https://blog.csdn.net/weixin_41287692/article/details/88418788)
 
 db.集合（表名）.starts()
 
@@ -315,7 +317,7 @@ db.vibrationCalcEntity.stats();
 
 
 
-## **MongoDB**[**慢查询**](http://hancang2000.blog.sohu.com/272666566.html)
+## MongoDB[慢查询](http://hancang2000.blog.sohu.com/272666566.html)
 
 ```
 # 查看当前是否开启profile功能（0-不开启/1-记录慢命令 (默认为>100ms) /2-记录所有命令）
@@ -334,7 +336,7 @@ db.vibrationCalcEntity.stats();
 
  
 
-## **查看正在执行的操作**
+## 查看正在执行的操作
 
 ```
 # 用户可以通过 Mongo Shell 连接，并执行 db.currentOp() 命令，能看到数据库当前正在执行的操作
@@ -351,7 +353,7 @@ db.vibrationCalcEntity.stats();
 
 
 
-## **解析计划**
+## 解析计划
 
 mongoDB 执行语句解析：
 

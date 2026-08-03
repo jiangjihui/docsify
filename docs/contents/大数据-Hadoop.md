@@ -1,4 +1,6 @@
-## **简介**
+# Hadoop
+
+## 简介
 
 Hadoop自带一个称为HDFS的分布式文件系统，即Hadoop Distributed Filesystem，HDFS是以流式数据访问模式来存储超大文件，运行于商用硬件集群上。与正常文件系统不同的是，它会让集群中的每个机器仿佛访问同一个文件系统，即在A机器写入HDFS的文件，在B机器也能看到，在B机器删除HDFS文件，集群其他机器中的该文件也会被删除。
 
@@ -6,7 +8,7 @@ Hadoop自带一个称为HDFS的分布式文件系统，即Hadoop Distributed Fil
 
  
 
-## **安装**
+## 安装
 
 使用 Docker 快速搭建 Hadoop [集群环境](https://www.jianshu.com/p/b75f8bc9346d)
 
@@ -14,11 +16,11 @@ Hadoop自带一个称为HDFS的分布式文件系统，即Hadoop Distributed Fil
 
  
 
-## **构成**
+## 构成
 
 Hadoop的[核心](https://blog.csdn.net/jiangyu1013/article/details/72644098)就是HDFS和MapReduce，而两者只是理论基础，不是具体可使用的高级应用
 
-### **HDFS特点**
+### HDFS特点
 
 1、**大数据文件**，非常适合上T级别的大文件或者一堆大数据文件的存储，如果文件只有几个G甚至更小就没啥意思了。
 
@@ -30,7 +32,7 @@ Hadoop的[核心](https://blog.csdn.net/jiangyu1013/article/details/72644098)就
 
 5、硬件故障，HDFS认为所有计算机都可能会出问题，为了防止某个主机失效读取不到该主机的块文件，它将同一个文件块副本分配到其它某几个主机上，如果其中一台主机失效，可以迅速找另一块副本取文件。
 
-### **HDFS元素**
+### HDFS元素
 
 1）**Block**：将一个文件进行分块，通常是64M。
 
@@ -42,7 +44,7 @@ Hadoop的[核心](https://blog.csdn.net/jiangyu1013/article/details/72644098)就
 
 
 
-### **MapReduce**
+### MapReduce
 
 我们要数图书馆中的所有书。你数1号书架，我数2号书架。这就是“Map”。我们人越多，数书就更快。
 
@@ -54,7 +56,7 @@ MapReduce的基本原理就是：将大的数据分析分成小块逐个分析�
 
 
 
-## **HDFS架构**
+## HDFS架构
 
 **Active Namenode**
 
@@ -74,7 +76,7 @@ Slave（有多个）；存储实际的数据块；执行数据块读 / 写
 
 
 
-## **HDFS的不足**
+## HDFS的不足
 
 hdfs并非一个通用的应用程序，而是局限于某些特定的场景
 
@@ -88,13 +90,13 @@ hdfs不提供数据的本地缓存机制
 
 
 
-## **应用场景**
+## 应用场景
 
 搜索、日志处理、推荐系统、数据分析、视频图像分析、数据保存等
 
 
 
-## **与Spark区别**
+## 与Spark区别
 
 Hadoop和Spark之间的一个关键[区别](https://blog.csdn.net/c36qUCnS2zuqF6/article/details/81518150)。 Hadoop基于大数据的批处理。 这意味着数据会在一段时间内存储，然后使用Hadoop进行处理。 在Spark中，处理可以实时进行。 Spark中的这种实时处理能力帮助我们解决实时分析问题。 除此之外，Spark还能够比Hadoop MapReduce（ Hadoop处理框架）快100倍地进行批处理。 因此，Apache Spark是业界大数据处理的首选工具。
 
@@ -102,7 +104,7 @@ Hadoop和Spark之间的一个关键[区别](https://blog.csdn.net/c36qUCnS2zuqF6
 
  
 
-## **MapReduce详解**
+## MapReduce详解
 
 Mapreduce是一个[计算框架](https://www.cnblogs.com/sharpxiajun/p/3151395.html)，既然是做计算的框架，那么表现形式就是有个输入（input），mapreduce操作这个输入（input），通过本身定义好的计算模型，得到一个输出（output），这个输出就是我们所需要的结果。
 
@@ -112,7 +114,7 @@ Mapreduce是一个[计算框架](https://www.cnblogs.com/sharpxiajun/p/3151395.h
 
  
 
-## **HDFS和**[**Hbase**](https://www.sohu.com/a/161068448_693397)
+## HDFS和[Hbase](https://www.sohu.com/a/161068448_693397)
 
 1 HDFS容错率很高，即便是在系统崩溃的情况下，也能够在节点之间快速传输数据。HBase是非关系数据库，是开源的Not-Only-SQL数据库，它的运行建立在Hadoop上。HBase依赖于CAP定理(Consistency, Availability, and Partition Tolerance）中的CP项。
 
@@ -130,7 +132,7 @@ HBase是实时数据处理环境的最佳典范。我们的一个客户是某欧
 
 
 
-## **Hive是什么**
+## Hive是什么
 
 Hive是一个数据仓库基础工具在Hadoop中用来处理结构化数据。它架构在[Hadoop](http://www.yiibai.com/hadoop/)之上，总归为大数据，并使得查询和分析方便。并提供简单的sql查询功能，可以将sql语句转换为MapReduce任务进行运行。它是用来开发SQL类型脚本用于做MapReduce操作的平台。
 
@@ -144,7 +146,7 @@ Hive和Hbase是两种基于Hadoop的不同技术--Hive是一种类SQL的引擎�
 
  
 
-## **hadoop1.0与hadoop2.0**[**比较**](https://blog.csdn.net/babyfish13/article/details/52527665)
+## hadoop1.0与hadoop2.0[比较](https://blog.csdn.net/babyfish13/article/details/52527665)
 
 版本[对比](https://www.cnblogs.com/dream-to-pku/p/7249954.html)：
 
@@ -167,7 +169,7 @@ Hadoop在2.0将资源管理从MapReduce中独立出来变成通用框架后，�
 
 
 
-## **YARN**
+## YARN
 
 **概述：**
 
