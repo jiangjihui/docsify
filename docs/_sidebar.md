@@ -55,13 +55,14 @@
   - [微服务基础](contents/microservice/微服务基础.md)
   - [Spring Cloud Alibaba](contents/microservice/SpringCloudAlibaba.md)
   - [Spring Cloud Netflix](contents/microservice/SpringCloudNetflix.md)
-  - [服务容错与流量控制](contents/microservice/服务容错.md)
   - [相关组件](contents/microservice/相关组件.md)
-  - [架构](contents/microservice/架构.md)
+  - [服务容错](contents/microservice/服务容错.md)
+  - [限流](contents/microservice/限流.md)
 
 - 分布式系统
   - [基础概念](contents/distributed/基础概念.md)
   - [分布式事务](contents/distributed/分布式事务.md)
+  - [数据一致性](contents/distributed/数据一致性.md)
 
 - 开发实践
   - [版本控制](contents/dev/版本控制.md)
