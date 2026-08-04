@@ -6,6 +6,71 @@
 	<meta name="viewport" content="width=device-width,initial-scale=1">
 	<meta charset="UTF-8">
 	<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@5/dist/themes/core.min.css">
+	<script>
+		// 方案 A+B 结合：自动(跟随系统) / 浅色 / 深色 三态循环，localStorage 记忆
+		// core.min.css 为浅色底色，深色时叠加 core-dark.min.css 叠加层
+		(function () {
+			var DARK = '//cdn.jsdelivr.net/npm/docsify@5/dist/themes/addons/core-dark.min.css';
+			var KEY = 'theme'; // 取值：'auto' | 'light' | 'dark'
+			var MODES = ['auto', 'light', 'dark']; // 点击循环顺序
+			var darkLink = document.createElement('link');
+			darkLink.rel = 'stylesheet';
+			darkLink.href = DARK;
+			var mq = window.matchMedia('(prefers-color-scheme: dark)');
+
+			function currentMode() {
+				var s = localStorage.getItem(KEY);
+				return MODES.indexOf(s) >= 0 ? s : 'auto'; // 默认=自动
+			}
+			function isDark() {
+				var m = currentMode();
+				if (m === 'dark') return true;
+				if (m === 'light') return false;
+				return mq.matches; // auto → 跟随系统
+			}
+			function apply(dark) {
+				if (dark) {
+					if (!darkLink.parentNode) document.head.appendChild(darkLink);
+				} else if (darkLink.parentNode) {
+					darkLink.parentNode.removeChild(darkLink);
+				}
+			}
+			// 同步导航栏按钮文案
+			function syncLabel() {
+				var el = document.getElementById('themeToggle');
+				if (!el) return;
+				var m = currentMode();
+				el.textContent = m === 'auto' ? '🌗 自动'
+				               : m === 'dark' ? '🌙 深色'
+				               : '☀️ 浅色';
+			}
+			apply(isDark());
+
+			// 仅「自动」档时，跟随系统主题变化
+			var sysHandler = function (e) {
+				if (currentMode() === 'auto') { apply(e.matches); syncLabel(); }
+			};
+			if (mq.addEventListener) mq.addEventListener('change', sysHandler);
+			else if (mq.addListener) mq.addListener(sysHandler);
+
+			// 供导航栏按钮调用：在 自动→浅色→深色 间循环，并写入 localStorage
+			window.toggleTheme = function () {
+				var cur = currentMode();
+				var next = MODES[(MODES.indexOf(cur) + 1) % MODES.length];
+				localStorage.setItem(KEY, next);
+				apply(isDark());
+				syncLabel();
+			};
+
+			// 导航栏渲染后同步文案（docsify 每次渲染都会触发）
+			document.addEventListener('docsify:done', syncLabel);
+			// 兜底：navbar 元素尚未出现时轮询等待
+			(function wait() {
+				if (document.getElementById('themeToggle')) syncLabel();
+				else requestAnimationFrame(wait);
+			})();
+		})();
+	</script>
 	<style>
 		:root {
 			/* 移动端/触屏设备：内容区占满宽度 */
@@ -16,6 +81,15 @@
 				/* 桌面端（宽屏+鼠标）：内容区收紧，阅读更舒适 */
 				--content-max-width: 70%;
 			}
+		}
+		/* 导航栏主题切换按钮：样式对齐其它导航项 */
+		#themeToggle {
+			color: inherit;
+			cursor: pointer;
+			user-select: none;
+		}
+		#themeToggle:hover {
+			opacity: .7;
 		}
 	</style>
 </head>

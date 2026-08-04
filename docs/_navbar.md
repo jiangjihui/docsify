@@ -9,4 +9,5 @@
 - [架构](架构/)
 - [场景方案](场景方案/)
 - [导航](导航/)
+- <span id="themeToggle" onclick="toggleTheme()" title="切换 自动 / 浅色 / 深色">🌗 自动</span>
 
