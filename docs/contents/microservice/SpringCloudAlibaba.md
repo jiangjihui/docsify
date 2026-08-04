@@ -1324,7 +1324,7 @@ JAVA_OPT="${JAVA_OPT} -server -Xms8g -Xmx8g -Xmn4g"为 JAVA_OPT="${JAVA_OPT} -se
 
 6. 关闭生产者
 
-## [Seata]([快速开始-阿里云Spring Cloud Alibaba官网](https://sca.aliyun.com/docs/2022/user-guide/seata/quick-start/))--分布式事务
+## [Seata（快速开始）](https://sca.aliyun.com/docs/2022/user-guide/seata/quick-start/) -- 分布式事务
 
 ### 分布式事务解决方案
 

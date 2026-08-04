@@ -31,52 +31,54 @@
 
 ## 🗂️ 技术目录
 
+站点采用「知识库 + 专题」双轨结构：左侧侧边栏为 `contents/` 知识库（按技术领域分类），顶部导航栏为独立专题集合。
+
 ### 🖥️ 计算机基础
-- 公共知识 | 数据类型 | Shell | Dos
+- 公共知识
 
 ### ☕ Java
-- 基础 | JVM | JMM | JDK | 多线程 | 集合
+- Java基础 | JVM | JMM | JDK | 多线程 | 集合
 
-### 🌐 Web框架
-- Spring | SpringBoot | SpringMVC | Mybatis | JPA
+### 🌐 Spring 生态
+- Spring | SpringBoot | SpringMVC | Spring Security | MyBatis | JPA
 
-### 💾 存储/数据库
-- 基础 | MySQL | PostgreSQL | TiDB | Oracle | Redis | MongoDB | Elasticsearch | ClickHouse
+### 💾 数据存储
+- 存储基础 | MySQL | PostgreSQL | Oracle | TiDB | Redis | MongoDB | Elasticsearch | ClickHouse
 
-### 🌊 Web容器
-- Nginx | Tomcat
-
-### 🎨 前端
-- 单页应用 | Vue
+### 🏗️ 基础设施
+- Nginx | Tomcat | Docker | Kubernetes | Linux | Dos
 
 ### 🌐 网络
 - 网络协议 | TCP | HTTP | 网络编程
 
-### 🔧 开发
-- 版本控制 | 代码规范 | 安全防护 | 依赖管理 | 正则表达式
+### 📬 中间件
+- 消息队列 | RabbitMQ | RocketMQ | Kafka | API 网关 | 可观测性 | 配置中心
 
 ### 🏛️ 微服务
-- 服务描述 | 相关组件 | Docker | Kubernetes | Spring-Cloud | Spring-Cloud-Alibaba | 架构
+- 微服务基础 | Spring Cloud Alibaba | Spring Cloud Netflix | APISIX | 服务容错 | 限流
 
-### 📬 消息队列
-- 消息队列 | RabbitMQ | RocketMQ | Kafka
+### 🔀 分布式系统
+- 基础概念 | 分布式事务 | 数据一致性
+
+### 🔧 开发实践
+- 版本控制 | 代码规范 | 安全防护 | 依赖管理 | 正则表达式 | 测试 | 日志体系
 
 ### 📊 大数据
-- 基础 | Hadoop | Flink | Doris
+- 大数据基础 | Hadoop | Flink | Doris
 
-### 🎯 设计模式
-- 创建型：单例、工厂、抽象工厂、原型
-- 结构型：外观、适配器、桥接、组合、装饰、享元、代理
-- 行为型：责任链、策略、模板方法、命令、观察者、访问者、状态、解释器、迭代器、中介者、备忘录
+### 🎨 前端
+- 单页应用 | Vue
 
-### 🏗️ 架构
-- DDD（领域驱动设计）实践
+### 🤖 AI
+- Agent(智能体)
 
-### 🔍 代码分析
-- Java 代码分析 | SQL 分析
-
-### 💼 实践
-- SQL 优化 | 生产环境问题诊断 | 线上服务器问题处理
+### 📚 专题（顶部导航）
+- **设计模式** - 24 种 GoF 设计模式及对比
+- **实践** - SQL 优化、问题诊断、产线故障复盘（按故障域分类）
+- **架构** - DDD 领域驱动设计实践
+- **场景方案** - 缓存与数据库一致性等技术方案
+- **代码分析** - Java / SQL 易错点分析
+- **导航** - 技术社区与常用工具收藏
 
 ## 🤝 贡献指南
 
@@ -91,5 +93,4 @@
 ---
 
 
-> 这世上没有白走的路，每走一步，都算数
-
+> 这世上没有白路的路，每走一步，都算数

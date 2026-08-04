@@ -2,7 +2,7 @@
   - [公共知识](contents/公共知识.md)
 
 - Java
-  - [基础](contents/java/基础.md)
+  - [基础](contents/java/Java基础.md)
   - [JVM](contents/java/JVM.md)
   - [JMM](contents/java/JMM.md)
   - [JDK](contents/java/JDK.md)
@@ -18,7 +18,7 @@
   - [JPA](contents/spring/JPA.md)
 
 - 数据存储
-  - [基础](contents/storage/基础.md)
+  - [基础](contents/storage/存储基础.md)
   - [MySQL](contents/storage/MySQL.md)
   - [PostgreSQL](contents/storage/PostgreSQL.md)
   - [Oracle](contents/storage/Oracle.md)
@@ -74,7 +74,7 @@
   - [日志体系](contents/dev/日志体系.md)
 
 - 大数据
-  - [基础](contents/bigdata/基础.md)
+  - [基础](contents/bigdata/大数据基础.md)
   - [Hadoop](contents/bigdata/Hadoop.md)
   - [Flink](contents/bigdata/Flink.md)
   - [Doris](contents/bigdata/Doris.md)

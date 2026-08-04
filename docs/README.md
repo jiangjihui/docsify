@@ -8,12 +8,12 @@
 
 | 基础 | 语言 | 框架 | 存储 |
 | --- | --- | --- | --- |
-| [计算机基础](contents/公共知识.md) | [Java](contents/java/基础.md) | [Spring 生态](contents/spring/Spring.md) | [数据存储](contents/storage/基础.md) |
+| [计算机基础](contents/公共知识.md) | [Java](contents/java/Java基础.md) | [Spring 生态](contents/spring/Spring.md) | [数据存储](contents/storage/存储基础.md) |
 | [AI](contents/ai/ai-agent.md) | [前端](contents/frontend/单页应用.md) | [微服务](contents/microservice/微服务基础.md) | [中间件](contents/middleware/消息队列.md) |
 
 | 运维 | 网络 | 开发 | 大数据 |
 | --- | --- | --- | --- |
-| [基础设施](contents/infra/Nginx.md) | [网络](contents/network/网络协议.md) | [开发实践](contents/dev/版本控制.md) | [大数据](contents/bigdata/基础.md) |
+| [基础设施](contents/infra/Nginx.md) | [网络](contents/network/网络协议.md) | [开发实践](contents/dev/版本控制.md) | [大数据](contents/bigdata/大数据基础.md) |
 
 ## 专题
 
