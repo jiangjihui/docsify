@@ -1,6 +1,8 @@
-# 网关
+# APISIX
 
-## apisix（网关）
+> 网关的通识概念、核心功能与多方案选型对比见 [API 网关](/contents/middleware/API网关.md)。
+
+## 简介
 
 Apache APISIX 是一个高性能、可插拔的 API 网关，设计用于管理和调度 API 及服务。它旨在简化 API 的发布和管理过程，尤其是在复杂的微服务架构中。
 

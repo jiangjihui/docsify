@@ -55,7 +55,7 @@
   - [微服务基础](contents/microservice/微服务基础.md)
   - [Spring Cloud Alibaba](contents/microservice/SpringCloudAlibaba.md)
   - [Spring Cloud Netflix](contents/microservice/SpringCloudNetflix.md)
-  - [相关组件](contents/microservice/相关组件.md)
+  - [APISIX](contents/microservice/APISIX.md)
   - [服务容错](contents/microservice/服务容错.md)
   - [限流](contents/microservice/限流.md)
 

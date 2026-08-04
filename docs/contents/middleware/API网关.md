@@ -210,6 +210,8 @@ curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/1 \
 - **优点**：性能业界领先（官方数据可达数万 QPS/核级别）、完全动态、社区活跃、Dashboard 完善；
 - **缺点**：引入了 etcd 依赖，运维复杂度略高；Lua 自定义插件有一定门槛。
 
+> Apache APISIX 的路由 / 上游 / 插件配置模型与限流插件参数详解见 [APISIX](/contents/microservice/APISIX.md)。
+
 ### 方案对比
 
 | 特性 | Nginx | Kong | Spring Cloud Gateway | APISIX |
