@@ -264,9 +264,9 @@ RabbitMQ的队列是先进先出（FIFO）的数据结构，这意味着消息�
 
 > 参考：[RabbitMQ 的七种消息传递形式](https://segmentfault.com/a/1190000040968626)
 
-![基本消息模型、work消息模型、Publish/subscribe](../_images/2715180372-7bccd8536f3064ab.png)
-![Routing路由模型、Topic通配符模式、RPC](../_images/1536903058-f82bb1ee6f281076.png)
-![消息确认](../_images/2250712566-6a05733c7680f781_fix732.png)
+![基本消息模型、work消息模型、Publish/subscribe](../../_images/2715180372-7bccd8536f3064ab.png)
+![Routing路由模型、Topic通配符模式、RPC](../../_images/1536903058-f82bb1ee6f281076.png)
+![消息确认](../../_images/2250712566-6a05733c7680f781_fix732.png)
 
 ### 名词解释
 
@@ -278,7 +278,7 @@ RabbitMQ的队列是先进先出（FIFO）的数据结构，这意味着消息�
 - RoutingKey：指定当前消息被谁接受
 - BindingKey：指定当前Exchange下，什么样的RoutingKey会被下派到当前绑定的Queue中
 
-![img](../_images/95517-20170109162632728-1069401237.png)
+![img](../../_images/95517-20170109162632728-1069401237.png)
 
 **生产者** 关心exchange、queue、routingKey
 

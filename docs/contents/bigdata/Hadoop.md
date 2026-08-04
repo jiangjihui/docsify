@@ -155,7 +155,7 @@ Hive和Hbase是两种基于Hadoop的不同技术--Hive是一种类SQL的引擎�
 为了从根本上解决旧的MapReduce框架的性能瓶颈，促进Hadoop框架的更长远发展，从0.23.0版本开始，Hadoop的MapReduce框架完全重构，叫做MapReduceV2或者Yarn.
 
 
- ![image](../_images/3071c56b-ea12-4704-ae67-c8d98f597c47.png)
+ ![image](../../_images/3071c56b-ea12-4704-ae67-c8d98f597c47.png)
 
 Hadoop在2.0将资源管理从MapReduce中独立出来变成通用框架后，就从1.0的三层结构演变为了现在的四层架构：
 

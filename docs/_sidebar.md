@@ -1,78 +1,86 @@
 - 计算机基础
-  - [公共知识](contents/计算机基础-公共知识.md)
-  - [Shell](contents/计算机基础-Shell.md)
-  - [Dos](contents/计算机基础-Dos.md)
-
-- AI
-  - [agent(智能体)](contents/ai/ai-agent.md)
+  - [公共知识](contents/公共知识.md)
 
 - Java
-  - [基础](contents/Java-基础.md)
-  - [JVM](contents/Java-JVM.md)
-  - [JMM](contents/Java-JMM.md)
-  - [JDK](contents/Java-JDK.md)
-  - [多线程](contents/Java-多线程.md)
-  - [集合](contents/Java-集合.md)
-  
-- web框架
-  - [Spring](contents/web框架-Spring.md)
-  - [SpringBoot](contents/web框架-SpringBoot.md)
-  - [SpringMVC](contents/web框架-SpringMVC.md)
-  - [Mybatis](contents/web框架-Mybatis.md)
-  - [JPA](contents/web框架-JPA.md)
+  - [基础](contents/java/基础.md)
+  - [JVM](contents/java/JVM.md)
+  - [JMM](contents/java/JMM.md)
+  - [JDK](contents/java/JDK.md)
+  - [多线程](contents/java/多线程.md)
+  - [集合](contents/java/集合.md)
 
-- 存储/数据库
-  - [基础](contents/存储-基础.md)
-  - [MySQL](contents/存储-MySQL.md)
-  - [PostgreSQL](contents/存储-PostgreSQL.md)
-  - [TiDB](contents/存储-TiDB.md)
-  - [Oracle](contents/存储-Oracle.md)
-  - [Redis](contents/存储-Redis.md)
-  - [MongoDB](contents/存储-MongoDB.md)
-  - [Elasticsearch](contents/存储-Elasticsearch.md)
-  - [ClickHouse](contents/存储-ClickHouse.md)
+- Spring 生态
+  - [Spring](contents/spring/Spring.md)
+  - [SpringBoot](contents/spring/SpringBoot.md)
+  - [SpringMVC](contents/spring/SpringMVC.md)
+  - [Spring Security](contents/spring/SpringSecurity.md)
+  - [MyBatis](contents/spring/MyBatis.md)
+  - [JPA](contents/spring/JPA.md)
 
-- web容器
-  - [Nginx](contents/web容器-Nginx.md)
-  - [Tomcat](contents/web容器-Tomcat.md)
-  
-- 前端
-  - [单页应用](contents/前端-单页应用.md)
-  - [Vue](contents/前端-Vue.md)
-  
+- 数据存储
+  - [基础](contents/storage/基础.md)
+  - [MySQL](contents/storage/MySQL.md)
+  - [PostgreSQL](contents/storage/PostgreSQL.md)
+  - [Oracle](contents/storage/Oracle.md)
+  - [TiDB](contents/storage/TiDB.md)
+  - [Redis](contents/storage/Redis.md)
+  - [MongoDB](contents/storage/MongoDB.md)
+  - [Elasticsearch](contents/storage/Elasticsearch.md)
+  - [ClickHouse](contents/storage/ClickHouse.md)
+
+- 基础设施
+  - [Nginx](contents/infra/Nginx.md)
+  - [Tomcat](contents/infra/Tomcat.md)
+  - [Docker](contents/infra/Docker.md)
+  - [Kubernetes](contents/infra/Kubernetes.md)
+  - [Linux](contents/infra/Linux.md)
+  - [Dos](contents/infra/Dos.md)
+
 - 网络
-  - [网络协议](contents/网络-网络协议.md)
-  - [TCP](contents/网络-TCP.md)
-  - [HTTP](contents/网络-HTTP.md)
-  - [网络编程](contents/网络-网络编程.md)
+  - [网络协议](contents/network/网络协议.md)
+  - [TCP](contents/network/TCP.md)
+  - [HTTP](contents/network/HTTP.md)
+  - [网络编程](contents/network/网络编程.md)
 
-- 开发
-  - [版本控制](contents/开发-版本控制.md)
-  - [代码规范](contents/开发-代码规范.md)
-  - [安全防护](contents/开发-安全防护.md)
-  - [依赖管理](contents/开发-依赖管理.md)
-  - [正则表达式](contents/开发-正则表达式.md)
-  
+- 中间件
+  - [消息队列](contents/middleware/消息队列.md)
+  - [RabbitMQ](contents/middleware/RabbitMQ.md)
+  - [RocketMQ](contents/middleware/RocketMQ.md)
+  - [Kafka](contents/middleware/Kafka.md)
+  - [API 网关](contents/middleware/API网关.md)
+  - [可观测性](contents/middleware/可观测性.md)
+  - [配置中心](contents/middleware/配置中心.md)
+
 - 微服务
-  - [服务描述](contents/微服务-服务描述.md)
-  - [相关组件](contents/微服务-相关组件.md)
-  - [Docker](contents/微服务-Docker.md)
-  - [Kubernetes](contents/微服务-K8s.md)
-  - [Spring-Cloud](contents/微服务-Spring-Cloud-Netflix.md)
-  - [Spring-Cloud-Alibaba](contents/微服务-Spring-Cloud-Alibaba.md)
-  - [架构](contents/微服务-架构.md)
+  - [微服务基础](contents/microservice/微服务基础.md)
+  - [Spring Cloud Alibaba](contents/microservice/SpringCloudAlibaba.md)
+  - [Spring Cloud Netflix](contents/microservice/SpringCloudNetflix.md)
+  - [服务容错与流量控制](contents/microservice/服务容错.md)
+  - [相关组件](contents/microservice/相关组件.md)
+  - [架构](contents/microservice/架构.md)
 
-- 消息队列
-  - [消息队列](contents/消息队列.md)
-  - [RabbitMQ](contents/消息队列-RabbitMQ.md)
-  - [RocketMQ](contents/消息队列-RocketMQ.md)
-  - [Kafka](contents/消息队列-Kafka.md)
+- 分布式系统
+  - [基础概念](contents/distributed/基础概念.md)
+  - [分布式事务](contents/distributed/分布式事务.md)
+
+- 开发实践
+  - [版本控制](contents/dev/版本控制.md)
+  - [代码规范](contents/dev/代码规范.md)
+  - [安全防护](contents/dev/安全防护.md)
+  - [依赖管理](contents/dev/依赖管理.md)
+  - [正则表达式](contents/dev/正则表达式.md)
+  - [测试](contents/dev/测试.md)
+  - [日志体系](contents/dev/日志体系.md)
 
 - 大数据
-  - [基础](contents/大数据-基础.md)
-  - [Hadoop](contents/大数据-Hadoop.md)
-  - [Flink](contents/大数据-Flink.md)
-  - [Doris](contents/大数据-Doris.md)
+  - [基础](contents/bigdata/基础.md)
+  - [Hadoop](contents/bigdata/Hadoop.md)
+  - [Flink](contents/bigdata/Flink.md)
+  - [Doris](contents/bigdata/Doris.md)
 
-- [Awesome docsify](subdir/quickstart.md)
-- [Changelog](none.md)
+- 前端
+  - [单页应用](contents/frontend/单页应用.md)
+  - [Vue](contents/frontend/Vue.md)
+
+- AI
+  - [Agent(智能体)](contents/ai/ai-agent.md)

@@ -8,12 +8,12 @@
 
 | 基础 | 语言 | 框架 | 存储 |
 | --- | --- | --- | --- |
-| [计算机基础](contents/计算机基础-公共知识.md) | [Java](contents/Java-基础.md) | [Web框架](contents/web框架-Spring.md) | [存储/数据库](contents/存储-基础.md) |
-| [AI](contents/ai/ai-agent.md) | [前端](contents/前端-单页应用.md) | [微服务](contents/微服务-服务描述.md) | [消息队列](contents/消息队列.md) |
+| [计算机基础](contents/公共知识.md) | [Java](contents/java/基础.md) | [Spring 生态](contents/spring/Spring.md) | [数据存储](contents/storage/基础.md) |
+| [AI](contents/ai/ai-agent.md) | [前端](contents/frontend/单页应用.md) | [微服务](contents/microservice/微服务基础.md) | [中间件](contents/middleware/消息队列.md) |
 
 | 运维 | 网络 | 开发 | 大数据 |
 | --- | --- | --- | --- |
-| [Web容器](contents/web容器-Nginx.md) | [网络](contents/网络-网络协议.md) | [开发](contents/开发-版本控制.md) | [大数据](contents/大数据-基础.md) |
+| [基础设施](contents/infra/Nginx.md) | [网络](contents/network/网络协议.md) | [开发实践](contents/dev/版本控制.md) | [大数据](contents/bigdata/基础.md) |
 
 ## 专题
 
@@ -27,4 +27,4 @@
 
 > 本文档基于 [docsify](https://github.com/docsifyjs/docsify/) 生成，所有 Markdown 转换在浏览器端执行。
 
-[开始阅读](contents/计算机基础-公共知识.md)
+[开始阅读](contents/公共知识.md)

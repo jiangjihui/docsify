@@ -237,7 +237,7 @@ public static void main( String[] args ){
 }
 ```
 
-IDEA 也早已支持了这个功能，创建类的时候直接就可以选： ![image (2) (1).png](../_images/38ee56982efd4cf888057470c2aa33dd~tplv-k3u1fbpfcp-zoom-1.png) **不过这个只是一个语法糖，编译后还是一个 Class，和普通的 Class 区别不大**
+IDEA 也早已支持了这个功能，创建类的时候直接就可以选： ![image (2) (1).png](../../_images/38ee56982efd4cf888057470c2aa33dd~tplv-k3u1fbpfcp-zoom-1.png) **不过这个只是一个语法糖，编译后还是一个 Class，和普通的 Class 区别不大**
 
 ### 更直观的 NullPointerException 提示
 
