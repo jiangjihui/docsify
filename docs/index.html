@@ -132,6 +132,32 @@
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-javascript.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-lua.min.js"></script>
+    <!--Mermaid 图表渲染：加载 mermaid 并把文档内 ```mermaid 代码块转为 SVG-->
+    <script src="//cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+        function renderMermaid() {
+            if (typeof mermaid === 'undefined') return;
+            document.querySelectorAll('pre > code.language-mermaid').forEach(function (code) {
+                var pre = code.parentElement;
+                if (pre && !pre.querySelector('.mermaid-svg')) {
+                    var wrap = document.createElement('div');
+                    wrap.className = 'mermaid mermaid-svg';
+                    wrap.textContent = code.innerText || code.textContent;
+                    pre.replaceWith(wrap);
+                }
+            });
+            if (document.querySelectorAll('.mermaid-svg').length > 0) {
+                mermaid.run({ nodes: document.querySelectorAll('.mermaid-svg') });
+            }
+        }
+        // docsify 每次路由切换渲染完页面后，把 mermaid 代码块转成图
+        window.$docsify = Object.assign(window.$docsify || {}, {
+            plugins: [function (hook) {
+                hook.doneEach(function () { setTimeout(renderMermaid, 0); });
+            }]
+        });
+    </script>
 </body>
 
 </html>

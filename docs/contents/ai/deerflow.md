@@ -215,3 +215,4 @@ deer-flow/
 - [DeerFlow GitHub（字节跳动官方）](https://github.com/bytedance/deer-flow)
 - [LangGraph](/contents/ai/langgraph.md) — DeerFlow 的编排底座
 - [AI Agent（智能体）](/contents/ai/ai-agent.md) — Agent 基础概念、工具、MCP、记忆前置阅读
+- [LLM 基础](/contents/ai/llm-basics.md) / [提示词工程](/contents/ai/prompt-engineering.md) / [RAG](/contents/ai/rag.md) — 理解 DeerFlow 前的 AI 基础

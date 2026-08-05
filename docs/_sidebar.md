@@ -84,6 +84,10 @@
   - [Vue](contents/frontend/Vue.md)
 
 - AI
+  - [LLM 基础](contents/ai/llm-basics.md)
+  - [提示词工程](contents/ai/prompt-engineering.md)
+  - [RAG](contents/ai/rag.md)
+  - [Embeddings 与向量数据库](contents/ai/embeddings-vector-db.md)
   - [Agent](contents/ai/ai-agent.md)
   - [LangGraph](contents/ai/langgraph.md)
   - [DeerFlow](contents/ai/deerflow.md)
