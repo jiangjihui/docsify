@@ -216,3 +216,4 @@ deer-flow/
 - [LangGraph](/contents/ai/langgraph.md) — DeerFlow 的编排底座
 - [AI Agent（智能体）](/contents/ai/ai-agent.md) — Agent 基础概念、工具、MCP、记忆前置阅读
 - [LLM 基础](/contents/ai/llm-basics.md) / [提示词工程](/contents/ai/prompt-engineering.md) / [RAG](/contents/ai/rag.md) — 理解 DeerFlow 前的 AI 基础
+- [LangChain 框架总览](/contents/ai/langchain.md) / [多智能体协作模式](/contents/ai/multi-agent-patterns.md) / [AI 安全与防护](/contents/ai/ai-safety.md) — DeerFlow 相关的框架与多 Agent 进阶主题

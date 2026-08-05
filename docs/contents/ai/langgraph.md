@@ -315,3 +315,4 @@ agent.invoke(Command(resume="yes"), config)
 - [LangGraph GitHub](https://github.com/langchain-ai/langgraph)
 - [AI Agent（智能体）](/contents/ai/ai-agent.md) — 本文的 Agent 基础概念前置阅读
 - [LLM 基础](/contents/ai/llm-basics.md) / [提示词工程](/contents/ai/prompt-engineering.md) / [RAG](/contents/ai/rag.md) — 使用 LangGraph 前建议先掌握的基础
+- [LangChain 框架总览](/contents/ai/langchain.md) / [多智能体协作模式](/contents/ai/multi-agent-patterns.md) / [AI 安全与防护](/contents/ai/ai-safety.md) — 围绕 LangGraph 的进阶主题
