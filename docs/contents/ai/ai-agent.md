@@ -481,7 +481,7 @@ Agent 执行代码可能存在风险：
 
 前面介绍了各种概念，如何把它们组合成一个完整的 Agent 平台？
 
-**Deer Flow** 是一个开源的 AI Agent 平台，完整实现了本笔记提到的所有概念：
+**Deer Flow**（详见 [DeerFlow 专题](/contents/ai/deerflow.md)）是一个开源的 AI Agent 平台，完整实现了本笔记提到的所有概念：
 
 ```
 Deer Flow = LangGraph + Tools + MCP + Memory + Skills + Sandbox + Subagents
@@ -502,8 +502,8 @@ Deer Flow = LangGraph + Tools + MCP + Memory + Skills + Sandbox + Subagents
 ### 快速体验
 
 ```bash
-# 克隆项目
-git clone https://github.com/archersama/deer-flow.git
+# 克隆项目（官方仓库，原 archersama/deer-flow）
+git clone https://github.com/bytedance/deer-flow.git
 
 # 启动服务（window环境 使用：Git Bash 控制台执行下面的命令，否则会报错）
 make dev
@@ -870,6 +870,7 @@ State machines:
 ## 相关资源
 
 - [learn-claude-code 项目](https://github.com/anthropics/learn-claude-code) - 12个 Agent 进阶机制的完整实现
+- [LangGraph](/contents/ai/langgraph.md) - 用图编排有状态的多 Agent 工作流（本文的框架落地篇）
 - [LangGraph 文档](https://langchain-ai.github.io/langgraph/)
 - [MCP 规范](https://modelcontextprotocol.io)
 

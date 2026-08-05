@@ -84,4 +84,6 @@
   - [Vue](contents/frontend/Vue.md)
 
 - AI
-  - [Agent(智能体)](contents/ai/ai-agent.md)
+  - [Agent](contents/ai/ai-agent.md)
+  - [LangGraph](contents/ai/langgraph.md)
+  - [DeerFlow](contents/ai/deerflow.md)
