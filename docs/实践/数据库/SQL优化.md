@@ -1,6 +1,6 @@
 # SQL 优化
 
-> 相关阅读：SQL 易错点（join、左连接 on vs where、NULL 处理）见 [易错代码分析](/代码分析/md/SQL.md)
+> 相关阅读：SQL 易错点（join、左连接 on vs where、NULL 处理）见 [易错源码分析](/代码分析/md/SQL.md)
 
 SQL 优化的方式方法很多，此处罗列一些比较重要，容易出现问题的优化点：
 
