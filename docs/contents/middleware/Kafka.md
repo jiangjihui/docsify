@@ -20,6 +20,38 @@ Apache Kafka 是一个分布式流处理平台，它最初由 LinkedIn 开发，
 7. **Consumer Group**：消费者分组，每个Consumer必须属于一个Group。Kafka会将同一个Topic中的消息分发给同一个Group内的不同Consumer，以实现负载均衡和消息的并行处理。
 8. **Zookeeper**：保存Kafka集群的元数据，如Broker、Topic、Partition等信息。同时，Zookeeper还负责Broker故障发现、Partition Leader选举和负载均衡等功能。
 
+> **图 1 · 核心组件关系图**：上面八个概念在一个 Kafka 集群中的对应关系。
+
+```mermaid
+flowchart LR
+    subgraph PRO["生产者侧"]
+        P1["Producer A"]
+        P2["Producer B"]
+    end
+
+    subgraph BROKER["Broker（Kafka 服务器，负责消息存储与转发）"]
+        subgraph TOPIC["Topic: order（消息类别）"]
+            PA0["Partition 0<br/>Offset: 0,1,2…"]
+            PA1["Partition 1<br/>Offset: 0,1,2…"]
+            PA2["Partition 2<br/>Offset: 0,1,2…"]
+        end
+    end
+
+    subgraph GROUP["Consumer Group: order-service"]
+        C1["Consumer 1"]
+        C2["Consumer 2"]
+    end
+
+    ZK[("ZooKeeper / KRaft<br/>元数据存储 · Leader 选举")]
+
+    P1 -->|"发送"| PA0
+    P2 -->|"发送"| PA2
+    PA0 -->|"消费"| C1
+    PA1 -->|"消费"| C1
+    PA2 -->|"消费"| C2
+    ZK -.->|"集群协调"| BROKER
+```
+
 ### 主要特点
 
 1. **高吞吐量**：Kafka能够处理非常高的消息吞吐量，适用于大规模数据处理和实时数据流场景。
@@ -51,14 +83,39 @@ Apache Kafka 是一个分布式流处理平台，它最初由 LinkedIn 开发，
 
 ## 架构与存储
 
+> **图 2 · 数据流图**：一条消息从生产、存储到消费的完整链路，后续小节依次拆解其中各环节。
+
+```mermaid
+flowchart LR
+    P["Producer<br/>生产消息"] --> PA{"分区器<br/>选择分区"}
+    PA -->|"Key 哈希 / 轮询 / 指定分区"| TP["Topic - Partition<br/>分区内有序的不可变日志"]
+    TP -->|"追加写"| SEG[("Segment 分段文件<br/>磁盘持久化")]
+    SEG -->|"按 Offset 拉取"| C["Consumer<br/>消费消息"]
+    C -.->|"提交消费进度"| OFF[("__consumer_offsets")]
+```
+
 ### 集群架构
 
-```
-Producer ──→ Broker1 ──→ Broker2 ──→ Broker3 ──→ Consumer
-                │           │           │
-                └───────────┴───────────┘
-                        ZooKeeper / KRaft
-                 (集群元数据、Controller选举)
+> **图 3 · 集群架构全景图**：生产/消费端连接任意 Broker，集群元数据由 ZooKeeper 或 KRaft 管理。
+
+```mermaid
+flowchart TB
+    P1["Producer"] -->|"写入"| B1
+    P2["Producer"] -->|"写入"| B2
+
+    subgraph CLUSTER["Kafka 集群"]
+        B1["Broker 1<br/>（充当 Controller）"]
+        B2["Broker 2"]
+        B3["Broker 3"]
+    end
+
+    B1 <-->|"副本同步"| B2
+    B2 <-->|"副本同步"| B3
+    B1 -->|"读取"| C1["Consumer"]
+    B3 -->|"读取"| C2["Consumer"]
+
+    ZK[("ZooKeeper / KRaft<br/>集群元数据 · Controller 选举")]
+    ZK -.->|"元数据服务"| CLUSTER
 ```
 
 - **Controller**：集群中某个Broker充当Controller角色，负责Partition Leader选举、Broker上下线处理
@@ -68,14 +125,20 @@ Producer ──→ Broker1 ──→ Broker2 ──→ Broker3 ──→ Consume
 
 每个Partition在磁盘上对应一个目录，包含多个Segment文件：
 
-```
-topic-order-0/               # Partition 0
-├── 00000000000000000000.log  # 消息数据文件
-├── 00000000000000000000.index # 偏移量索引文件
-├── 00000000000000000000.timeindex # 时间戳索引文件
-├── 00000000000005367851.log  # 下一个Segment
-├── 00000000000005367851.index
-└── 00000000000005367851.timeindex
+> **图 4 · 日志存储层次图**：Topic → Partition → Segment → 三类文件的层级关系。
+
+```mermaid
+flowchart TB
+    T["Topic: order"] --> P0["Partition 0<br/>目录 topic-order-0/"]
+    T --> P1["Partition 1"]
+    T --> PN["… Partition N"]
+
+    P0 --> S0["Segment 00000000000000000000"]
+    P0 --> S1["Segment 00000000000005367851<br/>（按起始 Offset 命名）"]
+
+    S0 --> L[".log<br/>消息数据文件"]
+    S0 --> I[".index<br/>偏移量稀疏索引"]
+    S0 --> TI[".timeindex<br/>时间戳索引"]
 ```
 
 - **Segment**：Partition按大小（默认1GB）或时间切分为多个Segment，便于日志清理和查找
@@ -92,6 +155,25 @@ topic-order-0/               # Partition 0
 | **批量压缩** | 生产者批量发送，减少网络IO次数；支持gzip/snappy/lz4/zstd压缩 |
 | **分区分段** | 并行读写，Segment便于日志清理和查找 |
 
+> **图 5 · 零拷贝数据路径对比**：消费快的关键——`sendfile()` 让数据从页缓存直达网卡，不经过用户空间。
+
+```mermaid
+flowchart TB
+    subgraph OLD["传统读取路径（多次拷贝）"]
+        direction LR
+        D1[("磁盘")] -->|"拷贝 1"| PC1["页缓存 Page Cache"]
+        PC1 -->|"拷贝 2"| UB["用户空间缓冲"]
+        UB -->|"拷贝 3"| SB["Socket 缓冲"]
+        SB -->|"拷贝 4"| NIC1["网卡"]
+    end
+
+    subgraph NEW["sendfile 零拷贝路径（Kafka 消费读取）"]
+        direction LR
+        D2[("磁盘")] -->|"DMA 读取"| PC2["页缓存 Page Cache"]
+        PC2 -->|"sendfile() 直接传输"| NIC2["网卡"]
+    end
+```
+
 ## 分区与副本
 
 ### 分区策略
@@ -104,6 +186,19 @@ topic-order-0/               # Partition 0
 | Key哈希 | 相同Key的消息进入同一分区（`hash(key) % partitions`） | 需要保序的消息 |
 | 轮询（默认） | Round Robin分配 | 无序要求，均匀分布 |
 | 自定义分区器 | 实现 `Partitioner` 接口 | 业务规则分区 |
+
+> **图 6 · 分区选择决策流程图**：生产者发送消息时选择分区的判定路径。
+
+```mermaid
+flowchart TD
+    START["Producer 发送消息"] --> Q1{"指定了 Partition?"}
+    Q1 -->|"是"| R1["直接写入指定 Partition"]
+    Q1 -->|"否"| Q2{"消息带 Key?"}
+    Q2 -->|"是"| R2["hash(key) % 分区数<br/>相同 Key 进入同一分区"]
+    Q2 -->|"否"| Q3{"自定义分区器?"}
+    Q3 -->|"是"| R3["按自定义逻辑分区"]
+    Q3 -->|"否"| R4["轮询 Round-Robin（默认）<br/>均匀分布"]
+```
 
 > **注意**：Key相同保证同一分区有序，但不保证跨分区有序。如果分区数发生变化，Key的映射关系会改变。
 
@@ -119,14 +214,24 @@ topic-order-0/               # Partition 0
 
 **副本同步流程**：
 
-```
-Producer → Leader Replica → 写入本地日志
-                              ↓
-                    Follower 拉取（Pull模式）
-                              ↓
-                    Follower 写入本地日志
-                              ↓
-                    更新 ISR 列表
+> **图 7 · 副本同步与 ISR 机制**：Follower 主动从 Leader 拉取数据保持同步，跟得上的副本留在 ISR 集合中。
+
+```mermaid
+flowchart TB
+    P["Producer"] -->|"发送消息"| L
+
+    subgraph LB["Broker A"]
+        L["Leader Replica<br/>处理该分区所有读写请求"] --> LL[("本地日志")]
+    end
+
+    subgraph FB["Broker B"]
+        F["Follower Replica<br/>不处理客户端请求"] --> FL[("本地日志")]
+    end
+
+    F -->|"Pull 拉取"| L
+    LL -.->|"同步进度"| ISR["ISR 同步副本集合<br/>（包含 Leader）"]
+    FL -.->|"同步进度"| ISR
+    ISR -.->|"Leader 宕机时<br/>从 ISR 选举新 Leader"| F
 ```
 
 ### 副本因子与可靠性
@@ -137,6 +242,113 @@ Producer → Leader Replica → 写入本地日志
 | `acks=1` | Leader写入即返回 | 中等，Leader宕机可能丢 | 中等 |
 | `acks=all` | 所有ISR副本写入才返回 | 最高，不丢数据 | 最低 |
 
+## 核心概念深入
+
+Kafka 的概念容易混淆，根源在于它们处在不同的「级别」上：有的属于整个集群，有的属于某个服务进程，有的属于某个分区。先把级别厘清，大多数「谁管谁」的问题就自然有了答案。
+
+### 概念的三个级别
+
+> **图 11 · 概念级别分布图**：Controller 是集群级的唯一角色；Leader 是分区级角色，分散在不同的 Broker 上。
+
+```mermaid
+flowchart TB
+    CTRL["Controller<br/>集群级 · 唯一<br/>管理元数据、触发 Leader 选举<br/>不承载业务数据流"]
+
+    subgraph B1["Broker 1（服务进程 / 容器）"]
+        P0L["P0 Replica<br/>Leader"]
+        P1F["P1 Replica<br/>Follower"]
+        P2F["P2 Replica<br/>Follower"]
+    end
+
+    subgraph B2["Broker 2（服务进程 / 容器）"]
+        P0F1["P0 Replica<br/>Follower"]
+        P1L["P1 Replica<br/>Leader"]
+        P2F2["P2 Replica<br/>Follower"]
+    end
+
+    subgraph B3["Broker 3（服务进程 / 容器）"]
+        P0F2["P0 Replica<br/>Follower"]
+        P1F2["P1 Replica<br/>Follower"]
+        P2L["P2 Replica<br/>Leader"]
+    end
+
+    CTRL -.->|"元数据管理"| B1
+    CTRL -.->|"元数据管理"| B2
+    CTRL -.->|"元数据管理"| B3
+```
+
+- **集群级**：整个集群只有一个 Controller（KRaft 模式下为多个 Controller 节点组成 Quorum，由 Active 节点主导），负责元数据管理、Partition Leader 选举、Broker 上下线处理；它不承载业务数据流，客户端也不直接连接它
+- **Broker 级**：Broker 只是一个服务进程，是「容器」——一个 Broker 可以同时承载成千上万个分区，对其中一部分它是 Leader，对另一部分它是 Follower
+- **分区级**：每个 Partition 独立选举自己的 Leader；Leader / Follower / ISR 都是绑定在分区副本（Replica）上的概念
+
+### 常见辨析
+
+Kafka 的概念容易产生混淆，最有代表性的是下面这些「一对对」的概念。把它们放在一起对比，比单独记定义更不易混淆。
+
+#### Leader 是分区级的，不是 Broker 级的
+
+**这是理解 Kafka 架构最关键的一点。**
+
+- **归属关系**：Leader 的身份绑定在具体的 **Partition Replica（分区副本）** 上，而不是绑定在 Broker 进程上
+- **粒度**：一个 Topic 有多个 Partition，每个 Partition 独立选举自己的 Leader
+- **Broker 的角色**：Broker 只是一个「容器」。一个 Broker 可以同时承载成千上万个 Partition，其中一部分它是 Leader，另一部分它是 Follower
+
+**直观示例**：集群有 3 个 Broker，Topic `orders` 有 3 个分区：
+
+| Partition | Leader Broker | Follower Brokers | 说明 |
+| :--- | :--- | :--- | :--- |
+| P0 | **Broker-1** | Broker-2, Broker-3 | Broker-1 是 P0 的 Leader |
+| P1 | **Broker-2** | Broker-3, Broker-1 | Broker-2 是 P1 的 Leader |
+| P2 | **Broker-3** | Broker-1, Broker-2 | Broker-3 是 P2 的 Leader |
+
+> **结论**：没有任何一个 Broker 是「全局 Leader」。每个 Broker 都是某些分区的 Leader，同时也是其他分区的 Follower。这种设计正是 Kafka 能够**水平扩展**和**负载均衡**的根本原因。当你问「Leader Broker」时，本质上是在问「哪个 Broker 当前是某个特定 Partition 的 Leader」，而非「哪个 Broker 是整个集群的老大」。
+
+#### Leader 与 Controller 的区别
+
+集群级别的「领导」角色是 Controller，它确实存在且集群唯一，但职责与 Partition Leader 完全不同：
+
+| 对比项 | Partition Leader | Controller |
+| :--- | :--- | :--- |
+| **级别** | Partition 级 | Cluster 级 |
+| **数量** | 每个 Partition 一个 | 集群仅一个（KRaft 模式下为 Controller Quorum） |
+| **职责** | 处理客户端读写请求、数据同步 | 管理元数据、触发 Leader 选举、分配副本 |
+| **数据面** | 承载实际业务数据流 | 不承载业务数据流 |
+| **对客户端** | 可见，客户端直连 | 不可见，客户端不直接与 Controller 通信 |
+
+> **一句话总结**：**Leader 管数据（Partition 级），Controller 管元数据（Cluster 级）。**
+
+#### Rebalance 与 Leader 选举：两种不同的「重选」
+
+两者都涉及「重新选举/分配」，但完全是不同级别的事情：
+
+| 对比项 | Leader 选举 | Rebalance |
+| :--- | :--- | :--- |
+| **级别** | 分区副本级（Broker 侧） | 消费者组级（消费侧） |
+| **触发** | Leader 宕机、ISR 变化 | 消费者加入/离开、心跳超时、分区数变化 |
+| **主持者** | Controller | Group Coordinator（某个 Broker） |
+| **结果** | 从 ISR 中选出新的 Leader 副本 | 重新分配分区与消费者的映射 |
+| **影响范围** | 该分区的读写 | 组内所有消费者停止消费（短暂 STW） |
+
+#### 分区有序性：分区内有序，跨分区无序
+
+- Kafka 只保证**同一分区内**的消息是「有序的、不可变的记录序列」；**跨分区之间没有顺序可言**
+- 相同 Key 的消息通过 `hash(key) % 分区数` 路由到同一分区——这是业务上保序的唯一手段
+- 如果必须全局有序：Topic 只建一个分区，但会失去分区带来的吞吐与并行能力
+
+#### Offset 与 Lag
+
+- **日志最新位点（LEO，Log End Offset）**：分区日志当前已写到的位置
+- **已提交 Offset**：消费者消费到并成功提交的位置（存储在 `__consumer_offsets` 内部 Topic）
+- **Lag = LEO − 已提交 Offset**：衡量消费积压，Lag 持续增大说明消费速度跟不上生产速度
+- `auto.offset.reset`（earliest/latest）只在消费者组没有已提交 Offset 时生效（首次消费或 Offset 已过期）
+
+#### acks=all 等的是 ISR，不是全部副本
+
+- `acks=all` 表示「**ISR 内**所有副本写入完成才返回」，而不是全部副本——落后太多被移出 ISR 的副本不在等待范围内
+- 风险：若 ISR 收缩到只剩 Leader，`acks=all` 退化为 `acks=1` 的效果
+- `min.insync.replicas` 兜底：ISR 数量低于该值时，Broker 直接拒绝写入（抛出 NotEnoughReplicas），宁可不写也不降低可靠性
+- 经典可靠性配置：`replication.factor=3` + `min.insync.replicas=2` + `acks=all`——允许 1 个 Broker 宕机而不丢数据
+
 ## 消费者组
 
 ### 消费者组机制
@@ -145,18 +357,53 @@ Producer → Leader Replica → 写入本地日志
 - 每个Partition只被组内一个消费者消费（确保消息不重复）
 - 消费者数量超过Partition数时，多余消费者空闲
 
-```
-Topic (3 Partitions)        Consumer Group A
-┌──────────┐               ┌──────────────┐
-│ P0       │ ────────────→ │ Consumer 1   │ (消费 P0, P1)
-│ P1       │ ────────────→ │ Consumer 1   │
-│ P2       │ ────────────→ │ Consumer 2   │ (消费 P2)
-└──────────┘               └──────────────┘
+> **图 8 · 消费者组分区分配图**：每个 Partition 只被组内一个消费者消费，消费者多于分区时多出的消费者空闲。
+
+```mermaid
+flowchart LR
+    subgraph TOPIC["Topic（3 个 Partition）"]
+        P0["P0"]
+        P1["P1"]
+        P2["P2"]
+    end
+
+    subgraph GROUP["Consumer Group A"]
+        C1["Consumer 1<br/>消费 P0, P1"]
+        C2["Consumer 2<br/>消费 P2"]
+        C3["Consumer 3<br/>空闲：无可分配分区"]
+    end
+
+    P0 --> C1
+    P1 --> C1
+    P2 --> C2
 ```
 
 ### Rebalance
 
 当消费者加入/离开Group，或Partition数变化时，触发Rebalance——重新分配Partition与消费者的映射关系。
+
+> **图 9 · Rebalance 时序图**：由 Group Coordinator 协调，重新分配期间所有消费者停止消费（短暂 STW）。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C1 as Consumer 1
+    participant C2 as Consumer 2
+    participant GC as Group Coordinator (Broker)
+
+    Note over C1,GC: 正常消费：各消费者定期发送心跳
+    C1->>GC: heartbeat
+    C2->>GC: heartbeat
+    Note over C1,C2: 触发条件：成员加入/离开、心跳超时（session.timeout.ms）或分区数变化
+    C2-xGC: 离开 / 心跳超时
+    GC->>C1: 通知开始 Rebalance
+    Note over C1,C2: 所有消费者停止消费（短暂不可用）
+    C1->>GC: 重新加入并上报订阅
+    C2->>GC: 重新加入并上报订阅
+    GC->>C1: 新分配方案（P0, P1）
+    GC->>C2: 新分配方案（P2）
+    Note over C1,C2: 恢复消费
+```
 
 **Rebalance触发条件：**
 - 消费者加入或离开Group
@@ -238,6 +485,28 @@ enable.idempotence=true
 
 **事务**（跨Partition原子写入）：
 
+> **图 10 · Exactly-Once 事务时序图**：事务 Producer 注册 PID 后开启事务，Broker 依 `<PID, Partition, SeqNum>` 幂等去重。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as 事务 Producer
+    participant B as Broker（含事务协调者）
+
+    P->>B: initTransactions() 注册 PID
+    P->>B: beginTransaction() 开启事务
+    P->>B: send(record1) 附带 PID, Partition, SeqNum
+    P->>B: send(record2) Broker 按 SeqNum 去重
+    alt 正常提交
+        P->>B: commitTransaction()
+        Note over B: 写入 COMMIT 标记，消息对消费者可见
+    else 异常回滚
+        P->>B: abortTransaction()
+        Note over B: 写入 ABORT 标记，消息被丢弃
+    end
+    Note over P,B: isolation.level=read_committed 的消费者只读已提交消息
+```
+
 ```java
 producer.initTransactions();
 try {
@@ -258,13 +527,60 @@ Kafka 2.8 开始引入 KRaft（Kafka Raft），3.3 标记为生产可用，完�
 
 | 对比项 | ZooKeeper 模式 | KRaft 模式 |
 | --- | --- | --- |
-| 元数据存储 | ZooKeeper 集群 | Kafka 内部Topic `@metadata` |
+| 元数据存储 | ZooKeeper 集群 | Kafka 内部 Topic `__cluster_metadata` |
 | Controller选举 | ZooKeeper 临时节点 | Raft 协议选举 |
 | 运维复杂度 | 需额外维护ZK集群 | 只需维护Kafka集群 |
 | Partition数支持 | 数万级 | 数百万级 |
 | 启动速度 | 分钟级 | 秒级 |
 
-**KRaft 启动配置：**
+#### `process.roles`：两种部署形态
+
+KRaft 的 Controller 是否独立部署，由 `process.roles` 决定：
+
+| 部署形态 | `process.roles` 取值 | 说明 |
+| --- | --- | --- |
+| 混合模式（Combined） | `broker,controller` | 同一进程同时承担 Broker 和 Controller 两种角色，适合开发/小集群 |
+| 隔离模式（Isolated） | Controller 节点配 `controller`、Broker 节点配 `broker` | 两种角色分开进程部署，生产环境推荐 |
+
+生产环境推荐隔离模式的原因：
+
+- **资源画像不同**：Broker 重磁盘 I/O，Controller 对延迟敏感，混跑时 I/O 抖动可能干扰 Controller 选举
+- **伸缩独立**：Controller 数量固定（3 或 5 个），Broker 随业务自由扩缩容
+- **故障隔离**：Broker 故障不影响元数据面，反之亦然
+
+#### Controller Quorum
+
+所有 Controller 节点组成一个 **Quorum**（用 Raft 协议管理的副本组）：
+
+- 通常配置 **3 或 5 个** Controller（奇数），`controller.quorum.voters` 配置列出全部投票成员
+- 其中一个被选为 **Active Controller**（Raft Leader），负责处理元数据写入（Topic 管理、Partition Leader 选举结果等）
+- 其余是 **Follower**，持续复制元数据日志，Active 故障时可随时接替
+- 达成共识需要多数派：3 节点需 2 个存活，5 节点需 3 个——可容忍 (n-1)/2 个 Controller 故障
+
+> **图 12 · KRaft 隔离模式部署**：Controller 独立成 Quorum 管元数据，Broker 只承载业务数据。
+
+```mermaid
+flowchart TB
+    subgraph QUORUM["Controller Quorum（3 节点，奇数）"]
+        AC["Controller 1<br/>Active：处理元数据写入"]
+        FC1["Controller 2<br/>Follower"]
+        FC2["Controller 3<br/>Follower"]
+    end
+
+    subgraph POOL["Broker 组（随业务扩缩容）"]
+        B1["Broker 1"]
+        B2["Broker 2"]
+        B3["Broker N …"]
+    end
+
+    AC <-->|"Raft 日志复制"| FC1
+    AC <-->|"Raft 日志复制"| FC2
+    B1 -->|"获取元数据"| AC
+    B2 -->|"获取元数据"| AC
+    B3 -->|"获取元数据"| AC
+```
+
+#### KRaft 启动配置（混合模式示例）
 
 ```properties
 # server.properties
@@ -273,6 +589,12 @@ process.roles=broker,controller
 controller.quorum.voters=1@host1:9093,2@host2:9093,3@host3:9093
 listeners=PLAINTEXT://:9092,CONTROLLER://:9093
 ```
+
+配置要点：
+
+- `process.roles=broker,controller` 即混合模式；隔离模式下 Controller 节点只配 `controller`，Broker 节点只配 `broker`
+- `controller.quorum.voters` 列出 Quorum 全部投票成员（格式 `node.id@主机:CONTROLLER端口`），**所有节点该配置必须一致**
+- `CONTROLLER://:9093` 是 Controller 通信监听器，仅供节点间使用，不面向业务客户端
 
 ### 其他 3.x 特性
 
