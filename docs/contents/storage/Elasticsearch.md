@@ -228,6 +228,7 @@ PUT /products
 2. **写入分片**：根据文档 `_id` 哈希值路由到对应主分片
 3. **数据持久化**：写入 Lucene 索引文件
 
+
 ### 数据搜索过程
 
 ```
@@ -238,6 +239,7 @@ PUT /products
 2. **分片查询**：向所有相关分片发送查询请求
 3. **结果聚合**：收集各分片结果，排序后返回
 
+
 ### 倒排索引
 
 Elasticsearch 使用倒排索引实现快速搜索：
@@ -247,6 +249,19 @@ Elasticsearch 使用倒排索引实现快速搜索：
 | elasticsearch | [1, 3] |
 | search | [1, 2, 3] |
 | engine | [1, 2] |
+
+> **倒排索引结构**：词项映射到包含它的文档 ID 列表，查询时据此快速定位命中文档。
+
+```mermaid
+flowchart LR
+    subgraph INV["倒排索引"]
+        K1["elasticsearch"] --> D1["[1, 3]"]
+        K2["search"] --> D2["[1, 2, 3]"]
+        K3["engine"] --> D3["[1, 2]"]
+    end
+    QUERY["查询含 search 的文档"] --> K2
+    K2 --> HIT["命中：doc1, doc2, doc3"]
+```
 
 ---
 

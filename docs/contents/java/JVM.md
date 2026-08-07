@@ -51,6 +51,23 @@
   
   由于类的加载请求会向上委托，如果父类加载器已经加载了某个类，子类加载器就不需要再次加载，提高了类加载的效率并且节省了内存空间。
 
+> **双亲委托类加载流程**：请求先向上委托至启动类加载器，只有当父加载器搜索范围中找不到类时，才由子加载器自行尝试。
+
+```mermaid
+%%{init: {'flowchart': {'rankSpacing': 10}}}%%
+flowchart TD
+    R["类加载请求"] --> A["应用程序类加载器"]
+    A -->|"委托父"| E["扩展类加载器"]
+    E -->|"委托父"| B["启动类加载器"]
+    B -->|"搜索范围有该类?"| B1{"能加载"}
+    B1 -->|"是"| OK["加载并返回 Class"]
+    B1 -->|"否，向下回退"| E2{"扩展类加载器能加载?"}
+    E2 -->|"是"| OK
+    E2 -->|"否"| A2{"应用程序类加载器能加载?"}
+    A2 -->|"是"| OK
+    A2 -->|"否"| ERR["抛出 LinkageError"]
+```
+
 ## 类的生命周期
 
  ![image](../../_images/2fdeff58-e589-4e41-ab27-82156526ae60.png)
@@ -207,6 +224,7 @@ JVM[内存结构](https://mp.weixin.qq.com/s?__biz=MzI4NDY5Mjc1Mg==&mid=22474839
  ![image](../../_images/4f19f24b-c8d5-4b2a-af1a-e7a3d2dfda25.png)
 
 方法区和对是所有线程共享的内存区域；而java栈、本地方法栈和程序员计数器是运行是线程私有的内存区域。
+
 
 ### Java堆
 
@@ -467,6 +485,19 @@ Cleaner是PhantomReference的子类，并通过自身的next和prev字段维护�
     在发生 Minor GC 之前，虚拟机先检查老年代最大可用的连续空间是否大于新生代所有对象总空间，如果条件成立的话，那么 Minor GC 可以确认是安全的。
   
     如果不成立的话虚拟机会查看 HandlePromotionFailure 设置值是否允许担保失败，如果允许那么就会继续检查老年代最大可用的连续空间是否大于历次晋升到老年代对象的平均大小，如果大于，将尝试着进行一次 Minor GC；如果小于，或者 HandlePromotionFailure 设置不允许冒险，那么就要进行一次 Full GC。
+
+> **对象晋升流程**：对象优先在 Eden 分配，经历 Minor GC 存活后进入 Survivor，年龄达阈值再晋升老年代；大对象直接进入老年代。
+
+```mermaid
+flowchart TD
+    NEW["新对象"] --> EDEN["Eden 区分配"]
+    EDEN -->|"Eden 满"| MINOR["Minor GC"]
+    MINOR -->|"存活"| S0["Survivor（From/To）<br/>年龄 +1"]
+    S0 -->|"年龄 < 阈值"| MINOR
+    S0 -->|"年龄 ≥ MaxTenuringThreshold"| OLD["老年代"]
+    EDEN -->|"大对象(>PretenureSizeThreshold)"| OLD
+    MINOR -->|"老年代空间不足 / 担保失败"| FULL["Full GC"]
+```
 
 ## GC触发
 

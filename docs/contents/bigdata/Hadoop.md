@@ -74,7 +74,27 @@ Slave（有多个）；存储实际的数据块；执行数据块读 / 写
 
 与 NameNode 交互，获取文件位置信息；与 DataNode 交互，读取或者写入数据；管理 HDFS、访问 HDFS。
 
+> **HDFS 架构图**：Client 向 NameNode 取块位置，再直接与 DataNode 读写；Secondary NameNode 为 NameNode 热备。
 
+```mermaid
+flowchart TB
+    Client["Client<br/>与 NameNode 交互取位置<br/>与 DataNode 读写数据"]
+    NN["Active NameNode<br/>管理命名空间 / 块映射<br/>处理读写请求"]
+    SNN["Secondary NameNode<br/>合并 fsimage + edits<br/>热备切换"]
+    DN1["DataNode 1<br/>存储 Block 副本"]
+    DN2["DataNode 2"]
+    DN3["DataNode 3"]
+
+    Client -->|"1. 请求块位置"| NN
+    NN -->|"2. 返回 DataNode 列表"| Client
+    Client -->|"3. 读写数据"| DN1
+    Client -->|"3. 读写数据"| DN2
+    Client -->|"3. 读写数据"| DN3
+    SNN -.->|"定期合并"| NN
+    DN1 -.->|"心跳 / 块上报"| NN
+    DN2 -.->|"心跳 / 块上报"| NN
+    DN3 -.->|"心跳 / 块上报"| NN
+```
 
 ## HDFS的不足
 
@@ -109,6 +129,16 @@ Hadoop和Spark之间的一个关键[区别](https://blog.csdn.net/c36qUCnS2zuqF6
 Mapreduce是一个[计算框架](https://www.cnblogs.com/sharpxiajun/p/3151395.html)，既然是做计算的框架，那么表现形式就是有个输入（input），mapreduce操作这个输入（input），通过本身定义好的计算模型，得到一个输出（output），这个输出就是我们所需要的结果。
 
 我们要学习的就是这个计算模型的运行规则。在运行一个mapreduce计算任务时候，任务过程被分为两个阶段：map阶段和reduce阶段，每个阶段都是用键值对（key/value）作为输入（input）和输出（output）。而程序员要做的就是定义好这两个阶段的函数：map函数和reduce函数。
+
+> **MapReduce 执行流程**：输入分片经 map 提取、shuffle 排序分组、reduce 汇总，得到最终结果集。
+
+```mermaid
+flowchart LR
+    IN["Input（分片）"] --> MAP["Map 阶段<br/>逐块提取分析"]
+    MAP --> SH["Shuffle<br/>排序 / 分组 / 分区"]
+    SH --> RED["Reduce 阶段<br/>汇总分析"]
+    RED --> OUT["Output（结果集）"]
+```
 
  
 
@@ -208,4 +238,18 @@ YARN使用了轻量级资源隔离机制Cgroups进行资源隔离以避免相互
 YARN是对Mapreduce V1重构得到的，有时候也成为MapReduce V2。 
 
 YARN可以看成一个云操作系统，由一个ResourceManager和多个NodeManager组成， 它负责管理所有NodeManger上多维度资源， 并以Container(启动一个Container相当于启动一个进程)方式分配给应用程序启动ApplicationMaster(相当于主进程中运行逻辑) 或运行ApplicationMaster切分的各Task(相当于子进程中运行逻辑)。
+
+> **YARN 架构图**：ResourceManager 统一调度，NodeManager 管理单节点容器，ApplicationMaster 管理单个作业。
+
+```mermaid
+flowchart TB
+    Client["Client<br/>提交作业"] --> RM["ResourceManager<br/>全局资源分配（单点）"]
+    RM -->|"分配 Container"| AM["ApplicationMaster<br/>单作业：申请资源 / 监控 Task"]
+    RM -->|"管理节点"| NM1["NodeManager 1<br/>启动 Container"]
+    RM -->|"管理节点"| NM2["NodeManager 2"]
+    NM1 -->|"运行 Task"| T1["Container / Task"]
+    NM2 -->|"运行 Task"| T2["Container / Task"]
+    AM -->|"调度 Task"| NM1
+    AM -->|"调度 Task"| NM2
+```
 

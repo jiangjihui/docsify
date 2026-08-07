@@ -115,6 +115,8 @@ WebApplicationContext 是专门为 Web 应用设计的上下文环境，是 Appl
 └─────────────────────────────────────────────────────────────┘
 ```
 
+> **请求在 Spring MVC 中的处理链路**：从 DispatcherServlet 进入，经映射、拦截、适配、控制器，最终由视图解析器渲染响应。
+
 ### DispatcherServlet 初始化
 
 DispatcherServlet 启动时会根据 `DispatcherServlet.properties` 配置文件初始化以下组件：
@@ -586,6 +588,8 @@ public class WebConfig {
                                           Interceptor2.afterCompletion
                                           Interceptor1.afterCompletion → 响应
 ```
+
+> **多个拦截器的执行顺序**：preHandle 按注册顺序正向执行，postHandle 与 afterCompletion 按反序执行，视图渲染位于两者中间。
 
 ---
 

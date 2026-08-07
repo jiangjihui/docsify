@@ -235,8 +235,6 @@ synchronized修饰的方法并没有monitorenter指令和monitorexit指令，取
 
 在Java SE 1.6里Synchronied同步锁，一共有四种状态：`无锁`、`偏向锁`、`轻量级锁`、`重量级锁`，它会随着竞争情况逐渐升级。锁可以升级但是不可以降级，目的是为了提供获取锁和释放锁的效率。
 
-> 锁膨胀方向： 无锁 → 偏向锁 → 轻量级锁 → 重量级锁 (此过程是**不可逆**的)
-
 **锁膨胀步骤**
 
 1. 偏向锁指VM认为只有某个线程才会执行同步代码（没有竞争），所以在Mark Word直接记录线程ID，只要线程来执行代码，会对比线程ID是否相等，相等则直接获得锁，执行同步代码。
@@ -248,6 +246,15 @@ synchronized修饰的方法并没有monitorenter指令和monitorexit指令，取
 **总结**
 
 重量级锁用到monitor对象，而偏向锁则在MarkWord记录线程ID进行比对，轻量级锁则是拷贝MarkWord到LockRecord，用CAS+自旋的方式获取。
+
+> **synchronized 锁升级流程**：随竞争加剧，锁沿 无锁 → 偏向锁 → 轻量级锁 → 重量级锁 单向膨胀，不可逆。
+
+```mermaid
+flowchart LR
+    N["无锁"] --> BI["偏向锁<br/>Mark Word 记线程 ID"]
+    BI -->|"CAS 失败 / 有竞争"| LI["轻量级锁<br/>LockRecord + CAS 自旋"]
+    LI -->|"自旋超限仍失败"| WE["重量级锁<br/>monitor 阻塞"]
+```
 
 ### 偏向锁
 

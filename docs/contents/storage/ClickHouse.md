@@ -28,6 +28,23 @@ ClickHouse 最初由俄罗斯公司 Yandex 开发，用于其搜索引擎的日�
 
 10. **易于部署和维护**：ClickHouse 设计得易于安装和管理，可以通过简单的命令行界面进行操作。
 
+> **列式存储布局**：每列独立存储为各自的文件，聚合时只需读取相关列，区别于按行存放。
+
+```mermaid
+flowchart TB
+    subgraph ROW["行式存储（按行存放）"]
+        direction LR
+        R1["行1: id, name, age"]
+        R2["行2: id, name, age"]
+    end
+    subgraph COL["列式存储（ClickHouse）"]
+        direction LR
+        C1["id 列: 1, 2, 3"]
+        C2["name 列: a, b, c"]
+        C3["age 列: 10, 20, 30"]
+    end
+```
+
 
 
 ## 局限性
@@ -50,6 +67,16 @@ ClickHouse 最初由俄罗斯公司 Yandex 开发，用于其搜索引擎的日�
    
    - 一张本地表等同于一份数据的分片。
      - 分布式表本身不存储任何数据，是本地表的访问代理，能够代理访问多个数据分片，实现分布式查询。
+
+> **本地表与分布式表**：分布式表不存数据，作为代理把请求转发到各分片上的本地表。
+
+```mermaid
+flowchart TB
+    APP["应用查询分布式表"] --> D["分布式表 Distributed Table<br/>不存数据 · 访问代理"]
+    D --> L1["本地表 Local Table · 分片 1"]
+    D --> L2["本地表 Local Table · 分片 2"]
+    D --> L3["本地表 Local Table · 分片 N"]
+```
 
 ## 表引擎
 

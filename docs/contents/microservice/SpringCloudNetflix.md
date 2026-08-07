@@ -40,6 +40,21 @@ Spring Cloud是一系列框架的有序集合。它利用Spring Boot的开发便
 
 6、Turbine监控服务间的调用和熔断相关指标
 
+> **请求处理全链路**：请求经网关、注册中心、负载均衡、Feign 调用，并由 Hystrix 熔断、Turbine 监控。
+
+```mermaid
+flowchart TD
+    REQ["外部请求"] --> ZUUL["Zuul API 网关"]
+    ZUUL -->|"从注册中心获取可用服务"| EUREKA[("Eureka 注册中心")]
+    ZUUL --> RIBBON["Ribbon 负载均衡"]
+    RIBBON --> SVC["后端服务实例"]
+    SVC -->|"服务间通信"| FEIGN["Feign 声明式调用"]
+    SVC --> HYSTRIX["Hystrix 熔断 / 超时"]
+    HYSTRIX --> TURBINE["Turbine 聚合监控指标"]
+```
+
+> **说明**：这是 Spring Cloud Netflix 全家桶协作的标准调用路径。
+
  
 
  

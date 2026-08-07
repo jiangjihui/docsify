@@ -103,6 +103,21 @@ PostgreSQL对JSONB数据类型的GIN和BTREE索引提供了高效的方式来查
    - 当需要搜索JSONB字段中的多个键或值时，GIN索引可以显著提高查询性能。
    - 适用于物联网（IoT）和大数据应用中，需要对半结构化数据进行复杂查询的场景。
 
+> **GIN 倒排索引结构**：以 key → posting list 的形式存储，查询时取多个 key 的 posting 交集得到命中文档。
+
+```mermaid
+flowchart LR
+    subgraph KEYS["倒排索引（GIN）：key → posting list"]
+        K1["key: name"] --> PL1["posting: doc1, doc3, doc7"]
+        K2["key: age"] --> PL2["posting: doc2, doc3"]
+        K3["key: tag"] --> PL3["posting: doc1, doc5"]
+    end
+    Q["查询 name=? AND tag=?"] --> K1
+    Q --> K3
+    K1 --> I["取 posting 交集<br/>得到命中文档"]
+    K3 --> I
+```
+
 4. **创建示例**：
    
    ```sql
@@ -893,6 +908,15 @@ hot_standby = on
 primary_conninfo = 'host=master_host port=5432 user=replicator password=repl_password'
 ```
 
+> **流复制架构**：主库以 WAL 日志流推送到从库并重放，从库提供只读与备份能力，故障时可提升为主库。
+
+```mermaid
+flowchart LR
+    P["主库 Primary<br/>wal_level=replica"] -->|"WAL 日志流（同步 / 异步）"| S["从库 Standby<br/>hot_standby=on"]
+    S -->|"持续重放 WAL"| REC[("数据同步 · 只读备份")]
+    P -.->|"pg_basebackup 基础备份"| S
+```
+
 ### 逻辑复制
 
 ```sql
@@ -906,6 +930,14 @@ CREATE USER subscriber WITH REPLICATION PASSWORD 'sub_password';
 CREATE SUBSCRIPTION my_subscription
     CONNECTION 'host=master_host port=5432 dbname=mydb user=subscriber password=sub_password'
     PUBLICATION my_publication;
+```
+
+> **逻辑复制发布/订阅**：主库按表发布行级变更，从库通过订阅接收并应用到本地表。
+
+```mermaid
+flowchart LR
+    P["主库 Publication<br/>users, orders"] -->|"逻辑复制流（行级变更）"| S["从库 Subscription<br/>接收并应用"]
+    S --> D[("本地表<br/>users / orders")]
 ```
 
 ### Patroni 高可用

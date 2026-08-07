@@ -56,6 +56,36 @@ Apache APISIX 是一个高性能、可插拔的 API 网关，设计用于管理�
 - **配置细节**：
   - 每个插件都有自己的配置参数。以限流插件为例，可以配置每秒允许通过的最大请求数、请求突发量等参数。在 APISIX 中，可以通过管理界面或者 API 来添加、配置和删除插件。并且可以根据具体的业务需求，定制开发新的插件，以满足一些特殊的功能要求。
 
+> **请求处理链路**：请求经路由匹配、插件链加工、服务与上游定位后转发到后端实例。
+
+```mermaid
+flowchart LR
+    REQ["客户端请求"] --> ROUTE["Route 路由<br/>匹配 URI / 方法 / 头"]
+    ROUTE --> PLUGIN["插件链 Plugin<br/>认证 / 限流 / 日志 ..."]
+    PLUGIN --> SERVICE["Service 服务<br/>抽象后端集群"]
+    SERVICE --> UPSTREAM["Upstream 上游<br/>负载均衡算法"]
+    UPSTREAM --> BACKEND["后端服务实例"]
+```
+
+> **说明**：Route 决定"转发给谁"，Plugin 决定"途中做什么"，Upstream 决定"具体打到哪个实例"。
+
+> **Route / Service / Upstream 关系**：多个路由可指向同一服务，服务再关联到上游集群。
+
+```mermaid
+flowchart TB
+    subgraph R["Route（路由规则）"]
+        R1["Route A"]
+        R2["Route B"]
+    end
+    R1 --> SVC["Service（后端抽象）"]
+    R2 --> SVC
+    SVC --> U["Upstream（真实地址集群）"]
+    U --> I1["实例 1"]
+    U --> I2["实例 2"]
+```
+
+> **说明**：Route 是匹配入口，Service 屏蔽后端细节，Upstream 负责实例级负载均衡。
+
 ### 差异对比
 
 #### 与 Ingress Nginx 的区别

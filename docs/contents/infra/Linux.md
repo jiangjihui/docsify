@@ -336,6 +336,24 @@ ss -ant | awk 'NR>1 {++S[$1]} END {for(a in S) print a, S[a]}'
 | CLOSE_WAIT | 远端已关闭，等待本地关闭 |
 | TIME_WAIT | 等待超时结束 |
 
+> **TCP 连接状态机**：从 LISTEN 到 ESTABLISHED 的建立，以及 FIN_WAIT / CLOSE_WAIT / TIME_WAIT 等关闭过程。
+
+```mermaid
+stateDiagram
+    [*] --> LISTEN
+    LISTEN --> SYN_SENT: 发起连接
+    LISTEN --> SYN_RECV: 收到连接请求
+    SYN_SENT --> ESTABLISHED: 收到确认
+    SYN_RECV --> ESTABLISHED: 确认完成
+    ESTABLISHED --> FIN_WAIT1: 本端请求关闭
+    ESTABLISHED --> CLOSE_WAIT: 远端已关闭
+    FIN_WAIT1 --> FIN_WAIT2: 对端确认
+    CLOSE_WAIT --> LAST_ACK: 本端关闭
+    FIN_WAIT2 --> TIME_WAIT: 收到关闭
+    LAST_ACK --> [*]
+    TIME_WAIT --> [*]
+```
+
 ### SSH
 
 ```bash
@@ -604,6 +622,18 @@ cat data.json | jq '.users[] | {name, age}'
 ### VIM
 
 **模式：** 普通模式（默认）→ `i` 进入插入模式 → `Esc` 回到普通模式 → `:` 进入命令模式
+
+> **VIM 模式切换状态机**：普通模式为默认态，i 进入插入、: 进入命令模式，Esc 回到普通模式。
+
+```mermaid
+stateDiagram
+    [*] --> Normal: 启动
+    Normal --> Insert: i / a / o
+    Insert --> Normal: Esc
+    Normal --> Command: :
+    Command --> Normal: 执行命令后 / Esc
+    Normal --> [*]: ZZ / :q
+```
 
 | 操作 | 命令 |
 | ---- | ---- |

@@ -242,6 +242,27 @@ Java 具有四种强度不同的引用类型。
   obj = null;
   ```
 
+> **引用类型强度层次图**：从强引用到虚引用，引用强度依次递减，被 GC 回收的时机也越来越早。
+
+```mermaid
+flowchart TB
+    S["强引用 StrongReference<br/>new 出的对象，绝不回收"]
+    SF["软引用 SoftReference<br/>内存不足时才回收"]
+    W["弱引用 WeakReference<br/>下次 GC 必回收<br/>ThreadLocal 用其作为 key"]
+    P["虚引用 PhantomReference<br/>不影响生命周期，仅回收时收通知"]
+    S --> SF --> W --> P
+```
+
+> **ThreadLocal 弱引用机制**：ThreadLocalMap 以弱引用持有 ThreadLocal 作为 key，线程仍在运行时 key 可被 GC；value 仍被强引用，需调用 remove() 清理以免泄漏。
+
+```mermaid
+flowchart LR
+    T["Thread 线程"] --> MAP["ThreadLocalMap"]
+    MAP --> E["Entry"]
+    TL["ThreadLocal 实例"] -.弱引用 key.-> E
+    E -->|强引用| V["value 对象"]
+```
+
 ## 注解
 
 注解是JDK1.5版本开始引入的一个特性，用于对代码进行说明，可以对包、类、接口、字段、方法参数、局部变量等进行注解。它主要的作用有以下四方面：

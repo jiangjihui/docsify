@@ -154,6 +154,16 @@ WT的redo log是通过配置开启或者关闭的，MongoDB并没有使用WT的r
 
 分片为应对高吞吐量与大数据量提供了方法。使用分片减少了每个分片需要处理的请求数，因此，通过水平扩展，集群可以提高自己的存储容量和吞吐量。举例来说，当插入一条数据时，应用只需要访问存储这条数据的分片
 
+> **分片（Sharding）水平扩展**：mongos 路由将请求分发到各分片，每个分片本身是副本集。
+
+```mermaid
+flowchart TB
+    APP["应用请求"] --> M["mongos 路由<br/>自动均衡数据"]
+    M --> S1["分片 Shard 1（副本集）"]
+    M --> S2["分片 Shard 2（副本集）"]
+    M --> S3["分片 Shard N（副本集）"]
+```
+
 
 
 
@@ -442,6 +452,7 @@ db.orders.aggregate([
 ])
 ```
 
+
 ### 常用阶段
 
 | 阶段 | 说明 | 示例 |
@@ -501,6 +512,24 @@ db.orders.aggregate([
 - 副本集至少需要3个节点（或2个数据节点+1个Arbiter）
 - Primary不可用时，Secondary发起选举，获得多数票的节点成为新Primary
 - 选举基于Raft协议，通常在10秒内完成
+
+> **副本集故障切换（Raft 选举）**：Primary 宕机后，Secondary 发起选举，获得多数票者成为新 Primary。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S1 as Primary
+    participant S2 as Secondary A
+    participant S3 as Secondary B
+    participant S4 as Arbiter
+    S1-xS2: Primary 宕机
+    Note over S2,S3: 检测到主节点不可用，发起选举
+    S2->>S3: 请求投票
+    S2->>S4: 请求投票
+    S3-->>S2: 投票
+    S4-->>S2: 投票（打破平局）
+    Note over S2: 获得多数票 → 成为新 Primary
+```
 
 ### 读写关注
 

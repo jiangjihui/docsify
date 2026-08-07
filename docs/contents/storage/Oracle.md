@@ -29,6 +29,17 @@ Oracle 数据库是 Oracle（甲骨文）公司推出的关系型数据库管理
 
 > **说明**：Oracle 12c 引入的 PDB（Pluggable Database，可插拔数据库）架构允许在一个 CDB（Container Database）中创建多个 PDB，大幅提升了资源利用率和运维效率。
 
+> **CDB/PDB 可插拔架构**：一个 CDB 容器数据库内可挂载多个相互隔离的 PDB 可插拔数据库。
+
+```mermaid
+flowchart TB
+    CDB["CDB 容器数据库<br/>Container Database"]
+    CDB --> PDB1["PDB 1 可插拔数据库"]
+    CDB --> PDB2["PDB 2 可插拔数据库"]
+    CDB --> PDB3["PDB 3 可插拔数据库"]
+    CDB --> ROOT["ROOT + SEED<br/>系统元数据和公共用户"]
+```
+
 ### 与 MySQL/PostgreSQL 对比
 
 | 特性 | Oracle | MySQL | PostgreSQL |
@@ -60,6 +71,21 @@ SELECT instance_name FROM v$instance;
 
 -- 查看数据库名
 SELECT name FROM v$database;
+```
+
+> **实例与数据库的关系**：单机下一对一，RAC 集群中一个数据库（共享存储）对应多个实例。
+
+```mermaid
+flowchart TB
+    subgraph SINGLE["单机环境：一对一"]
+        I1["实例 Instance<br/>SGA + 后台进程"] --> D1["数据库 Database<br/>数据 / 控制 / 归档文件"]
+    end
+    subgraph RAC["RAC 集群：一库多实例"]
+        D2["数据库 Database<br/>（共享存储）"]
+        I2["实例 1"] --> D2
+        I3["实例 2"] --> D2
+        I4["实例 N"] --> D2
+    end
 ```
 
 ### 内存结构
@@ -111,6 +137,7 @@ SELECT * FROM v$pgastat;
 ```
 数据库 → 表空间 → 数据文件 → 段（表/索引） → 区（Extent） → 数据块
 ```
+
 
 **查看表空间：**
 

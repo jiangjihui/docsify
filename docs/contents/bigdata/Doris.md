@@ -75,6 +75,20 @@ Broker 是一个可选组件，主要用于处理外部数据源的导入导出�
 - **Partition**：用于将大表划分为更小的、更易于管理的部分，每个 Partition 可以包含一个或多个 Tablet。
 - **Replication**：通过多副本机制保证数据的可靠性和高可用性，通常配置为三副本。
 
+> **FE / BE 架构图**：FE 作为大脑负责元数据与调度，BE 负责存储与执行，Broker 处理外部数据导入导出。
+
+```mermaid
+flowchart TB
+    Client["Client（JDBC / MySQL 协议）"] --> FE["FE（Frontend）<br/>元数据 / SQL 解析优化<br/>查询调度 / 集群管理"]
+    FE -->|"分配子任务"| BE1["BE 1<br/>列式存储 / 查询执行"]
+    FE -->|"分配子任务"| BE2["BE 2"]
+    FE -->|"分配子任务"| BE3["BE 3"]
+    FE -.->|"主备同步"| FEF["FE Follower（高可用）"]
+    BE1 -.->|"多副本 Tablet"| BE2
+    BE2 -.->|"多副本 Tablet"| BE3
+    BR["Broker（可选）<br/>HDFS / S3 导入导出"] -.-> BE1
+```
+
 ### 工作流程
 
 1. **查询请求**：客户端通过 JDBC 或其他接口向 FE 发送 SQL 查询请求。
@@ -83,6 +97,23 @@ Broker 是一个可选组件，主要用于处理外部数据源的导入导出�
 4. **数据处理**：BE 节点根据分配的任务执行数据扫描、过滤、聚合等操作。
 5. **结果合并**：FE 收集各个 BE 节点的查询结果，并进行最终的合并和排序。
 6. **返回结果**：将最终的查询结果返回给客户端。
+
+> **查询工作流程**：SQL 经 FE 解析调度，BE 并行执行，结果由 FE 合并返回。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant FE as FE
+    participant B as BE 节点
+    C->>FE: 1. 发送 SQL 查询
+    FE->>FE: 2. 解析 / 优化 / 生成执行计划
+    FE->>B: 3. 分配子任务
+    B->>B: 4. 扫描 / 过滤 / 聚合
+    B-->>FE: 5. 返回局部结果
+    FE->>FE: 6. 合并与排序
+    FE-->>C: 7. 返回最终结果
+```
 
 ## 应用场景
 

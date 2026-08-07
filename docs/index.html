@@ -91,6 +91,12 @@
 		#themeToggle:hover {
 			opacity: .7;
 		}
+		/* Mermaid 节点标签：禁止换行。
+		   htmlLabels 默认用 foreignObject+HTML <div>，长文本会被浏览器按节点宽度自动折行；
+		   这里用 white-space:nowrap 强制单行，节点宽度由 mermaid 按内容自动撑开。 */
+		.mermaid foreignObject div {
+			white-space: nowrap !important;
+		}
 	</style>
 </head>
 
@@ -152,11 +158,12 @@
             }
         }
         // docsify 每次路由切换渲染完页面后，把 mermaid 代码块转成图
-        window.$docsify = Object.assign(window.$docsify || {}, {
-            plugins: [function (hook) {
-                hook.doneEach(function () { setTimeout(renderMermaid, 0); });
-            }]
-        });
+        // 注意：必须往现有 plugins 数组【追加】，不能整体覆盖（Object.assign 重写 plugins 会冲掉
+        // search.min.js 注册的搜索插件，导致侧边栏搜索框消失）。search / copy-code 等插件均通过
+        // window.$docsify.plugins 注册，这里合并而非替换。
+        window.$docsify.plugins = (window.$docsify.plugins || []).concat([function (hook) {
+            hook.doneEach(function () { setTimeout(renderMermaid, 0); });
+        }]);
     </script>
 </body>
 

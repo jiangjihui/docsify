@@ -53,6 +53,23 @@ Spring Security 的 Web 安全能力本质上是一条 **Filter 过滤器链**�
 | `ExceptionTranslationFilter` | 将安全异常翻译为 401（未认证）或 403（拒绝访问）响应 |
 | `AuthorizationFilter` | 最终的授权判定（6.x 中替代 FilterSecurityInterceptor） |
 
+> **Spring Security 的过滤器链**：请求经 FilterChainProxy 进入，依次经过上下文加载、各类认证 Filter、异常翻译与最终授权判定。
+
+```mermaid
+%%{init: {'flowchart': {'rankSpacing': 20}}}%%
+flowchart TD
+    A["HTTP 请求"] --> B["FilterChainProxy<br/>（安全过滤器链入口）"]
+    B --> C["SecurityContextHolderFilter<br/>加载/清理 SecurityContext"]
+    C --> D["UsernamePasswordAuthenticationFilter<br/>表单登录"]
+    C --> E["BasicAuthenticationFilter<br/>HTTP Basic"]
+    C --> F["BearerTokenAuthenticationFilter<br/>JWT Bearer"]
+    D --> G["ExceptionTranslationFilter<br/>异常 → 401 / 403"]
+    E --> G
+    F --> G
+    G --> H["AuthorizationFilter<br/>（最终授权判定）"]
+    H --> I["目标应用 / 资源"]
+```
+
 ### 认证流程
 
 以表单登录为例，一次完整的认证过程如下：
@@ -65,6 +82,31 @@ Spring Security 的 Web 安全能力本质上是一条 **Filter 过滤器链**�
 6. 使用 `PasswordEncoder` 比对提交的密码与数据库中的密码；
 7. 认证成功，将**已认证**的 `Authentication` 存入 `SecurityContextHolder`；
 8. 后续过滤器和业务代码通过 `SecurityContextHolder.getContext().getAuthentication()` 获取当前用户。
+
+> **表单登录的认证时序**：从提交凭据到 AuthenticationManager 委派 Provider 完成比对，最终把已认证的 Authentication 存入 SecurityContext。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant F as UsernamePasswordAuthenticationFilter
+    participant AM as AuthenticationManager
+    participant P as AuthenticationProvider
+    participant S as UserDetailsService
+    participant PE as PasswordEncoder
+    participant SC as SecurityContextHolder
+    U->>F: 提交用户名/密码
+    F->>F: 构造未认证的 Authentication
+    F->>AM: 提交认证请求
+    AM->>P: 委托认证
+    P->>S: loadUserByUsername()
+    S-->>P: 返回 UserDetails
+    P->>PE: 比对密码
+    PE-->>P: 匹配结果
+    P-->>AM: 返回已认证的 Authentication
+    AM-->>SC: 存入 SecurityContext
+    SC-->>U: 后续可获取当前用户
+```
 
 ```java
 // 在业务代码中获取当前登录用户

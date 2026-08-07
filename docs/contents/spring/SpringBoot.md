@@ -66,6 +66,7 @@ Spring Boot 是用于简化 Spring 应用从搭建到开发的框架。应用**�
 4. **应用配置**：
    - 将满足条件的配置应用到应用程序
 
+
 #### 什么是 DeferredImportSelector
 
 `DeferredImportSelector` 是一个接口，它继承自 `ImportSelector`。它的主要用途是在某些情况下延迟配置类的导入，直到特定条件得到满足为止。这通常用于处理一些依赖于其他配置类的情况，或者当需要在运行时动态决定导入哪些类时。
@@ -134,6 +135,22 @@ Spring Boot 的 `run` 方法是启动 Spring Boot 应用程序的入口点。�
 5. **启动嵌入式服务器（如果适用）**：如果你的 Spring Boot 应用程序是一个 web 应用程序，并且你选择了使用 Spring Boot 的嵌入式服务器（如 Tomcat、Jetty 或 Undertow），那么在这一步，Spring Boot 会启动这个服务器。这允许你的应用程序作为一个独立的 web 服务器运行，而无需部署到外部容器中。
 
 6. **运行应用程序**：最后，一旦所有必要的配置和 Bean 都已加载，并且（如果适用）嵌入式服务器也已启动，Spring Boot 应用程序就会开始运行。这通常意味着你的应用程序现在可以接受请求（对于 web 应用程序）或执行其他类型的任务（对于非 web 应用程序）。
+
+> **SpringApplication.run 的启动主线**：推断类型、创建上下文、触发自动配置、加载 Bean，最后按需启动内嵌服务器。
+
+```mermaid
+%%{init: {'flowchart': {'rankSpacing': 20}}}%%
+flowchart TD
+    A["SpringApplication.run()"] --> B["推断应用类型<br/>（Web / Reactive / 普通）"]
+    B --> C["加载并创建 ApplicationContext"]
+    C --> D["@EnableAutoConfiguration 触发自动配置"]
+    D --> E["扫描并加载 Bean<br/>（@Component / @Bean 等）"]
+    E --> F{"是 Web 应用？"}
+    F -->|"是"| G["启动内嵌服务器<br/>（Tomcat / Jetty / Undertow）"]
+    F -->|"否"| H["直接运行"]
+    G --> I([开始接收请求 / 执行任务])
+    H --> I
+```
 
 **总结**
 

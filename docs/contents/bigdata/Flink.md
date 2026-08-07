@@ -41,6 +41,15 @@ Flink 的基本组件主要包括：
 - **Transformation**：对数据的处理转换操作，包括 map、filter、flatMap、keyBy 等
 - **DataSink**：数据输出目的地，如 Kafka、HDFS、数据库、文件系统等
 
+> **流处理编程模型**：数据从 Source 流入，经 Transformation 转换，由 Sink 流出。
+
+```mermaid
+flowchart LR
+    SRC["DataSource<br/>HDFS / Kafka / DB"] --> T1["Transformation<br/>map / filter"]
+    T1 --> T2["Transformation<br/>keyBy / reduce"]
+    T2 --> SNK["DataSink<br/>Kafka / HDFS / DB"]
+```
+
 ### 主要特性
 
 - **流处理与批处理统一**：Flink 将流处理和批处理统一为 DataStream API 和 DataSet API，批处理被定义为有界数据流的特殊处理
@@ -667,6 +676,23 @@ flink run -s <savepoint-path> --allowNonRestoredState <jar-file>
 3. 从最近的 Checkpoint 恢复状态
 4. 继续处理数据
 
+> **Checkpoint 故障恢复时序**：TaskManager 失败，JobManager 重调度并从最近 Checkpoint 恢复状态后继续处理。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant JM as JobManager
+    participant TM as TaskManager
+    participant CP as Checkpoint 存储（HDFS）
+    JM->>TM: 定时触发 Checkpoint
+    TM->>CP: 持久化状态快照
+    CP-->>JM: 确认完成
+    Note over TM: TaskManager 失败
+    JM->>JM: 检测到失败，重新调度 Task
+    JM->>CP: 从最近 Checkpoint 恢复状态
+    JM->>TM: 继续处理数据
+```
+
 ---
 
 ## 窗口与时间语义
@@ -680,6 +706,21 @@ Flink 支持三种时间语义：
 | **Event Time** | 事件实际发生的时间 | 需要精确结果的场景，如日志分析 |
 | **Processing Time** | 数据被处理的时间 | 实时性要求高、允许近似结果的场景 |
 | **Ingestion Time** | 数据进入 Flink 的时间 | 介于两者之间 |
+
+> **时间语义与窗口类型**：事件按三种时间语义划分，再落入滚动/滑动/会话/全局等窗口。
+
+```mermaid
+flowchart TB
+    DS["DataStream"] --> TT{"时间语义"}
+    TT -->|"Event Time"| E["事件实际发生时间"]
+    TT -->|"Processing Time"| P["被处理的时间"]
+    TT -->|"Ingestion Time"| I["进入 Flink 的时间"]
+    DS --> WIN{"窗口类型"}
+    WIN -->|"Tumbling"| W1["滚动窗口（无重叠）"]
+    WIN -->|"Sliding"| W2["滑动窗口（可重叠）"]
+    WIN -->|"Session"| W3["会话窗口（按间隔）"]
+    WIN -->|"Global"| W4["全局窗口（需触发器）"]
+```
 
 **配置：**
 

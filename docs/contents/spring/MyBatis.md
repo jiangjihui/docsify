@@ -350,6 +350,8 @@ public interface UserMapper {
 └─────────────────────┘           └─────────────────────────┘
 ```
 
+> **MyBatis 的 SQL 执行链路**：从 SqlSessionFactory 到 SqlSession，再按执行器类型进入 StatementHandler 完成参数与结果处理。
+
 ### Executor 执行器
 
 MyBatis 有三种执行器：
@@ -564,6 +566,17 @@ public class SqlSessionTemplate implements SqlSession {
         }
     }
 }
+```
+
+> **Mapper 接口的代理调用链**：Mapper 接口由 JDK 动态代理生成，经线程安全的 SqlSessionTemplate 与内部拦截器驱动实际 SQL 执行。
+
+```mermaid
+flowchart TD
+    A["Mapper 接口<br/>（如 UserMapper）"] --> B["MapperProxy<br/>（JDK 动态代理）"]
+    B --> C["SqlSessionTemplate<br/>（线程安全）"]
+    C --> D["SqlSessionInterceptor<br/>（每次获取/关闭 SqlSession）"]
+    D --> E["Executor → StatementHandler"]
+    E --> F[("数据库")]
 ```
 
 ### 事务管理

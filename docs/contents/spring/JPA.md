@@ -153,6 +153,8 @@ emf.close();
 
 ---
 
+> **JPA 的传统编程执行链路**：基于 Persistence 配置构建全局唯一的 EntityManagerFactory，每次请求创建 EntityManager，经持久化上下文与数据库交互。
+
 ## 初始化机制
 
 ### Persistence.xml配置
@@ -485,6 +487,8 @@ em.remove(user);  // 删除状态，提交后从数据库删除
                     └─────────────────┘
 ```
 
+> **实体的四种生命周期状态**：new 对象经 persist 进入托管，close/detach 转游离，merge 可回到托管，remove 后提交即从库删除。
+
 ### flush机制
 
 JPA会自动将内存中的更改同步到数据库：
@@ -765,6 +769,8 @@ Repository (接口)
     │               │
     │               └─ JpaRepository (JPA特定)
 ```
+
+> **Spring Data JPA 的 Repository 继承层次**：从顶层 Repository 接口逐级派生出 Crud、分页排序与 JPA 特定能力。
 
 ### 快速入门
 

@@ -80,6 +80,37 @@ Broker（代理）：它主要负责接收、存储和转发消息。Broker 是�
 - 信道可以提高连接的并发处理能力，减少连接的创建和销毁开销。信道可以设置各种属性，如确认模式、事务模式等。
 - 在确认模式下，消费者在处理完消息后需要向服务器发送确认消息，以告知服务器消息已经被成功处理。如果消费者在处理消息过程中出现问题，它可以拒绝消息，服务器会将消息重新放入队列，等待其他消费者处理。
 
+> **RabbitMQ 逻辑组成关系**：连接、信道、交换机、队列与绑定之间的包含与路由关系。
+
+```mermaid
+classDiagram
+    class Connection {
+        长连接
+        心跳保活
+    }
+    class Channel {
+        逻辑通信通道
+        复用 Connection
+    }
+    class Exchange {
+        Direct / Topic / Fanout / Headers
+        只转发不存储
+    }
+    class Queue {
+        FIFO 存储消息
+        持久 / 排他 / 自动删除
+    }
+    class Binding {
+        连接 Exchange 与 Queue
+        基于 routing key
+    }
+    Connection "1" *-- "多" Channel
+    Exchange "1" --> "多" Binding
+    Binding "1" --> "1" Queue
+    Channel --> Exchange : 发送消息
+    Channel --> Queue : 消费消息
+```
+
 ## 消息
 
 ### 消息存储
@@ -158,6 +189,8 @@ RabbitMQ的消息主要由两部分组成：消息头（Headers）和消息体�
 2. 生产者将消息发送到RabbitMQ的交换机（Exchange）。
 3. 交换机根据消息的路由键和预设的路由规则，将消息路由到一个或多个队列（Queue）中。
 4. 消费者（Consumer）从队列中获取消息，并进行处理。
+
+
 
 ## 答疑
 
@@ -309,6 +342,24 @@ Exchange类型有以下几种：
 - **Header**：header模式与routing不同的地方在于，header模式取消routingkey，使用header中的 key/value（键值对）匹配队列，但是其性能很差，目前几乎不再使用。
 
 > **Exchange（交换机）只负责转发消息，不具备存储消息的能力**，因此如果没有任何队列与Exchange绑定，或者没有符合路由规则的队列，那么消息会丢失！
+
+> **Exchange 四种类型路由方式**：direct 精确匹配、topic 通配符、fanout 广播、headers 按头属性。
+
+```mermaid
+flowchart TB
+    subgraph T["Exchange 类型"]
+        D["Direct<br/>routing key 完全匹配"]
+        TP["Topic<br/>通配符 # /* 模糊匹配"]
+        F["Fanout<br/>广播到所有绑定队列"]
+        H["Headers<br/>按 header 键值对匹配"]
+    end
+    D -->|"key=error"| QD["Queue: error"]
+    TP -->|"us.stock.*"| QT["Queue: stock"]
+    F --> QA["Queue A"]
+    F --> QB["Queue B"]
+    F --> QC["Queue C"]
+    H -->|"x-match"| QH["Queue: headers"]
+```
 
 ## 消息确认机制（ACK）
 

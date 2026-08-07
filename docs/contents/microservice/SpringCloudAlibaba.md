@@ -46,6 +46,28 @@ Spring Cloud Alibaba 致力于提供微服务开发的一站式解决方案。�
 
 **Alibaba Cloud SMS** : 覆盖全球的短信服务，友好、高效、智能的互联化通讯能力，帮助企业迅速搭建客户触达通道。
 
+> **组件能力全景**：SCA 以 Nacos、Sentinel、Gateway、RocketMQ、Dubbo、Seata 覆盖微服务的注册、容错、网关、消息与事务。
+
+```mermaid
+flowchart TB
+    subgraph SCA["Spring Cloud Alibaba 组件全家桶"]
+        NACOS["Nacos<br/>注册中心 + 配置中心"]
+        SENTINEL["Sentinel<br/>限流 / 熔断降级"]
+        GATEWAY["Spring Cloud Gateway<br/>服务网关"]
+        ROCKETMQ["RocketMQ<br/>消息驱动"]
+        DUBBO["Dubbo<br/>RPC 调用"]
+        SEATA["Seata<br/>分布式事务"]
+    end
+    APP["微服务应用"] --> NACOS
+    APP --> SENTINEL
+    APP --> GATEWAY
+    APP --> ROCKETMQ
+    APP --> DUBBO
+    APP --> SEATA
+```
+
+> **说明**：各组件默认集成了 Ribbon 等能力，可按需引入，不必全量使用。
+
 ## Nacos Discovery--服务治理
 
 ### 简介
@@ -149,6 +171,22 @@ public interface ProductService{
 ```
 
 4 修改controller使用创建的service进行服务调用
+
+> **服务调用链路**：消费者经 Nacos 发现实例，由 Ribbon 负载均衡、Feign 发起远程调用。
+
+```mermaid
+sequenceDiagram
+    participant S as 服务消费者(order)
+    participant N as Nacos 注册中心
+    participant P as 服务提供者(product)
+    S->>N: 启动时注册 + 拉取服务列表
+    P->>N: 注册 service-product 实例
+    S->>N: 定时心跳 / 刷新列表
+    S->>P: 通过 Feign + 服务名调用<br/>（Ribbon 负载均衡选实例）
+    P-->>S: 返回结果
+```
+
+> **说明**：用服务名替代具体 IP，调用过程对代码透明，类似调用本地方法。
 
 ## Nacos Config--服务配置
 
@@ -869,6 +907,20 @@ public class AuthGlobelFilter implements GlobalFilter, Ordered {
 }
 ```
 
+> **网关请求生命周期**：请求经断言匹配、过滤器加工后路由到上游，响应再经后置过滤器返回。
+
+```mermaid
+flowchart LR
+    REQ["客户端请求"] --> PRE["Predicate 断言<br/>匹配路由条件"]
+    PRE -->|"匹配成功"| F1["GlobalFilter / GatewayFilter（pre）<br/>鉴权 / 改写请求"]
+    F1 --> ROUTE["路由转发<br/>lb://service-product"]
+    ROUTE --> UP["上游微服务"]
+    UP --> F2["GlobalFilter（post）<br/>收集指标 / 记录日志"]
+    F2 --> RES["响应客户端"]
+```
+
+> **说明**：断言决定"是否路由"，过滤器决定"路由前后做什么"，二者共同构成 Gateway 的核心。
+
 ### 结合Sentinel进行网关限流
 
 - **route维度：**
@@ -1402,6 +1454,31 @@ RM：Resource Manager 资源管理器，用于分支事务上的资源管理，�
 7. 全局事务调用链处理完毕，TM根据有无异常向TC发起全局事务的提交或者回滚
 
 8. TC协调其管辖之下的所有分支事务， 决定是否回滚
+
+> **Seata 全局事务执行流程**：XID 随调用链传播，Phase1 各自提交并记录 undo_log，Phase2 由 TC 统一提交或回滚。
+
+```mermaid
+sequenceDiagram
+    participant TM as TM（A 服务）
+    participant TC as TC（事务协调器）
+    participant RM1 as RM（A 分支）
+    participant RM2 as RM（B 分支）
+    TM->>TC: 开启全局事务，获得 XID
+    TM->>RM1: 注册分支事务并执行（XID 传播）
+    TM->>RM2: 远程调用 B，XID 随调用链传播
+    RM2->>TC: 注册分支事务并执行
+    alt 无异常
+        TM->>TC: 提交全局事务
+        TC->>RM1: 删除 undo_log
+        TC->>RM2: 删除 undo_log
+    else 有异常
+        TM->>TC: 回滚全局事务
+        TC->>RM1: 按 undo_log 逆向补偿
+        TC->>RM2: 按 undo_log 逆向补偿
+    end
+```
+
+> **说明**：Phase1 即提交本地事务，避免了传统 2PC 长持锁，整体吞吐更高。
 
 ### Seata 实现2PC 与传统2PC 的差别
 

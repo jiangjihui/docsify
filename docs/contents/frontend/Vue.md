@@ -185,6 +185,17 @@ count.value = 1
 state.count++
 ```
 
+> **响应式原理**：Proxy 劫持数据，读取时收集依赖，写入时派发更新触发重新渲染。
+
+```mermaid
+flowchart LR
+    D["响应式数据（Proxy 劫持）"] -->|"读取 get"| T["依赖收集<br/>track 记录 Effect"]
+    T --> E["副作用 Effect<br/>（渲染函数）"]
+    D -->|"写入 set"| U["派发更新<br/>trigger 通知依赖"]
+    U --> E
+    E --> R["重新渲染视图"]
+```
+
 ## Composition API 详解
 
 ### ref 和 reactive
@@ -246,6 +257,18 @@ watchEffect(() => {
 | errorCaptured | onErrorCaptured |
 | renderTracked | onRenderTracked |
 | renderTriggered | onRenderTriggered |
+
+> **组件生命周期**：从创建到卸载的状态流转，对应 Vue 3 的组合式 API 钩子。
+
+```mermaid
+stateDiagram-v2
+    [*] --> Setup: 创建（created）
+    Setup --> Mounted: onBeforeMount → onMounted
+    Mounted --> Updated: onBeforeUpdate → onUpdated
+    Updated --> Updated: 数据变化重新渲染
+    Updated --> Unmounted: onBeforeUnmount → onUnmounted
+    Unmounted --> [*]
+```
 
 ```javascript
 import {
@@ -329,6 +352,18 @@ provide('count', count)
 import { inject } from 'vue'
 
 const count = inject('count')
+```
+
+> **组件通信方式**：父→子 props 下行，子→父 emit 上行，跨层用 provide/inject，全局用 Pinia/Vuex。
+
+```mermaid
+flowchart TB
+    P["父组件"] -->|"props 向下"| C["子组件"]
+    C -->|"emit 向上"| P
+    P -.->|"provide"| D["后代组件"]
+    D -.->|"inject"| P
+    ST["Pinia / Vuex<br/>全局状态"] -.->|"共享"| P
+    ST -.->|"共享"| C
 ```
 
 ### v-model

@@ -124,15 +124,16 @@ Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh
 > **Bean 完整生命周期（实例化 → 就绪 → 销毁）**：下图串起「注册定义 → 实例化 → 依赖注入 → 初始化 → 使用 → 销毁」全过程；其中 ②③ 埋点对应 BeanPostProcessor 的前后处理、① 对应初始化回调（@PostConstruct / InitializingBean）。
 
 ```mermaid
+%%{init: {'flowchart': {'rankSpacing': 20, 'nodeSpacing': 25}}}%%
 flowchart TD
-    A([BeanDefinition 注册]) --> B["实例化<br/>反射调用构造器"]
-    B --> C["属性填充 / 依赖注入<br/>setter、@Autowired"]
-    C --> D["Aware 接口回调<br/>BeanNameAware 等"]
+    A([BeanDefinition 注册]) --> B["实例化（反射调用构造器）"]
+    B --> C["依赖注入（@Autowired / setter）"]
+    C --> D["Aware 接口回调"]
     D --> E["BeanPostProcessor 前置处理"]
-    E --> F["@PostConstruct /<br/>InitializingBean.afterPropertiesSet"]
-    F --> G["BeanPostProcessor 后置处理<br/>AOP 代理在此生成"]
+    E --> F["初始化回调（@PostConstruct / InitializingBean）"]
+    F --> G["BeanPostProcessor 后置处理（AOP 代理在此生成）"]
     G --> H([Bean 就绪，可被使用])
-    H --> I["容器关闭：<br/>@PreDestroy / DisposableBean.destroy"]
+    H --> I["销毁回调（@PreDestroy / DisposableBean）"]
     I --> J([Bean 销毁])
 ```
 
@@ -576,6 +577,7 @@ AOP代理（AOP Proxy）
 > **五种通知在目标方法周边的执行顺序**：`@Around` 包裹整个调用，`@Before` 在目标方法前、`@AfterReturning`/`@AfterThrowing` 在返回或异常后、`@After` 无论成败都执行（类似 finally）。
 
 ```mermaid
+%%{init: {'flowchart': {'rankSpacing': 10}}}%%
 flowchart TD
     A([方法被调用]) --> B["@Around 前置逻辑"]
     B --> C["@Before 通知"]
@@ -620,7 +622,7 @@ flowchart TD
 
 - **描述**：无论目标方法是否正常返回还是抛出异常，都会执行的代码段。
 - **应用场景**：通常用于释放资源，如关闭文件流、数据库连接等。、
-- ```java
+  ```java
   @After("execution(* com.example.service.*.*(..))")
   public void afterAdvice() {
       System.out.println("Executing Finally Advice");
@@ -703,11 +705,12 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 > **三级缓存解决 A↔B 循环依赖的流程**：实例化 A 后将其早期引用（对象工厂）放入三级缓存；填充 A 时发现需要 B，转而去创建 B；B 填充时发现需要 A，此时从三级缓存拿到 A 的早期引用（含 AOP 代理）并升入二级缓存，B 得以完成并进入一级缓存；A 随后拿到 B 也完成初始化。
 
 ```mermaid
+%%{init: {'flowchart': {'rankSpacing': 10}}}%%
 flowchart TD
     subgraph caches["三级缓存"]
-        L1["一级缓存 singletonObjects<br/>成品对象"]
-        L2["二级缓存 earlySingletonObjects<br/>早期（半成品）对象"]
-        L3["三级缓存 singletonFactories<br/>对象工厂（含 AOP）"]
+        L1["一级缓存 singletonObjects（成品对象）"]
+        L2["二级缓存 earlySingletonObjects（早期半成品对象）"]
+        L3["三级缓存 singletonFactories（对象工厂，含 AOP）"]
     end
     start([getBean A]) --> a1["实例化 A（属性未赋值）"]
     a1 --> a2["A 早期引用存入三级缓存"]
@@ -717,11 +720,11 @@ flowchart TD
     b2 --> b3["填充 B 属性 → 需要 A"]
     b3 --> lookup{"查询 A"}
     lookup -->|"一级无 / 二级无"| c1["三级缓存命中"]
-    c1 --> c2["getObject() 获取 A 早期引用<br/>（AOP 场景为代理对象）"]
-    c2 --> c3["A 早期引用升入二级缓存<br/>清除三级缓存记录"]
+    c1 --> c2["getObject() 获取 A 早期引用（AOP 场景为代理对象）"]
+    c2 --> c3["A 早期引用升入二级缓存 · 清除三级缓存记录"]
     c3 --> b4["B 完成初始化 → 放入一级缓存"]
     b4 --> a4["A 拿到 B → 完成初始化"]
-    a4 --> a5["A 放入一级缓存<br/>清除二/三级缓存"]
+    a4 --> a5["A 放入一级缓存 · 清除二/三级缓存"]
     a5 --> done([循环依赖解决])
 ```
 

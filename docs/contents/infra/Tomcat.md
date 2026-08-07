@@ -20,6 +20,39 @@ Tomcat 的核心架构包括以下组件：
 - **Connector**：负责处理网络连接
 - **Executor**：线程池
 
+> **Tomcat 整体架构**：Server → Service → Engine/Connector，Engine 下 Host → Context 的容器层级。
+
+```mermaid
+classDiagram
+    class Server {
+        +顶级容器，代表整个 Tomcat 实例
+    }
+    class Service {
+        +包含一个 Engine 和多个 Connector
+    }
+    class Engine {
+        +处理请求的容器
+    }
+    class Connector {
+        +负责处理网络连接
+    }
+    class Host {
+        +虚拟主机
+    }
+    class Context {
+        +Web 应用
+    }
+    class Executor {
+        +线程池
+    }
+    Server "1" *-- "1..*" Service
+    Service "1" *-- "1" Engine
+    Service "1" *-- "1..*" Connector
+    Engine "1" *-- "1..*" Host
+    Host "1" *-- "1..*" Context
+    Service ..> Executor : 使用
+```
+
 ### Spring Boot 与 Tomcat
 
 Spring Boot 默认使用 Tomcat 作为嵌入式 Web 容器。通过 spring-boot-starter-web 依赖自动引入 Tomcat。
@@ -136,6 +169,18 @@ Tomcat 使用线程池来处理并发请求，这与 Java 标准线程池有所�
 3. 请求处理完成后，线程返回线程池等待下一个请求
 4. 空闲线程超过超时时间可能被回收
 
+> **线程池处理请求**：从线程池分配线程，无空闲且未达上限则新建，空闲超时后回收。
+
+```mermaid
+flowchart TD
+    R["请求到达 Tomcat"] --> ALLOC{"分配线程"}
+    ALLOC -->|"有空闲线程"| P["线程处理请求"]
+    ALLOC -->|"无空闲且未达 maxThreads"| N["创建新线程处理"]
+    P --> RET["处理完成，线程返回线程池"]
+    N --> RET
+    RET -->|"空闲超时"| REC["线程被回收"]
+```
+
 > **注意**：Tomcat 的线程池主要用于处理网络请求，与 Java 标准线程池的队列机制有所不同。
 
 ---
@@ -167,6 +212,17 @@ Tomcat 通过 Mapper 类进行路由判断，流程如下：
 ```
 
 DefaultServlet 最终通过 `copy()` 方法将静态资源的输入流读取并写入输出流，完成资源响应。
+
+> **请求路由处理流程**：Mapper 先判 Servlet、再判 JSP，最后由 DefaultServlet 处理静态资源。
+
+```mermaid
+flowchart TD
+    START["请求到达 Tomcat"] --> Q1{"是 Servlet?<br/>（InvokerServlet）"}
+    Q1 -->|"是"| S["用户注册的 Servlet 处理"]
+    Q1 -->|"否"| Q2{"是 JSP?<br/>（JspServlet）"}
+    Q2 -->|"是"| J["JspServlet 处理 JSP 页面"]
+    Q2 -->|"否"| D["DefaultServlet 处理静态资源<br/>serveResource → copy → 输出流"]
+```
 
 ---
 

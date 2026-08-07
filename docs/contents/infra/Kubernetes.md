@@ -56,6 +56,26 @@ Kubernetes 的起源可以追溯到 Google 内部的 Borg 系统。Borg 是 Goog
 - **Container Runtime**：是负责实际运行容器的软件，常见的如 Docker、Containerd 等。它根据 Kubelet 的指令来运行容器，包括容器的创建、启动、停止等操作。
 - **kube - proxy**：主要负责实现服务的代理和负载均衡功能。它会在节点上设置规则，将请求转发到正确的容器服务上。
 
+> **Kubernetes 集群架构**：Master 节点运行控制平面组件，Worker 节点运行 Kubelet、运行时与 kube-proxy。
+
+```mermaid
+flowchart TB
+    subgraph M["Master 节点（控制平面）"]
+        API["API Server<br/>集群前端接口"]
+        SCH["Scheduler<br/>调度 Pod 到节点"]
+        CM["Controller Manager<br/>维持期望状态"]
+    end
+    subgraph W["Worker 节点（Node）"]
+        K["Kubelet<br/>管理本节点容器"]
+        CR["Container Runtime<br/>运行容器"]
+        KP["kube-proxy<br/>服务代理与负载均衡"]
+    end
+    API --> SCH
+    API --> CM
+    API -->|"下发任务"| K
+    K --> CR
+```
+
 
 
 ### 资源对象
@@ -67,6 +87,25 @@ Kubernetes 资源对象 主要包括 pod、service、deployment。
 - **Service** 是一种**抽象的资源**，用于定义一组 Pod 的访问策略。它提供了一个稳定的 IP 地址和 DNS 名称，使得其他 Pod 或者外部客户端可以通过这个统一的入口访问后端的 Pod。例如，一个 Web 服务可以通过 Service 来对外提供服务，而不管后端的 Web 容器有多少个或者如何变化。
 
 - **Deployment** 用于**管理 Pod 的部署和更新**。它可以定义 Pod 的副本数量、更新策略等。例如，在进行应用程序版本更新时，Deployment 可以控制更新的方式，如滚动更新（逐步替换旧版本的 Pod 为新版本）或者蓝绿更新（先启动新版本的应用，然后切换流量到新版本）。
+
+> **Pod 创建与调度流程**：API Server 接收创建请求，Scheduler 选节点绑定，Kubelet 拉起容器并上报状态。
+
+```mermaid
+sequenceDiagram
+    participant U as 用户（kubectl）
+    participant API as API Server
+    participant SCH as Scheduler
+    participant K as Kubelet
+    participant RT as Container Runtime
+    U->>API: 创建 Pod（apply）
+    API->>SCH: 通知待调度 Pod
+    SCH->>SCH: 按资源需求选择节点
+    SCH->>API: 绑定 Pod 到节点
+    API->>K: 下发 Pod 配置
+    K->>RT: 拉取镜像并启动容器
+    RT-->>K: 容器运行中
+    K-->>API: 上报 Pod 状态（Running）
+```
 
 #### Pod
 
@@ -199,6 +238,21 @@ Service 是一种网络抽象，用于定义一组 Pod 的访问策略。因为 
 1.  **Deployment** 负责创建并维护一组带有特定标签（如 `app: my-backend`）的 Pod。
 2.  **Service** 通过配置相同的选择器（`selector: app: my-backend`），自动发现并关联这些 Pod。
 3.  当外部请求到达 Service 时，Service 会将流量负载均衡到 Deployment 管理的健康 Pod 上。即使 Deployment 正在滚动更新（旧 Pod 销毁、新 Pod 创建），Service 也能智能地将流量只导向当前可用的 Pod，保证服务不中断。
+
+> **Deployment 与 Service 协同**：Deployment 维持带标签的 Pod，Service 用相同选择器发现并负载均衡到这些 Pod。
+
+```mermaid
+flowchart LR
+    subgraph D["Deployment 管理 Pod"]
+        P1["Pod（app:my-backend）"]
+        P2["Pod（app:my-backend）"]
+        P3["Pod（app:my-backend）"]
+    end
+    SVC["Service<br/>selector: app=my-backend<br/>固定虚拟 IP"] -->|"负载均衡"| P1
+    SVC -->|"负载均衡"| P2
+    SVC -->|"负载均衡"| P3
+    REQ["外部/其他服务请求"] --> SVC
+```
 
 #### 📊 核心区别总结
 
