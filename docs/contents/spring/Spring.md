@@ -121,6 +121,21 @@ Spring ioc 容器的核心类是 AbstractApplicationContext，入口是 `refresh
 
 > 其中①②③是Spring预留的三个埋点，可以在这些地方插入一些用户代码，进行一些[定制化](https://www.cnblogs.com/lixinjie/p/taste-spring-009.html)。
 
+> **Bean 完整生命周期（实例化 → 就绪 → 销毁）**：下图串起「注册定义 → 实例化 → 依赖注入 → 初始化 → 使用 → 销毁」全过程；其中 ②③ 埋点对应 BeanPostProcessor 的前后处理、① 对应初始化回调（@PostConstruct / InitializingBean）。
+
+```mermaid
+flowchart TD
+    A([BeanDefinition 注册]) --> B["实例化<br/>反射调用构造器"]
+    B --> C["属性填充 / 依赖注入<br/>setter、@Autowired"]
+    C --> D["Aware 接口回调<br/>BeanNameAware 等"]
+    D --> E["BeanPostProcessor 前置处理"]
+    E --> F["@PostConstruct /<br/>InitializingBean.afterPropertiesSet"]
+    F --> G["BeanPostProcessor 后置处理<br/>AOP 代理在此生成"]
+    G --> H([Bean 就绪，可被使用])
+    H --> I["容器关闭：<br/>@PreDestroy / DisposableBean.destroy"]
+    I --> J([Bean 销毁])
+```
+
 ConfigurationClassPostProcessor不仅仅是一个bean工厂后处理器，还是一个专门用于注册bean定义的后处理器。这个类在容器启动时会被调用，因此把其它类的bean定义注册到了容器中。
 
 **处理的问题**
@@ -370,6 +385,25 @@ bean 的创建过程其实都是通过调用工厂的 getBean 方法来完成的
    
    如果当前存在事务，则在嵌套事务内执行；如果当前没有事务，则新建一个事务。嵌套事务是外部事务的子事务，外部事务回滚时，嵌套事务也会回滚，而嵌套事务回滚不会影响外部事务的提交。
 
+> **七种传播行为按「对现有事务的态度」归类**：便于记忆——一类是「加入/复用已有事务」，一类是「挂起外层或新建独立事务」，一类是「干脆不开启事务」。
+
+```mermaid
+flowchart LR
+    subgraph g1["加入或复用已有事务"]
+        REQ["REQUIRED<br/>默认：无则建，有则加入"]
+        SUP["SUPPORTS<br/>有则加入，无则非事务"]
+        MAN["MANDATORY<br/>必须有事务，否则抛异常"]
+        NES["NESTED<br/>有则子事务，无则新建"]
+    end
+    subgraph g2["挂起外层或独立新建"]
+        RN["REQUIRES_NEW<br/>挂起外层，新建独立事务"]
+    end
+    subgraph g3["非事务执行"]
+        NS["NOT_SUPPORTED<br/>挂起现有事务，非事务运行"]
+        NEV["NEVER<br/>已有事务则抛异常"]
+    end
+```
+
 #### 七种事务属性
 
 **Required**
@@ -465,6 +499,26 @@ BeanFactory 和 ApplicationContext 都是 Spring 框架中用于管理 bean 的�
 - **选择 `BeanFactory` 的理由**：如果你的应用程序只需要最基本的 IoC 功能，并且不需要 `ApplicationContext` 提供的额外功能，那么 `BeanFactory` 是一个轻量级的选择。
 - **选择 `ApplicationContext` 的理由**：如果你的应用程序需要高级特性，如事件驱动、国际化支持、资源加载等，那么 `ApplicationContext` 是更好的选择。
 
+> **BeanFactory 与 ApplicationContext 的继承与能力扩展**：`ApplicationContext` 是 `BeanFactory` 的子接口，在基础 DI 之上扩展了国际化、事件、资源加载等企业级能力。
+
+```mermaid
+classDiagram
+    class BeanFactory {
+        +getBean(name)
+        +containsBean(name)
+        基础 DI / IOC 容器
+    }
+    class ApplicationContext {
+        +getMessage() 国际化
+        +publishEvent() 事件机制
+        +getResource() 资源加载
+    }
+    ApplicationContext --|> BeanFactory
+    ApplicationContext ..> MessageSource : 国际化
+    ApplicationContext ..> ApplicationEventPublisher : 事件
+    ApplicationContext ..> ResourceLoader : 资源
+```
+
 在实际应用中，大多数情况下推荐使用 `ApplicationContext`，因为它提供了更丰富的功能，更适合构建复杂的企业级应用。Spring Boot 默认使用的就是 `ApplicationContext`（具体是 `AnnotationConfigApplicationContext` 或 `WebApplicationContext`），它为开发者提供了极大的便利。
 
 ## Spring的AOP
@@ -518,6 +572,21 @@ AOP代理（AOP Proxy）
 3. **最终通知（After（Finally）Advice）**
 4. **异常通知（After Throwing Advice）**
 5. **环绕通知（Around Advice）**
+
+> **五种通知在目标方法周边的执行顺序**：`@Around` 包裹整个调用，`@Before` 在目标方法前、`@AfterReturning`/`@AfterThrowing` 在返回或异常后、`@After` 无论成败都执行（类似 finally）。
+
+```mermaid
+flowchart TD
+    A([方法被调用]) --> B["@Around 前置逻辑"]
+    B --> C["@Before 通知"]
+    C --> D{目标方法执行}
+    D -->|正常返回| E["@AfterReturning 通知"]
+    D -->|抛出异常| F["@AfterThrowing 通知"]
+    E --> G["@After（Finally）通知"]
+    F --> G
+    G --> H["@Around 后置逻辑"]
+    H --> I([返回结果])
+```
 
 下面详细介绍每种通知类型及其应用场景：
 
@@ -630,6 +699,31 @@ Spring 通过三级缓存提前暴露对象解决循环依赖
 - 有了二级缓存都能解决 Spring 依赖了，怎么要有三级缓存呢。其实我们在前面分析源码时也提到过，三级缓存主要是解决 Spring AOP 的特性。AOP 本身就是对方法的增强，是 `ObjectFactory<?>` 类型的 lambda 表达式，而 Spring 的原则又不希望将此类类型的 Bean 前置创建，所以要存放到三级缓存中处理。
 - 其实整体处理过程类似，唯独是 B 在填充属性 A 时，先查询成品缓存、再查半成品缓存，最后在看看有没有单例工程类在三级缓存中。最终获取到以后调用 getObject 方法返回代理引用或者原始引用。
 - 至此也就解决了 Spring AOP 所带来的三级缓存问题。*本章节涉及到的 AOP 依赖有源码例子，可以进行调试*
+
+> **三级缓存解决 A↔B 循环依赖的流程**：实例化 A 后将其早期引用（对象工厂）放入三级缓存；填充 A 时发现需要 B，转而去创建 B；B 填充时发现需要 A，此时从三级缓存拿到 A 的早期引用（含 AOP 代理）并升入二级缓存，B 得以完成并进入一级缓存；A 随后拿到 B 也完成初始化。
+
+```mermaid
+flowchart TD
+    subgraph caches["三级缓存"]
+        L1["一级缓存 singletonObjects<br/>成品对象"]
+        L2["二级缓存 earlySingletonObjects<br/>早期（半成品）对象"]
+        L3["三级缓存 singletonFactories<br/>对象工厂（含 AOP）"]
+    end
+    start([getBean A]) --> a1["实例化 A（属性未赋值）"]
+    a1 --> a2["A 早期引用存入三级缓存"]
+    a2 --> a3["填充 A 属性 → 需要 B"]
+    a3 --> b1["getBean B → 实例化 B"]
+    b1 --> b2["B 早期引用存入三级缓存"]
+    b2 --> b3["填充 B 属性 → 需要 A"]
+    b3 --> lookup{"查询 A"}
+    lookup -->|"一级无 / 二级无"| c1["三级缓存命中"]
+    c1 --> c2["getObject() 获取 A 早期引用<br/>（AOP 场景为代理对象）"]
+    c2 --> c3["A 早期引用升入二级缓存<br/>清除三级缓存记录"]
+    c3 --> b4["B 完成初始化 → 放入一级缓存"]
+    b4 --> a4["A 拿到 B → 完成初始化"]
+    a4 --> a5["A 放入一级缓存<br/>清除二/三级缓存"]
+    a5 --> done([循环依赖解决])
+```
 
 ## Spring注解
 

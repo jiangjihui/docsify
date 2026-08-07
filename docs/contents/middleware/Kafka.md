@@ -20,7 +20,7 @@ Apache Kafka 是一个分布式流处理平台，它最初由 LinkedIn 开发，
 7. **Consumer Group**：消费者分组，每个Consumer必须属于一个Group。Kafka会将同一个Topic中的消息分发给同一个Group内的不同Consumer，以实现负载均衡和消息的并行处理。
 8. **Zookeeper**：保存Kafka集群的元数据，如Broker、Topic、Partition等信息。同时，Zookeeper还负责Broker故障发现、Partition Leader选举和负载均衡等功能。
 
-> **图 1 · 核心组件关系图**：上面八个概念在一个 Kafka 集群中的对应关系。
+> **核心组件关系图**：上面八个概念在一个 Kafka 集群中的对应关系。
 
 ```mermaid
 flowchart LR
@@ -83,7 +83,7 @@ flowchart LR
 
 ## 架构与存储
 
-> **图 2 · 数据流图**：一条消息从生产、存储到消费的完整链路，后续小节依次拆解其中各环节。
+> **数据流图**：一条消息从生产、存储到消费的完整链路，后续小节依次拆解其中各环节。
 
 ```mermaid
 flowchart LR
@@ -96,7 +96,7 @@ flowchart LR
 
 ### 集群架构
 
-> **图 3 · 集群架构全景图**：生产/消费端连接任意 Broker，集群元数据由 ZooKeeper 或 KRaft 管理。
+> **集群架构全景图**：生产/消费端连接任意 Broker，集群元数据由 ZooKeeper 或 KRaft 管理。
 
 ```mermaid
 flowchart TB
@@ -125,7 +125,7 @@ flowchart TB
 
 每个Partition在磁盘上对应一个目录，包含多个Segment文件：
 
-> **图 4 · 日志存储层次图**：Topic → Partition → Segment → 三类文件的层级关系。
+> **日志存储层次图**：Topic → Partition → Segment → 三类文件的层级关系。
 
 ```mermaid
 flowchart TB
@@ -166,7 +166,7 @@ Kafka 的消息不会永久保留，通过两种策略清理旧数据：
 | **批量压缩** | 生产者批量发送，减少网络IO次数；支持gzip/snappy/lz4/zstd压缩 |
 | **分区分段** | 并行读写，Segment便于日志清理和查找 |
 
-> **图 5 · 零拷贝数据路径对比**：消费快的关键——`sendfile()` 让数据从页缓存直达网卡，不经过用户空间。
+> **零拷贝数据路径对比**：消费快的关键——`sendfile()` 让数据从页缓存直达网卡，不经过用户空间。
 
 ```mermaid
 flowchart TB
@@ -198,7 +198,7 @@ flowchart TB
 | 轮询（默认） | Round Robin分配 | 无序要求，均匀分布 |
 | 自定义分区器 | 实现 `Partitioner` 接口 | 业务规则分区 |
 
-> **图 6 · 分区选择决策流程图**：生产者发送消息时选择分区的判定路径。
+> **分区选择决策流程图**：生产者发送消息时选择分区的判定路径。
 
 ```mermaid
 flowchart TD
@@ -233,7 +233,7 @@ flowchart TD
 
 **副本同步流程**：
 
-> **图 7 · 副本同步与 ISR 机制**：Follower 主动从 Leader 拉取数据保持同步，跟得上的副本留在 ISR 集合中。
+> **副本同步与 ISR 机制**：Follower 主动从 Leader 拉取数据保持同步，跟得上的副本留在 ISR 集合中。
 
 ```mermaid
 flowchart TB
@@ -277,7 +277,7 @@ Kafka 提供三种投递语义，取决于**生产端 acks 配置**与**消费�
 
 Kafka 不丢消息需要**生产、存储、消费**三个环节同时保证，缺一环都可能丢：
 
-> **图 13 · 消息不丢失的三段式保障链路**：每一环节对应一组关键配置，组合使用才能端到端不丢。
+> **消息不丢失的三段式保障链路**：每一环节对应一组关键配置，组合使用才能端到端不丢。
 
 ```mermaid
 flowchart LR
@@ -307,7 +307,7 @@ flowchart LR
 
 **LEO（Log End Offset）** 是日志已写到的位置（最新消息的下一条），**HW（High Watermark，高水位）** 是 ISR 中所有副本**都已完成同步**的位置——消费者只能读取 HW 之前的消息，HW 之后的数据对消费者不可见。
 
-> **图 14 · Leader 切换时 HW 截断导致丢数据**：`acks=all` 返回成功，但 Follower 尚未同步完成时 Leader 宕机，未同步数据被截断。
+> **Leader 切换时 HW 截断导致丢数据**：`acks=all` 返回成功，但 Follower 尚未同步完成时 Leader 宕机，未同步数据被截断。
 
 ```mermaid
 sequenceDiagram
@@ -340,7 +340,7 @@ Kafka 的概念容易混淆，根源在于它们处在不同的「级别」上�
 
 ### 概念的三个级别
 
-> **图 11 · 概念级别分布图**：Controller 是集群级的唯一角色；Leader 是分区级角色，分散在不同的 Broker 上。
+> **概念级别分布图**：Controller 是集群级的唯一角色；Leader 是分区级角色，分散在不同的 Broker 上。
 
 ```mermaid
 flowchart TB
@@ -449,7 +449,7 @@ Kafka 的概念容易产生混淆，最有代表性的是下面这些「一对�
 - 每个Partition只被组内一个消费者消费（确保消息不重复）
 - 消费者数量超过Partition数时，多余消费者空闲
 
-> **图 8 · 消费者组分区分配图**：每个 Partition 只被组内一个消费者消费，消费者多于分区时多出的消费者空闲。
+> **消费者组分区分配图**：每个 Partition 只被组内一个消费者消费，消费者多于分区时多出的消费者空闲。
 
 ```mermaid
 flowchart LR
@@ -474,7 +474,7 @@ flowchart LR
 
 当消费者加入/离开Group，或Partition数变化时，触发Rebalance——重新分配Partition与消费者的映射关系。
 
-> **图 9 · Rebalance 时序图**：由 Group Coordinator 协调，重新分配期间所有消费者停止消费（短暂 STW）。
+> **Rebalance 时序图**：由 Group Coordinator 协调，重新分配期间所有消费者停止消费（短暂 STW）。
 
 ```mermaid
 sequenceDiagram
@@ -524,7 +524,7 @@ sequenceDiagram
 
 先用 `kafka-consumer-groups.sh --describe --group <group>` 查看各分区 Lag，Lag 持续增大说明**消费速度 < 生产速度**。
 
-> **图 15 · 消息积压处理决策流程**：先定位瓶颈在「并发不足 / 分区不足 / 消费过慢」哪一环，再选对应方案。
+> **消息积压处理决策流程**：先定位瓶颈在「并发不足 / 分区不足 / 消费过慢」哪一环，再选对应方案。
 
 ```mermaid
 flowchart TD
@@ -617,7 +617,7 @@ enable.idempotence=true
 
 **事务**（跨Partition原子写入）：
 
-> **图 10 · Exactly-Once 事务时序图**：事务 Producer 注册 PID 后开启事务，Broker 依 `<PID, Partition, SeqNum>` 幂等去重。
+> **Exactly-Once 事务时序图**：事务 Producer 注册 PID 后开启事务，Broker 依 `<PID, Partition, SeqNum>` 幂等去重。
 
 ```mermaid
 sequenceDiagram
@@ -702,7 +702,7 @@ KRaft 的 Controller 是否独立部署，由 `process.roles` 决定：
 - 其余是 **Follower**，持续复制元数据日志，Active 故障时可随时接替
 - 达成共识需要多数派：3 节点需 2 个存活，5 节点需 3 个——可容忍 (n-1)/2 个 Controller 故障
 
-> **图 12 · KRaft 隔离模式部署**：Controller 独立成 Quorum 管元数据，Broker 只承载业务数据。
+> **KRaft 隔离模式部署**：Controller 独立成 Quorum 管元数据，Broker 只承载业务数据。
 
 ```mermaid
 flowchart TB
