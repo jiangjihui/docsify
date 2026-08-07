@@ -145,6 +145,17 @@ flowchart TB
 - **Offset Index**：稀疏索引，每4KB记录一条，用于快速定位消息位置
 - **Time Index**：按时间戳索引，支持按时间消费
 
+#### 日志清理策略
+
+Kafka 的消息不会永久保留，通过两种策略清理旧数据：
+
+| 策略 | 机制 | 适用场景 |
+| --- | --- | --- |
+| **delete（默认）** | 按保留时间（`log.retention.hours`，默认 168h/7 天）或日志大小（`log.retention.bytes`）删除最旧的 Segment | 日志、事件流等一次性消费的数据 |
+| **compact（压缩）** | 按 Key 只保留每个 Key 的最新一条消息，旧版本被清理 | 配置变更、用户状态等「只关心最新值」的数据 |
+
+> **注意**：两种策略可同时启用。`compact` 清理的是旧版本消息，消息的 Offset 不会重用（永远递增），消费者依然按 Offset 定位消息。
+
 ### 高性能原理
 
 | 技术 | 说明 |
@@ -202,6 +213,14 @@ flowchart TD
 
 > **注意**：Key相同保证同一分区有序，但不保证跨分区有序。如果分区数发生变化，Key的映射关系会改变。
 
+#### 分区数如何选择
+
+- **估算公式**：`分区数 ≈ 目标吞吐量 ÷ 单分区吞吐量`（单分区吞吐受网络、磁盘、消费逻辑影响，需压测验证）
+- **消费者并发上限**：一个分区的消息最多被组内一个消费者消费，**消费者数量 = 分区数时并发最高**；想提高消费并行度，必须先增加分区
+- **分区过多的代价**：文件句柄过多（每个分区一批 Segment 文件）、元数据膨胀、Leader 选举与故障恢复变慢（副本同步要在更多分区上完成）、Rebalance 耗时增加
+
+> 实践建议：按峰值吞吐 × 3 预估分区数，留出扩消费者余量；分区数**只能增加不能减少**（`kafka-topics.sh --alter`），且增加后 Key 哈希路由会变化，改分区前要评估对顺序性的影响。
+
 ### 副本机制
 
 每个Partition有多个副本（Replica），分布在不同Broker上：
@@ -241,6 +260,79 @@ flowchart TB
 | `acks=0` | 发送后不等响应 | 最低，可能丢数据 | 最高 |
 | `acks=1` | Leader写入即返回 | 中等，Leader宕机可能丢 | 中等 |
 | `acks=all` | 所有ISR副本写入才返回 | 最高，不丢数据 | 最低 |
+
+#### 消息投递语义（at-most-once / at-least-once / exactly-once）
+
+Kafka 提供三种投递语义，取决于**生产端 acks 配置**与**消费端 Offset 提交时机**的组合：
+
+| 语义 | 生产端 | 消费端 | 说明 |
+| --- | --- | --- | --- |
+| **at-most-once** | 任意 | 消费前提交 / 自动提交 | 最多一次：可能丢消息，不重复 |
+| **at-least-once** | `acks=all` | 消费成功后提交 | 至少一次：不丢消息，但**可能重复消费**（生产默认） |
+| **exactly-once** | 幂等 + 事务 | `isolation.level=read_committed` | 精确一次：跨 Partition 原子写入 + 只读已提交消息 |
+
+> 工程现实：端到端 exactly-once 很难，因为下游（数据库、Redis、外部系统调用）不感知 Kafka 事务。生产环境普遍采用 **at-least-once + 消费端幂等** 的组合，把「重复」交给业务去重兜底。
+
+#### 消息不丢失：端到端三段式保障
+
+Kafka 不丢消息需要**生产、存储、消费**三个环节同时保证，缺一环都可能丢：
+
+> **图 13 · 消息不丢失的三段式保障链路**：每一环节对应一组关键配置，组合使用才能端到端不丢。
+
+```mermaid
+flowchart LR
+    subgraph P["生产环节：写不丢"]
+        A1["acks=all<br/>ISR 全部写入才返回"]
+        A2["retries 重试<br/>+ 幂等"]
+    end
+    subgraph B["存储环节：存不丢"]
+        B1["replication.factor=3<br/>多副本"]
+        B2["min.insync.replicas=2<br/>ISR 下限兜底"]
+    end
+    subgraph C["消费环节：读不丢"]
+        C1["处理成功后再<br/>手动提交 Offset"]
+    end
+    A1 --> A2 --> B1 --> B2 --> C1
+```
+
+| 环节 | 保障手段 | 关键点 |
+| --- | --- | --- |
+| 生产者 | `acks=all` + `retries` | 等待 ISR 全部写入成功才返回；失败自动重试 |
+| Broker 存储 | `replication.factor≥3` + ISR + `min.insync.replicas=2` | 允许 1 个 Broker 宕机不丢；ISR 不足时拒绝写入而非降级 |
+| 消费者 | 处理成功后再 `commitSync()` | **先处理后提交**：提交了但没处理完 = 丢消息 |
+
+> 注意：`acks=all` 只保证「消息写进 ISR」，不保证「消费者一定拿到」——消费环节的丢失（如自动提交）同样会造成消息丢失。
+
+#### HW 与 LEO：Leader 切换为什么会丢数据
+
+**LEO（Log End Offset）** 是日志已写到的位置（最新消息的下一条），**HW（High Watermark，高水位）** 是 ISR 中所有副本**都已完成同步**的位置——消费者只能读取 HW 之前的消息，HW 之后的数据对消费者不可见。
+
+> **图 14 · Leader 切换时 HW 截断导致丢数据**：`acks=all` 返回成功，但 Follower 尚未同步完成时 Leader 宕机，未同步数据被截断。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as Producer
+    participant L as Leader
+    participant F as Follower（ISR）
+
+    P->>L: send(msg4) acks=all 返回成功
+    Note over L,F: Follower 尚未复制完成 msg4
+    L-xF: Leader 宕机
+    Note over F: Follower 当选新 Leader<br/>本地只有 msg0-msg3
+    Note over P,F: HW 之后的数据被截断<br/>msg4 已确认成功但永久丢失
+```
+
+**为什么 `acks=all` 仍可能丢数据**：`acks=all` 返回时，消息只保证写入了当时 ISR 内的副本。若 Leader 在 Follower 完成同步前宕机，新 Leader（原 Follower）日志更短，会把 Leader 本地 HW 之后的「未同步数据」**截断丢弃**——这些消息虽已返回成功，但消费者永远读不到。
+
+**ISR 为空时的取舍**：
+
+| 配置 | 行为 | 影响 |
+| --- | --- | --- |
+| `unclean.leader.election.enable=false`（推荐） | 只允许 ISR 内副本当选 | 不丢数据，但 ISR 全部宕机时分区不可用 |
+| `unclean.leader.election.enable=true` | 允许非 ISR 副本当选 | 快速恢复可用，但**会丢数据**（该副本可能严重滞后） |
+
+> 一句话：**HW 是「已确认且可见」的分界线；unclean 选举是「保可用还是保数据」的取舍开关**。
 
 ## 核心概念深入
 
@@ -428,6 +520,33 @@ sequenceDiagram
 - **手动提交**：`enable.auto.commit=false`，处理完消息后调用 `commitSync()` 或 `commitAsync()`
 - **存储位置**：Kafka 0.9+ 默认存储在 `__consumer_offsets` 内部Topic中
 
+#### 消息积压（Lag）排查与处理
+
+先用 `kafka-consumer-groups.sh --describe --group <group>` 查看各分区 Lag，Lag 持续增大说明**消费速度 < 生产速度**。
+
+> **图 15 · 消息积压处理决策流程**：先定位瓶颈在「并发不足 / 分区不足 / 消费过慢」哪一环，再选对应方案。
+
+```mermaid
+flowchart TD
+    START["发现 Lag 持续增大"] --> Q1{"消费者数<br/>已达分区数？"}
+    Q1 -->|"否"| S1["水平扩容消费者<br/>直到消费者数 = 分区数"]
+    Q1 -->|"是"| Q2{"分区吞吐<br/>足够？"}
+    Q2 -->|"否"| S2["增加分区（只能增）<br/>或重建 Topic 重灌"]
+    Q2 -->|"是"| Q3{"消费逻辑<br/>慢？"}
+    Q3 -->|"是"| S3["优化消费逻辑：批量 / 异步<br/>避免 poll 超时反复 Rebalance"]
+    Q3 -->|"否"| S4["排查下游阻塞<br/>（DB / 外部调用）"]
+```
+
+处理手段汇总：
+
+| 手段 | 说明 |
+| --- | --- |
+| 扩容消费者 | 消费者数 ≤ 分区数，先扩到与分区数持平 |
+| 增加分区 | `--alter --partitions` 只能增加；改分区数后 Key 路由变化，注意对顺序性的影响 |
+| 重建 Topic 重灌 | 用更大分区数的新 Topic，消费者切换消费，适合积压巨大场景 |
+| 临时丢消息 | 积压过大且业务可容忍时，重置 Offset 跳过旧消息（`--reset-offsets --to-latest`） |
+| 排查消费者 | 处理耗时、`max.poll.interval.ms` 超时反复触发 Rebalance、下游阻塞 |
+
 ## 生产者与消费者
 
 ### 生产者核心配置
@@ -470,6 +589,19 @@ max.poll.records=500
 # 两次poll最大间隔（超过则触发Rebalance）
 max.poll.interval.ms=300000
 ```
+
+#### Kafka 为什么用 Pull 而不是 Push
+
+核心区别见下表：
+
+| 对比项 | Pull（Kafka） | Push（如 RabbitMQ） |
+| --- | --- | --- |
+| 消费速度控制 | 消费者自主拉取，量力而行 | Broker 推送，需感知消费者处理能力 |
+| Broker 复杂度 | 无状态，不关心消费者状态 | 需维护推送状态，易把慢消费者「推爆」 |
+| 吞吐 | 支持批量拉取（`fetch.min.bytes` / `max.poll.records`），吞吐高 | 逐条推送开销大 |
+| 延迟 | 空轮询有额外延迟，用长轮询（`fetch.wait.max.ms`）缓解 | 实时性更好 |
+
+> 面试一句话：Pull 让**消费者掌握消费节奏**，Broker 保持简单无状态，配合批量拉取实现高吞吐；代价是空轮询延迟，Kafka 用长轮询把「拉不到数据时挂起等待」来缓解。
 
 ### Exactly-Once 语义
 
@@ -518,6 +650,19 @@ try {
     producer.abortTransaction();
 }
 ```
+
+#### 消费端幂等：重复消费的兜底方案
+
+at-least-once 语义下，重复消费无法从 MQ 层面消除，只能靠业务幂等兜底：
+
+| 方案 | 做法 | 适用场景 |
+| --- | --- | --- |
+| 唯一键 / 唯一索引 | 消息带业务唯一 ID（如订单号），写入冲突则忽略 | 数据库写入类消费 |
+| Redis SETNX | 以消息 ID 为 key 设置标记，设置成功才处理 | 高并发、非强事务场景 |
+| 状态机判断 | 处理前检查当前状态，只处理「允许流转」的消息 | 有明确状态流转的业务 |
+| 去重表 | 消费前先查去重表，已处理过直接跳过 | 通用兜底 |
+
+> 配合建议：消费逻辑**先查重再处理**，处理与标记（写库 / 写 Redis）尽量放在同一事务或原子操作中，避免「处理了但没标记」造成重复。
 
 ## Kafka 3.x 新特性
 
