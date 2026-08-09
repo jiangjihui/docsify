@@ -202,6 +202,8 @@ curl -u user:password http://localhost:8080/api/user
 
 ### OAuth2 / JWT
 
+> **协议原理**：OAuth2 的角色、四种授权模式、令牌与刷新机制，以及 JWT 的结构与签名，见独立文档 [OAuth2 协议](../../contents/security/OAuth2.md) 与 [JWT 令牌](../../contents/security/JWT.md)。下文仅演示 Spring Boot 的集成方式。
+
 #### OAuth2 登录（第三方登录）
 
 作为 OAuth2 客户端对接 GitHub、Google 等第三方登录，只需引入依赖并配置客户端信息：

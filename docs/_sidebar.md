@@ -67,7 +67,6 @@
 - 开发实践
   - [版本控制](contents/dev/版本控制.md)
   - [代码规范](contents/dev/代码规范.md)
-  - [安全防护](contents/dev/安全防护.md)
   - [依赖管理](contents/dev/依赖管理.md)
   - [正则表达式](contents/dev/正则表达式.md)
   - [测试](contents/dev/测试.md)
@@ -82,3 +81,8 @@
 - 前端
   - [单页应用](contents/frontend/单页应用.md)
   - [Vue](contents/frontend/Vue.md)
+
+- 安全与认证
+  - [OAuth2](contents/security/OAuth2.md)
+  - [JWT](contents/security/JWT.md)
+  - [安全防护](contents/security/安全防护.md)

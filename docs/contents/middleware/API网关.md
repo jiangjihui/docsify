@@ -92,6 +92,8 @@ stateDiagram
 
 ### 认证与授权
 
+> **协议原理**：OAuth2 的令牌签发与四种授权模式、JWT 的结构与签名验签，见独立文档 [OAuth2 协议](../../contents/security/OAuth2.md) 与 [JWT 令牌](../../contents/security/JWT.md)。下文聚焦网关层的统一校验与透传。
+
 将认证逻辑收敛到网关，后端服务就无需重复实现：
 
 1. **统一认证**：校验请求携带的 JWT / OAuth2 令牌，验证通过后把用户信息（如 userId）写入 Header 透传给下游；
