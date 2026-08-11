@@ -235,23 +235,69 @@ flowchart TD
 
 > **副本同步与 ISR 机制**：Follower 主动从 Leader 拉取数据保持同步，跟得上的副本留在 ISR 集合中。
 
-```mermaid
-flowchart TB
-    P["Producer"] -->|"发送消息"| L
-
-    subgraph LB["Broker A"]
-        L["Leader Replica<br/>处理该分区所有读写请求"] --> LL[("本地日志")]
-    end
-
-    subgraph FB["Broker B"]
-        F["Follower Replica<br/>不处理客户端请求"] --> FL[("本地日志")]
-    end
-
-    F -->|"Pull 拉取"| L
-    LL -.->|"同步进度"| ISR["ISR 同步副本集合<br/>（包含 Leader）"]
-    FL -.->|"同步进度"| ISR
-    ISR -.->|"Leader 宕机时<br/>从 ISR 选举新 Leader"| F
-```
+<svg viewBox="0 0 800 470" width="100%" role="img" aria-label="副本同步与 ISR 机制" xmlns="http://www.w3.org/2000/svg" style="max-width:800px;height:auto" font-family="system-ui,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
+<defs>
+<marker id="arrGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/></marker>
+<marker id="arrPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b5cf6"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e11d48"/></marker>
+<filter id="cardShadow" x="-8%" y="-8%" width="116%" height="116%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+</defs>
+<rect x="0" y="0" width="800" height="470" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+<g filter="url(#cardShadow)">
+<rect x="205" y="30" width="270" height="175" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="217" y="52" font-size="12" font-weight="700" fill="#475569">Broker A</text>
+<rect x="225" y="65" width="130" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="290" y="88" font-size="13.5" font-weight="700" fill="#1e3a8a" text-anchor="middle">Leader Replica</text>
+<text x="290" y="108" font-size="11" fill="#1d4ed8" text-anchor="middle">处理该分区读写请求</text>
+<rect x="375" y="65" width="82" height="60" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="416" y="88" font-size="12.5" font-weight="700" fill="#92400e" text-anchor="middle">本地日志</text>
+<text x="416" y="108" font-size="10.5" fill="#b45309" text-anchor="middle">LEO 同步位置</text>
+</g>
+<g filter="url(#cardShadow)">
+<rect x="205" y="235" width="270" height="175" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="217" y="257" font-size="12" font-weight="700" fill="#475569">Broker B</text>
+<rect x="225" y="270" width="130" height="60" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="290" y="293" font-size="13.5" font-weight="700" fill="#14532d" text-anchor="middle">Follower Replica</text>
+<text x="290" y="313" font-size="11" fill="#15803d" text-anchor="middle">不处理客户端请求</text>
+<rect x="375" y="270" width="82" height="60" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="416" y="293" font-size="12.5" font-weight="700" fill="#92400e" text-anchor="middle">本地日志</text>
+<text x="416" y="313" font-size="10.5" fill="#b45309" text-anchor="middle">LEO 同步位置</text>
+</g>
+<rect x="30" y="190" width="140" height="58" rx="9" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="100" y="214" font-size="15" font-weight="700" fill="#0f172a" text-anchor="middle">Producer</text>
+<text x="100" y="234" font-size="11.5" fill="#475569" text-anchor="middle">生产消息</text>
+<g filter="url(#cardShadow)">
+<rect x="520" y="140" width="250" height="160" rx="10" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="535" y="160" font-size="10" fill="#7c3aed">In-Sync Replicas</text>
+<text x="535" y="184" font-size="14" font-weight="700" fill="#5b21b6">ISR 同步副本集合</text>
+<line x1="530" y1="196" x2="760" y2="196" stroke="#ddd6fe" stroke-width="1"/>
+<text x="535" y="218" font-size="12" fill="#4c1d95">✓ Leader（含自身）</text>
+<text x="535" y="242" font-size="12" fill="#4c1d95">✓ Follower（跟得上同步）</text>
+<text x="535" y="266" font-size="11.5" fill="#9333ea">✗ 落后过多会被移出 ISR</text>
+</g>
+<g stroke-linecap="round" stroke-linejoin="round">
+<path d="M170,219 H200 V95 H222" fill="none" stroke="#64748b" stroke-width="1.8" marker-end="url(#arrGray)"/>
+<path d="M355,95 H375" fill="none" stroke="#64748b" stroke-width="1.8" marker-end="url(#arrGray)"/>
+<path d="M355,300 H375" fill="none" stroke="#64748b" stroke-width="1.8" marker-end="url(#arrGray)"/>
+<path d="M290,270 V128" fill="none" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arrBlue)"/>
+<path d="M457,95 H490 V170 H520" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#arrPurple)"/>
+<path d="M457,300 H490 V230 H520" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#arrPurple)"/>
+<path d="M545,300 V420 H295 V332" fill="none" stroke="#e11d48" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrRed)"/>
+</g>
+<g>
+<rect x="200" y="206" width="56" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
+<text x="228" y="216" font-size="10.5" fill="#475569" text-anchor="middle">发送消息</text>
+<rect x="297" y="178" width="78" height="18" rx="3" fill="#ffffff" stroke="#bfdbfe" stroke-width="0.8"/>
+<text x="336" y="191" font-size="11.5" font-weight="700" fill="#1d4ed8" text-anchor="middle">Pull 拉取</text>
+<rect x="297" y="200" width="100" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
+<text x="347" y="210" font-size="10" fill="#64748b" text-anchor="middle">Follower 主动发起</text>
+<text x="494" y="126" font-size="11" fill="#7c3aed" writing-mode="vertical-rl">同步进度</text>
+<text x="494" y="234" font-size="11" fill="#7c3aed" writing-mode="vertical-rl">同步进度</text>
+<rect x="308" y="414" width="226" height="14" rx="3" fill="#ffffff" stroke="#fecdd3" stroke-width="0.8"/>
+<text x="421" y="424" font-size="11" font-weight="600" fill="#be123c" text-anchor="middle">Leader 宕机时从 ISR 选举新 Leader</text>
+</g>
+</svg>
 
 ### 副本因子与可靠性
 
