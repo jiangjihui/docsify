@@ -1,5 +1,10 @@
 - 计算机基础
   - [公共知识](contents/公共知识.md)
+  - [操作系统](contents/操作系统基础.md)
+  - [计算机网络](contents/计算机网络基础.md)
+  - [数据结构与算法](contents/数据结构与算法基础.md)
+  - [计算机组成原理](contents/计算机组成原理基础.md)
+  - [编译原理与程序执行](contents/编译原理与程序执行基础.md)
 
 - Java
   - [基础](contents/java/Java基础.md)
