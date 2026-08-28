@@ -16,3 +16,9 @@
   - [Agent](contents/ai/ai-agent.md)
   - [LangGraph](contents/ai/langgraph.md)
   - [DeerFlow](contents/ai/deerflow.md)
+
+- AI 辅助编程
+  - [AI 辅助编程总览](contents/ai/ai-assisted-coding.md)
+  - [Codex](contents/ai/codex.md)
+  - [Claude Code](contents/ai/claude-code.md)
+  - [Agent Skills（superpowers 等）](contents/ai/agent-skills.md)

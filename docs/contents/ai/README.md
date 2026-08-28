@@ -26,11 +26,19 @@
 - [LangGraph](contents/ai/langgraph.md) — 有状态图工作流编排
 - [DeerFlow](contents/ai/deerflow.md) — 字节开源的深度研究框架
 
+### AI 辅助编程（工具化）
+
+- [AI 辅助编程总览](contents/ai/ai-assisted-coding.md) — Codex / Claude Code / Skills 横向对比与选型
+- [Codex](contents/ai/codex.md) — OpenAI 的云端异步 + 终端 CLI 编码智能体
+- [Claude Code](contents/ai/claude-code.md) — Anthropic 的终端同步编码智能体，7 种定制方式
+- [Agent Skills（superpowers 等）](contents/ai/agent-skills.md) — 以 obra/superpowers 为例的技能复用体系
+
 ## 如何阅读
 
 - **初次接触**：先读完「基础」4 篇，建立对 LLM / 提示 / 检索的共同语言。
 - **准备做应用**：重点看「工程化」的 Function Calling 与 LangChain，再按需补 AI 安全。
 - **要落地多 Agent**：直接进「平台与实战」，用 LangGraph 搭有状态工作流，或基于 DeerFlow 快速起一个深度研究原型。
+- **想直接上手编码智能体**：看「AI 辅助编程（工具化）」分组，先横向对比 Codex / Claude Code / Skills，再按场景深入对应专页。
 
 ## 相关分类
 
