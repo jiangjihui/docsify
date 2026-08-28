@@ -97,6 +97,22 @@
 		.mermaid foreignObject div {
 			white-space: nowrap !important;
 		}
+		/* 长代码块（如 JMeter 的 jmx）限高 + 内部滚动，避免撑长页面 */
+		pre[data-lang="xml"] {
+			max-height: 40em;
+			overflow: auto;
+		}
+		/* 深色主题下滚动条不要太突兀 */
+		@media (prefers-color-scheme: dark) {
+			pre[data-lang="xml"]::-webkit-scrollbar {
+				height: 8px;
+				width: 8px;
+			}
+			pre[data-lang="xml"]::-webkit-scrollbar-thumb {
+				background: rgba(255, 255, 255, .25);
+				border-radius: 4px;
+			}
+		}
 	</style>
 </head>
 
