@@ -91,6 +91,18 @@
 		#themeToggle:hover {
 			opacity: .7;
 		}
+		/* ── 页内目录（subMaxLevel 展开的子标题列表）可读性优化（参考 media-creator-docs 2026-08-25 puppeteer 实测）──
+		   问题：core 主题给 .app-sub-sidebar 条目与主导航完全相同的 16px 字号 / 25.6px 行高，
+		   仅靠 13.6px 缩进区分层级；且每行右侧预留 35px 箭头位而页内目录并无箭头，
+		   实际文本宽度仅 ≈197px≈12 个汉字，描述性长标题（12~18 字）大量折成两行，
+		   双行块(51px)夹在单行块(25.6px)之间，观感零乱、「不对齐」。
+		   处置：字号降为 14px、行高收紧至 1.5、右侧无效 padding 回收到 10px，
+		   多数标题回到单行；仍折行的条目两行天然左缘对齐、块高降至 42px。 */
+		.sidebar .app-sub-sidebar li a {
+			font-size: 14px;
+			line-height: 1.5;
+			padding-right: 10px;
+		}
 		/* Mermaid 节点标签：禁止换行。
 		   htmlLabels 默认用 foreignObject+HTML <div>，长文本会被浏览器按节点宽度自动折行；
 		   这里用 white-space:nowrap 强制单行，节点宽度由 mermaid 按内容自动撑开。 */
@@ -116,7 +128,8 @@
 	</style>
 </head>
 
-<body>
+<!-- 侧栏灰色折叠箭头 -->
+<body class="sidebar-chevron-right sidebar-group-box">
 	<div id="app"></div>
 	<script>
 		window.$docsify = {
