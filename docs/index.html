@@ -34,6 +34,8 @@
 				} else if (darkLink.parentNode) {
 					darkLink.parentNode.removeChild(darkLink);
 				}
+				// 暴露当前主题，供 CSS 做主题相关微调（如深色下 mermaid 时序图文字颜色）
+				document.documentElement.dataset.theme = dark ? 'dark' : 'light';
 			}
 			// 同步导航栏按钮文案
 			function syncLabel() {
@@ -108,6 +110,20 @@
 		   这里用 white-space:nowrap 强制单行，节点宽度由 mermaid 按内容自动撑开。 */
 		.mermaid foreignObject div {
 			white-space: nowrap !important;
+		}
+		/* Mermaid 时序图消息文字：mermaid 初始化用的是浅色主题（theme:'default'），
+		   messageText 固定输出 #333；流程图节点有浅色填充所以看得见，但时序图没有填充，
+		   深色页面下这段文字几乎"沉"进背景。
+		   处置：仅在深色主题下把消息文字改成浅色，浅色主题保持原样。
+		   mermaid 生成的规则带 #mermaid-xxx 前缀（id 特异性更高），故需 !important。 */
+		html[data-theme="dark"] .mermaid-svg svg .messageText {
+			fill: #d6d7e6 !important;
+		}
+		/* Markdown 表格表头禁止折行：中文表头（如「必选项」「有效值」）在 auto 布局下
+		   会被右侧长描述列挤压到 min-content，变成一字一行；nowrap 保住表头的最小列宽，
+		   表体单元格不受影响、仍可正常折行。 */
+		.markdown-section th {
+			white-space: nowrap;
 		}
 		/* 长代码块（如 JMeter 的 jmx）限高 + 内部滚动，避免撑长页面 */
 		pre[data-lang="xml"] {

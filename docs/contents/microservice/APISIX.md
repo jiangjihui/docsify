@@ -21,7 +21,7 @@ Apache APISIX 是一个高性能、可插拔的 API 网关，设计用于管理�
 ### 功能
 
 - **路由管理**：可以根据路径、域名、头信息等条件进行路由。
-- **身份验证**：支持多种认证方式，如 JWT、OAuth2 等。
+- **身份验证**：支持多种认证方式，如 `key-auth`（API Key）、JWT、OAuth2 等。
 - **限流**：可以根据用户或请求类型限制访问频率。
 - **监控**：提供详细的指标数据，帮助监控 API 的健康状态。
 - **日志记录**：可以记录请求和响应的数据，便于调试和分析。
@@ -52,9 +52,20 @@ Apache APISIX 是一个高性能、可插拔的 API 网关，设计用于管理�
 #### Plugin（插件）
 
 - **定义与作用**：
-  - 插件是 APISIX 实现各种功能扩展的关键组件。它可以挂载到 Route 或者 Service 上，用于实现如安全认证、流量控制、日志记录等功能。例如，通过挂载 JWT（JSON Web Token）认证插件到 Route 上，可以对访问该 Route 对应的后端服务的请求进行身份验证，只有携带有效 JWT 令牌的请求才会被允许通过。
+  - 插件是 APISIX 实现各种功能扩展的关键组件。它可以挂载到 Route、Service 或 Consumer 上，用于实现如安全认证、流量控制、日志记录等功能。例如，通过挂载 JWT（JSON Web Token）认证插件到 Route 上，可以对访问该 Route 对应的后端服务的请求进行身份验证，只有携带有效 JWT 令牌的请求才会被允许通过。认证类插件通常需要**两侧配合**：Route 上挂插件开启校验，Consumer 上存放对应凭证。
 - **配置细节**：
   - 每个插件都有自己的配置参数。以限流插件为例，可以配置每秒允许通过的最大请求数、请求突发量等参数。在 APISIX 中，可以通过管理界面或者 API 来添加、配置和删除插件。并且可以根据具体的业务需求，定制开发新的插件，以满足一些特殊的功能要求。
+
+#### Consumer（消费者）
+
+- **定义与作用**：
+  - Consumer 是 APISIX 对**调用方身份**的抽象，代表一个使用 API 的客户端——可以是终端用户、第三方应用，也可以是内部服务。它与 Route 之间没有绑定关系，而是由认证插件在请求处理阶段"认领"：请求带着凭证进来，插件解析出它属于哪个 Consumer，后续的限流、鉴权、审计都作用在这个身份上。
+- **配置细节**：
+  - Consumer 以 `username` 作为唯一标识，通过 Admin API 的 `/apisix/admin/consumers` 维护。凭证（API Key、JWT 密钥、用户名密码等）直接写在它的 `plugins` 里，一个 Consumer 可以同时绑定多种认证插件——意味着同一个调用方既能用 API Key 访问，也能用 JWT 访问。
+  - 同一个 Consumer 需要多把同类凭证时（例如密钥轮换期新旧并存），可以改用 Credential 子资源 `/apisix/admin/consumers/{username}/credentials/{id}` 分别存放，而不是反复覆盖 `plugins` 里那一把。
+  - 这里的 `username` 就是限流插件参数里 `consumer_name` 所指的值：认证让网关先知道"你是谁"，后续的限流才能从「按 IP 计数」细化到「按调用方计数」。
+
+> **认证的两侧配合**：Route 上挂认证插件开启校验，Consumer 上存对应凭证；插件负责把请求里的凭证翻译成一个具体身份。具体用法见后文「认证插件」。
 
 > **请求处理链路**：请求经路由匹配、插件链加工、服务与上游定位后转发到后端实例。
 
@@ -186,6 +197,150 @@ flowchart TB
 | ----------- | ------- | --- | --------------- | ----------------------------------- |
 | count       | integer | 是   | count > 0       | 每个客户端在指定时间窗口内的总请求数量阈值。              |
 | time_window | integer | 是   | time_window > 0 | 时间窗口的大小（以秒为单位）。超过该属性定义的时间，则会重新开始计数。 |
+
+### 认证插件
+
+> **认证模型**：APISIX 的认证不是"一个插件搞定"，而是**两侧配合**——Route 上挂认证插件开启校验，Consumer 上存对应凭证。请求进来后插件按约定位置提取凭证、反查 Consumer，校验通过再把身份写进请求头透传给上游。
+
+> **key-auth 鉴权链路**：提取 `apikey` → 反查 Consumer → 校验通过后注入身份头 → 转发上游。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as 客户端
+    participant A as APISIX
+    participant E as etcd
+    participant U as 上游服务
+    C->>A: 请求携带 apikey
+    A->>A: 按 header / query 提取 key
+    A->>E: 反查 key 归属的 Consumer
+    alt 未携带 key
+        A-->>C: 401 Missing API key
+    else key 不匹配
+        A-->>C: 401 Invalid API key
+    else 校验通过
+        A->>U: 注入身份头后转发
+        U-->>C: 业务响应
+    end
+```
+
+> **说明**：认证在网关一次收口，下游服务只需信任 `X-Consumer-Username` 这类身份头，不必再实现一套密钥校验；网关也因此"看得见"调用方，能据此做精细限流与审计。
+
+#### key-auth
+
+`key-auth` 插件为 Route 或 Service 增加 **API Key** 认证：客户端把密钥放在请求头（默认 `apikey`）或查询串里，APISIX 校验通过才放行。它的定位是"认得出人"而非"证明得了身份"——密钥**不携带任何声明、没有内置过期时间**，网关每来一个请求都要反查一次 Consumer 才知道对方是谁。相比之下 JWT 把身份与权限写在令牌里，网关本地验签即可，不必回查。
+
+##### 核心属性
+
+[完整资料查看](https://apisix.apache.org/zh/docs/apisix/plugins/key-auth/)
+
+Consumer 侧（存放凭证）：
+
+| 名称  | 类型     | 必选项 | 有效值 | 描述                                                                                                                    |
+| --- | ------ | --- | --- | --------------------------------------------------------------------------------------------------------------------- |
+| key | string | 是   | 无   | Consumer 的唯一密钥，即客户端需要携带的 API Key。该字段在 schema 中标记为加密字段，写入 etcd 前会被加密；也支持用 `$secret://` 前缀引用密钥管理服务中的值。 |
+
+Route 侧（开启校验）：
+
+| 名称               | 类型      | 必选项 | 有效值         | 描述                                                                 |
+| ---------------- | ------- | --- | ----------- | ------------------------------------------------------------------ |
+| header           | string  | 否   | 默认 `apikey` | 从哪个请求头读取密钥。                                                        |
+| query            | string  | 否   | 默认 `apikey` | 从哪个查询参数读取密钥，优先级低于 `header`——两者同时携带且值冲突时，以请求头为准。                     |
+| hide_credentials | boolean | 否   | 默认 `false`  | 为 `false` 时，含密钥的请求头或查询串会原样透传给上游；为 `true` 时先剥离认证信息再转发。               |
+
+> **版本说明**：更新版本的 `key-auth` 还提供 `anonymous_consumer`（允许匿名消费者绕过认证）与 `realm`（401 响应中 `WWW-Authenticate` 的域值）。本文演示环境为 APISIX 3.11.0，尚未包含这两个参数，需要时请查阅对应版本的官方文档。
+
+##### 使用步骤
+
+**第一步：创建 Consumer 并绑定密钥。** 凭证挂在 Consumer 上，`username` 即后续限流插件 `key: consumer_name` 的取值：
+
+```bash
+# 创建 Consumer jack，并在其 plugins 中写入 key-auth 密钥
+curl -X PUT http://127.0.0.1:9180/apisix/admin/consumers \
+  -H "X-API-KEY: admin-key" \
+  -d '{
+    "username": "jack",
+    "plugins": {
+      "key-auth": {
+        "key": "jack-key"
+      }
+    }
+  }'
+```
+
+> 若同一个 Consumer 需要多把密钥（如轮换期新旧并存），改用 Credential 子资源：`PUT /apisix/admin/consumers/jack/credentials/cred-1`，body 为 `{"plugins":{"key-auth":{"key":"..."}}}`，Consumer 本身只保留 `username`。
+
+**第二步：在 Route 上启用插件。** 这条 Route 上的所有请求都会被要求携带密钥：
+
+```bash
+# 创建路由并开启 key-auth；hide_credentials 打开，避免密钥泄露到上游
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/1 \
+  -H "X-API-KEY: admin-key" \
+  -d '{
+    "uri": "/api/user/*",
+    "plugins": {
+      "key-auth": {
+        "header": "apikey",
+        "hide_credentials": true
+      }
+    },
+    "upstream": {
+      "type": "roundrobin",
+      "nodes": {"10.0.0.1:8080": 1}
+    }
+  }'
+```
+
+**第三步：带密钥请求验证。** 密钥既可以放在请求头，也可以放在查询串：
+
+```bash
+# 请求头方式（默认参数名 apikey）
+curl -i http://127.0.0.1:9080/api/user/1 -H "apikey: jack-key"
+
+# 查询串方式：http://127.0.0.1:9080/api/user/1?apikey=jack-key
+```
+
+认证通过后，上游会收到 APISIX 注入的身份头：
+
+| 请求头                    | 含义                                            |
+| ---------------------- | --------------------------------------------- |
+| `X-Consumer-Username`  | 认证命中的 Consumer 的 `username`                    |
+| `X-Credential-Identifier` | 本次命中的凭证标识；用 Credential 子资源创建时为该凭据的 `id`        |
+| `X-Consumer-Custom-Id` | Consumer 上配置的 `custom_id`（若设置）                |
+
+> 想直接看效果，可把上游换成 `httpbin.org:80`：返回体里既能确认身份头，也能观察 `apikey` 是否还残留。
+
+##### hide_credentials 为什么要开
+
+`hide_credentials` 默认是 `false`，意思是客户端带来的 `apikey` 会被**原样透传**给上游。这不只是"多传一个头"的问题：上游只要有访问日志、链路追踪或错误上报，密钥就会跟着落进日志系统，一旦日志被读取或外泄，等于把调用方身份一起交了出去。
+
+| 配置      | 上游收到的内容              | 适用场景                          |
+| ------- | -------------------- | ----------------------------- |
+| `false` | 请求头 / 查询串中的 `apikey` 保留 | 默认值。调试期观察原始请求，或上游确实需要自行校验密钥   |
+| `true`  | 密钥被剥离，只保留 `X-Consumer-*` 身份头 | 推荐。认证已在网关收口的常规业务路由            |
+
+##### 常见错误
+
+| 现象                                              | 原因                                              | 处置                                                        |
+| ----------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------- |
+| 401 `{"message":"Missing API key in request"}`  | 请求未携带密钥，或携带的参数名与插件配置的 `header` / `query` 不一致    | 确认客户端发送的头名（默认 `apikey`）与 Route 上的配置一致                    |
+| 401 `{"message":"Invalid API key in request"}`  | 密钥与任何 Consumer 的凭证都不匹配；或 Consumer 创建了但没绑定 `key-auth` | 用 `GET /apisix/admin/consumers` 核对用户名与密钥，确认 `key` 写在 Consumer 的 `plugins.key-auth` 里 |
+| 不带密钥也能访问                                        | 插件未真正生效：Route 未启用 `key-auth`，或请求实际命中的是另一条规则更宽的路由 | 用 `GET /apisix/admin/routes/1` 核对生效配置，并检查是否有其他 Route 抢先匹配了同一 URI |
+| 请求通过但上游拿不到 `apikey`                             | 配置了 `hide_credentials: true`                    | 属预期行为，改用 `X-Consumer-Username` 识别调用方                      |
+
+##### 与 jwt-auth 的取舍
+
+| 维度      | key-auth                        | jwt-auth                    |
+| ------- | ------------------------------- | --------------------------- |
+| 凭证形态    | 一串固定密钥                          | 签名令牌（JWT）                   |
+| 是否携带声明  | 否，网关需反查 Consumer 才知道是谁          | 是，`sub`、`scope` 等直接写在载荷里    |
+| 过期与轮换   | 无内置过期，靠手工更换 / 删除凭证              | 有 `exp`，可短有效期 + 刷新         |
+| 校验开销    | 反查 Consumer（内存缓存，未命中回源 etcd）    | 本地验签，无需回查                   |
+| 适用场景    | 内部服务互调、给第三方发长期 API Key          | 面向终端用户的登录态、需要携带权限声明         |
+
+> **选型口径**：调用方是「可信的服务或长期合作方」，发一把不常变的密钥最省事；调用方是「随时会登录登出的终端用户」，用 JWT 才能避免每次请求都回查。两者也可并存——同一 Consumer 分别绑 `key-auth` 与 `jwt-auth`，Route 上同时启用后，请求带哪种凭证都能被识别。
+
+JWT 的结构、签名验签与安全要点见 [JWT 令牌](/contents/security/JWT.md)；网关层统一的认证收敛与身份透传设计见 [API 网关](/contents/middleware/API网关.md) 的「认证与授权」小节。
 
 ### 开发 APISIX 插件
 

@@ -117,6 +117,8 @@ sequenceDiagram
     D-->>C: 返回结果
 ```
 
+> 认证在网关落地的具体配置——Consumer 与 Credential 模型、`key-auth` 的参数、请求示例与排错——见 [APISIX](/contents/microservice/APISIX.md) 的「认证插件」小节。
+
 ### 协议转换
 
 客户端与后端服务的协议往往不一致，网关负责在边界做协议适配：
